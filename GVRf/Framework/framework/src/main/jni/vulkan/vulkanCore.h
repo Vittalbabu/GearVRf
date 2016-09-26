@@ -207,6 +207,9 @@ public:
       void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeline &m_pipeline);
       VkShaderModule CreateShaderModuleAscii(const uint32_t* code, uint32_t size);
       bool GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex);
+       VkDevice& getDevice(){
+            return m_device;
+       }
 private:
     std::vector<VkFence> waitFences;
     static VulkanCore* theInstance;
@@ -214,6 +217,7 @@ private:
         m_Vulkan_Initialised = false;
         initVulkanCore(newNativeWindow);
     }
+
     bool CreateInstance();
     VkShaderModule CreateShaderModule(std::vector<uint32_t> code, uint32_t size);
     bool GetPhysicalDevices();

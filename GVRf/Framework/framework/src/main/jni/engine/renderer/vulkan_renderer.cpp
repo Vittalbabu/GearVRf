@@ -39,7 +39,7 @@
 #include "vulkan_renderer.h"
 #include <unordered_map>
 #include <unordered_set>
-
+#include "objects/uniform_block.h"
 namespace gvr {
      void VulkanRenderer::renderCamera(Scene* scene, Camera* camera,
              ShaderManager* shader_manager,
@@ -79,8 +79,12 @@ namespace gvr {
                  const std::vector<unsigned short> & indices =  rdata->mesh()->triangles();
                 vulkanCore_->InitVertexBuffersFromRenderData(vertices, rdata->m_vertices, rdata->m_indices, indices);
                 //vulkanCore_->InitVertexBuffersFromRenderData(rdata->m_vertices, rdata->m_indices);
-                vulkanCore_->InitUniformBuffersForRenderData(rdata->m_modelViewMatrixUniform);
-                vulkanCore_->InitDescriptorSetForRenderData(rdata->m_modelViewMatrixUniform, rdata->m_descriptorSet);
+                VulkanUniformBlock& transform_ubo = rdata->getTransformUBO();
+                transform_ubo.createBuffer(vulkanCore_->getDevice(),vulkanCore_);
+             //   vulkanCore_->InitUniformBuffersForRenderData(rdata->m_modelViewMatrixUniform);
+                GVR_Uniform& transformUbo = transform_ubo.getBuffer();
+                // vulkanCore_->InitUniformBuffersForRenderData(transformUbo);
+                vulkanCore_->InitDescriptorSetForRenderData(transformUbo, rdata->m_descriptorSet);
                 vulkanCore_->InitPipelineForRenderData(rdata->m_vertices, rdata->m_pipeline);
 
                 rdata->uniform_dirty = false;

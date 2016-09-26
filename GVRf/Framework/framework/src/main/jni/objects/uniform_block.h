@@ -398,6 +398,7 @@ protected:
 class VulkanUniformBlock: public UniformBlock
 {
 public:
+bool buffer_init_;
     GVR_Uniform m_bufferInfo;
     VulkanUniformBlock();
     VulkanUniformBlock(const std::string& descriptor);
@@ -405,6 +406,7 @@ public:
     GVR_Uniform& getBuffer(){
         return m_bufferInfo;
     }
+    void updateBuffer(VkDevice &device,VulkanCore* vk);
 };
 /**
  * Manages a GLSL Uniform Block containing data parameters to pass to

@@ -1438,14 +1438,6 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
 
 void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data)
 {
-    //static float spinAngle = 0.01f;
-
-    //glm::mat4 rotationx = glm::rotate(glm::mat4(), glm::radians(spinAngle*3), glm::vec3(1.0f, 0.0f, 0.0f));
-    //glm::mat4 rotationy = glm::rotate(glm::mat4(), glm::radians(spinAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-    //glm::mat4 rotation = rotationx * rotationy;
-    //glm::mat4 model = m_modelMatrix * rotation;
-    //glm::mat4 modelView = m_viewMatrix * model;
-   // glm::mat4 modelViewProjection;// =  rotation;//m_projectionMatrix * modelView;
 
 
     VkResult ret = VK_SUCCESS;
@@ -1460,16 +1452,19 @@ void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render
     glm::mat4 proj = camera->getProjectionMatrix();
     glm::mat4 modelViewProjection = proj * view * model;
 
-   // LOGI("Vulkan mvp %f %f %f %f", modelViewProjection[0][0],  modelViewProjection[0][1], modelViewProjection[0][2], modelViewProjection[0][3]);
-
+ /*
     ret = vkMapMemory(m_device, render_data->m_modelViewMatrixUniform.mem, 0, render_data->m_modelViewMatrixUniform.allocSize, 0, (void **) &pData);
     assert(!ret);
 
     memcpy(pData, (const void*) &modelViewProjection, sizeof(modelViewProjection));
 
     vkUnmapMemory(m_device, render_data->m_modelViewMatrixUniform.mem);
+*/
 
-    //spinAngle += 0.8f;
+    VulkanUniformBlock& transform_ubo = render_data->getTransformUBO();
+    transform_ubo.setMat4("mvp",modelViewProjection);
+    transform_ubo.updateBuffer(m_device,this);
+
 }
 
 

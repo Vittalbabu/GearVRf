@@ -30,9 +30,11 @@
 #include "objects/render_pass.h"
 #include "objects/material.h"
 #include<sstream>
+#include "objects/uniform_block.h"
 #include "vulkan/vulkanCore.h"
 typedef unsigned long Long;
 namespace gvr {
+
 class Mesh;
 class Material;
 class Light;
@@ -72,7 +74,7 @@ public:
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
                     1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0),uniform_dirty(true), renderdata_dirty_(true) {
+                    GL_TRIANGLES), texture_capturer(0),uniform_dirty(true), renderdata_dirty_(true), transform_UBO("mat4 mvp") {
     }
 
     void copy(const RenderData& rdata) {
@@ -341,10 +343,15 @@ public:
     VkPipeline& getVKPipeline(){
         return m_pipeline;
     }
+    VulkanUniformBlock& getTransformUBO(){
+        return transform_UBO;
+    }
+
 
     // Vulkan
+        VulkanUniformBlock transform_UBO;
         GVR_Uniform m_modelViewMatrixUniform;
-        
+
         VkPipeline m_pipeline;
         VkDescriptorSet m_descriptorSet;
         bool uniform_dirty;

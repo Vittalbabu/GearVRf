@@ -19,13 +19,14 @@
 namespace gvr {
 
 UniformBlock::UniformBlock(const std::string& descriptor) :
-        Descriptor(descriptor),
+        //Descriptor(descriptor),
         TotalSize(0),
         UniformData(NULL)
 {
     ownData = false;
     if (!descriptor.empty())
     {
+        LOGE("setting descriptor");
         setDescriptor(descriptor);
     }
 }
@@ -525,15 +526,32 @@ GLint GLUniformBlock::sizeFromUniformType(GLint type)
 }
 
 VulkanUniformBlock::VulkanUniformBlock(const std::string& descriptor) :
-    UniformBlock(descriptor){
+    UniformBlock(descriptor), buffer_init_(false){
+
+    LOGE("pararameter");
 }
 
 VulkanUniformBlock::VulkanUniformBlock() :
-    UniformBlock()
+    UniformBlock(), buffer_init_(false)
 {
+    LOGE("default");
+}
+void VulkanUniformBlock::updateBuffer(VkDevice &device,VulkanCore* vk){
+
+  //  if(!buffer_init_)
+  //      createBuffer(device, vk);
+
+    VkResult ret = VK_SUCCESS;
+    uint8_t *pData;
+
+    ret = vkMapMemory(device, m_bufferInfo.mem, 0, m_bufferInfo.allocSize, 0, (void **) &pData);
+    assert(!ret);
+
+    memcpy(pData, UniformData, TotalSize);
+
+    vkUnmapMemory(device, m_bufferInfo.mem);
 
 }
-
 void VulkanUniformBlock::createBuffer(VkDevice &device,VulkanCore* vk){
 
     VkResult err = VK_SUCCESS;
