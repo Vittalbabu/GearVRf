@@ -6,6 +6,50 @@
 #include <vulkan/vulkan.h>
 
 namespace gvr {
+struct GVR_VK_SwapchainBuffer
+{
+    VkImage image;
+    VkCommandBuffer cmdBuffer;
+    VkImageView view;
+    VkDeviceSize size;
+    VkDeviceMemory mem;
+};
+
+struct GVR_VK_DepthBuffer {
+    VkFormat format;
+    VkImage image;
+    VkDeviceMemory mem;
+    VkImageView view;
+};
+
+struct GVR_VK_Vertices {
+    VkBuffer buf;
+    VkDeviceMemory mem;
+    VkPipelineVertexInputStateCreateInfo vi;
+    VkVertexInputBindingDescription      vi_bindings[1];
+    VkVertexInputAttributeDescription    vi_attrs[2];
+};
+
+struct GVR_Uniform {
+    VkBuffer buf;
+    VkDeviceMemory mem;
+    VkDescriptorBufferInfo bufferInfo;
+    VkDeviceSize allocSize;
+};
+
+struct OutputBuffer
+{
+    VkBuffer imageOutputBuffer;
+    VkDeviceMemory memory;
+    VkDeviceSize size;
+};
+
+// Index buffer
+struct GVR_VK_Indices {
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+    uint32_t count;
+};
 
 class ImageCreateInfo final
     {

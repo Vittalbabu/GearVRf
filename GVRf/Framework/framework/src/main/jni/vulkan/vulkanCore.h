@@ -21,6 +21,7 @@
 
 #include <android/native_window_jni.h>	// for native window JNI
 #include "vulkan/vulkan_wrapper.h"
+#include "vulkanInfoWrapper.h"
 #include <vector>
 #include "glm/glm.hpp"
 
@@ -182,50 +183,6 @@ const char shader_tri_vert[]={
 const int shader_tri_vert_size=1212;
 
 
-struct GVR_VK_SwapchainBuffer
-{
-    VkImage image;
-    VkCommandBuffer cmdBuffer;
-    VkImageView view;
-    VkDeviceSize size;
-    VkDeviceMemory mem;
-};
-
-struct GVR_VK_DepthBuffer {
-    VkFormat format;
-    VkImage image;
-    VkDeviceMemory mem;
-    VkImageView view;
-};
-
-struct GVR_VK_Vertices {
-    VkBuffer buf;
-    VkDeviceMemory mem;
-    VkPipelineVertexInputStateCreateInfo vi;
-    VkVertexInputBindingDescription      vi_bindings[1];
-    VkVertexInputAttributeDescription    vi_attrs[2];
-};
-
-struct Uniform {
-    VkBuffer buf;
-    VkDeviceMemory mem;
-    VkDescriptorBufferInfo bufferInfo;
-    VkDeviceSize allocSize;
-};
-
-struct OutputBuffer
-{
-    VkBuffer imageOutputBuffer;
-    VkDeviceMemory memory;
-    VkDeviceSize size;
-};
-
-// Index buffer
-struct GVR_VK_Indices {
-    VkDeviceMemory memory;
-    VkBuffer buffer;
-    uint32_t count;
-};
 
 
 class VulkanCore {
@@ -240,8 +197,8 @@ public:
         return NULL;
     }
     void UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data);
-     void InitUniformBuffersForRenderData(Uniform &m_modelViewMatrixUniform);
-     void InitDescriptorSetForRenderData(Uniform &m_modelViewMatrixUniform, VkDescriptorSet &m_descriptorSet);
+     void InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform);
+     void InitDescriptorSetForRenderData(GVR_Uniform &m_modelViewMatrixUniform, VkDescriptorSet &m_descriptorSet);
      void BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors, int &swapChainIndex, std::vector<RenderData*>& render_data_vector);
      void DrawFrameForRenderData(int &swapChainIndex);
       int AcquireNextImage();
@@ -249,6 +206,7 @@ public:
      //void InitVertexBuffersFromRenderData(GVR_VK_Vertices &m_vertices, GVR_VK_Indices &m_indices);
       void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeline &m_pipeline);
       VkShaderModule CreateShaderModuleAscii(const uint32_t* code, uint32_t size);
+      bool GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex);
 private:
     std::vector<VkFence> waitFences;
     static VulkanCore* theInstance;
@@ -263,7 +221,7 @@ private:
     bool InitDevice();
     void InitSurface();
     void InitSwapchain(uint32_t width, uint32_t height);
-    bool GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex);
+
     void InitCommandbuffers();
     void InitVertexBuffers();
     void InitLayouts();
@@ -313,7 +271,7 @@ private:
     uint8_t * texDataVulkan;
     int imageIndex = 0;
     uint8_t *finaloutput;
-    Uniform m_modelViewMatrixUniform;
+    GVR_Uniform m_modelViewMatrixUniform;
     VkDescriptorPool m_descriptorPool;
     VkDescriptorSet m_descriptorSet;
     GVR_VK_Indices m_indices;

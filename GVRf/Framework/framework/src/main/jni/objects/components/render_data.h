@@ -343,7 +343,8 @@ public:
     }
 
     // Vulkan
-        Uniform m_modelViewMatrixUniform;
+        GVR_Uniform m_modelViewMatrixUniform;
+        
         VkPipeline m_pipeline;
         VkDescriptorSet m_descriptorSet;
         bool uniform_dirty;

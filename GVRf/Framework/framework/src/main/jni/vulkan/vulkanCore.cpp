@@ -14,7 +14,7 @@
  */
 
 #include "vulkanCore.h"
-#include "vulkanInfoWrapper.h"
+
 #include "util/gvr_log.h"
 #include <assert.h>
 #include <cstring>
@@ -876,7 +876,7 @@ void VulkanCore::InitUniformBuffers(){
 }
 
 
-void VulkanCore::InitUniformBuffersForRenderData(Uniform &m_modelViewMatrixUniform){
+void VulkanCore::InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform){
     // the uniform in this example is a matrix in the vertex stage
     memset(&m_modelViewMatrixUniform, 0, sizeof(m_modelViewMatrixUniform));
 
@@ -1473,7 +1473,7 @@ void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render
 }
 
 
-void VulkanCore::InitDescriptorSetForRenderData(Uniform &m_modelViewMatrixUniform, VkDescriptorSet &m_descriptorSet) {
+void VulkanCore::InitDescriptorSetForRenderData(GVR_Uniform &m_modelViewMatrixUniform, VkDescriptorSet &m_descriptorSet) {
     //Create a pool with the amount of descriptors we require
     VkDescriptorPoolSize poolSize[2] = {};
     poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
