@@ -57,7 +57,8 @@ void Renderer::initializeStats() {
 ***/
 Renderer* Renderer::getInstance(const char* type){
     if(nullptr == instance){
-        if(0 == std::strcmp(type,"Vulkan")) {
+       // if(0 == std::strcmp(type,"Vulkan")) {
+       if(1){
             instance = new VulkanRenderer();
             isVulkan_ = true;
         }

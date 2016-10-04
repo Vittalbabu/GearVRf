@@ -30,6 +30,7 @@
 #include "objects/render_pass.h"
 #include "objects/material.h"
 #include<sstream>
+#include "vulkan/vulkanCore.h"
 typedef unsigned long Long;
 namespace gvr {
 class Mesh;
@@ -71,7 +72,7 @@ public:
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
                     1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0),renderdata_dirty_(true) {
+                    GL_TRIANGLES), texture_capturer(0),uniform_dirty(true), renderdata_dirty_(true) {
     }
 
     void copy(const RenderData& rdata) {
@@ -268,7 +269,7 @@ public:
         sample_coverage_ = sample_coverage;
         hash_code_dirty_ = true;
     }
-   
+
     float sample_coverage() const {
     	return sample_coverage_;
     }
@@ -337,6 +338,18 @@ public:
         }
         return hash_code;
     }
+    VkPipeline& getVKPipeline(){
+        return m_pipeline;
+    }
+
+    // Vulkan
+        Uniform m_modelViewMatrixUniform;
+        Uniform m_lightUniform;
+        VkPipeline m_pipeline;
+        VkDescriptorSet m_descriptorSet;
+        bool uniform_dirty;
+        GVR_VK_Indices m_indices;
+        GVR_VK_Vertices m_vertices;
 private:
     //  RenderData(const RenderData& render_data);
     RenderData(RenderData&& render_data);
@@ -344,6 +357,7 @@ private:
     RenderData& operator=(RenderData&& render_data);
 
 private:
+
     static const int DEFAULT_RENDER_MASK = Left | Right;
     static const int DEFAULT_RENDERING_ORDER = Geometry;
     Mesh* mesh_;

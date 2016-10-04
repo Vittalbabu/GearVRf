@@ -17,11 +17,25 @@
 #ifndef FRAMEWORK_VULKANCORE_H
 #define FRAMEWORK_VULKANCORE_H
 
+#define VK_USE_PLATFORM_ANDROID_KHR
+
+#include <android/native_window_jni.h>	// for native window JNI
 #include "vulkan/vulkan_wrapper.h"
+#include <vector>
+#include "glm/glm.hpp"
+//#include "vulkanThreadPool.h"
+
 #define GVR_VK_CHECK(X) if (!(X)) { LOGD("VK_CHECK Failure"); assert((X));}
 #define GVR_VK_VERTEX_BUFFER_BIND_ID 0
 #define GVR_VK_SAMPLE_NAME "GVR Vulkan"
 #define VK_KHR_ANDROID_SURFACE_EXTENSION_NAME "VK_KHR_android_surface"
+
+
+namespace gvr {
+class Scene;
+class RenderData;
+class Camera;
+extern  uint8_t *oculusTexData;
 
 struct GVR_VK_SwapchainBuffer
 {
@@ -30,6 +44,7 @@ struct GVR_VK_SwapchainBuffer
     VkImageView view;
     VkDeviceSize size;
     VkDeviceMemory mem;
+    VkBuffer buf;
 };
 
 struct GVR_VK_DepthBuffer {
@@ -47,41 +62,81 @@ struct GVR_VK_Vertices {
     VkVertexInputAttributeDescription    vi_attrs[2];
 };
 
+struct Uniform {
+    VkBuffer buf;
+    VkDeviceMemory mem;
+    VkDescriptorBufferInfo bufferInfo;
+    VkDeviceSize allocSize;
+};
+
+struct OutputBuffer
+{
+    VkBuffer imageOutputBuffer;
+    VkDeviceMemory memory;
+    VkDeviceSize size;
+};
+
+// Index buffer
+struct GVR_VK_Indices {
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+    uint32_t count;
+};
+
 
 class VulkanCore {
 public:
     // Return NULL if Vulkan inititialisation failed. NULL denotes no Vulkan support for this device.
-    static VulkanCore* getInstance() {
+    static VulkanCore* getInstance(ANativeWindow * newNativeWindow = nullptr) {
         if (!theInstance) {
-            theInstance = new VulkanCore;
+            theInstance = new VulkanCore(newNativeWindow);
         }
         if (theInstance->m_Vulkan_Initialised)
             return theInstance;
         return NULL;
     }
+    void UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data);
+     void InitUniformBuffersForRenderData(Uniform &m_modelViewMatrixUniform);
+     void InitUniformBuffersForRenderDataLights(Uniform &m_modelViewMatrixUniform);
+     void InitDescriptorSetForRenderData(Uniform &m_modelViewMatrixUniform, Uniform &m_lightsUniform, VkDescriptorSet &m_descriptorSet);
+     void BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors, int &swapChainIndex, std::vector<RenderData*>& render_data_vector);
+     void DrawFrameForRenderData(int &swapChainIndex);
+      int AcquireNextImage();
+      void InitVertexBuffersFromRenderData(const std::vector<glm::vec3>& vertices, GVR_VK_Vertices &m_vertices, GVR_VK_Indices &m_indices, const std::vector<unsigned short> & indices);
+     //void InitVertexBuffersFromRenderData(GVR_VK_Vertices &m_vertices, GVR_VK_Indices &m_indices);
+      void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeline &m_pipeline);
+      VkShaderModule CreateShaderModuleAscii(const uint32_t* code, uint32_t size);
+      void BuildSecondaryCmdBuffer(VkCommandBuffer secondaryCmdBuff, VkCommandBufferBeginInfo secondaryBeginInfo, RenderData* renderData, VkDescriptorSet allDescriptors);
 private:
+    std::vector<VkFence> waitFences;
     static VulkanCore* theInstance;
-    VulkanCore() : m_pPhysicalDevices(NULL){
+    VulkanCore(ANativeWindow * newNativeWindow) : m_pPhysicalDevices(NULL){
         m_Vulkan_Initialised = false;
-        initVulkanCore();
+        initVulkanCore(newNativeWindow);
     }
     bool CreateInstance();
+    VkShaderModule CreateShaderModule(std::vector<uint32_t> code, uint32_t size);
     bool GetPhysicalDevices();
-    void initVulkanCore();
-    void InitDevice();
+    void initVulkanCore(ANativeWindow * newNativeWindow);
+    bool InitDevice();
+    void InitSurface();
     void InitSwapchain(uint32_t width, uint32_t height);
     bool GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex);
     void InitCommandbuffers();
+    void InitTransientCmdPool();
+    VkCommandBuffer GetTransientCmdBuffer();
     void InitVertexBuffers();
     void InitLayouts();
     void InitRenderPass();
-    void InitPipeline();
     void InitFrameBuffers();
     void InitSync();
     void BuildCmdBuffer();
 
-    bool m_Vulkan_Initialised;
+    void InitUniformBuffers();
 
+
+    bool m_Vulkan_Initialised;
+    ANativeWindow * m_androidWindow;
 
     VkInstance m_instance;
     VkPhysicalDevice* m_pPhysicalDevices;
@@ -97,6 +152,7 @@ private:
 
     VkSwapchainKHR m_swapchain;
     GVR_VK_SwapchainBuffer* m_swapchainBuffers;
+    GVR_VK_SwapchainBuffer* outputImage;
 
     uint32_t m_swapchainCurrentIdx;
     uint32_t m_height;
@@ -107,6 +163,7 @@ private:
     VkFramebuffer* m_frameBuffers;
 
     VkCommandPool m_commandPool;
+    VkCommandPool m_commandPoolTrans;
     GVR_VK_DepthBuffer* m_depthBuffers;
     GVR_VK_Vertices m_vertices;
 
@@ -114,11 +171,20 @@ private:
     VkPipelineLayout  m_pipelineLayout;
     VkRenderPass m_renderPass;
     VkPipeline m_pipeline;
-
+    OutputBuffer* m_outputBuffers;
     uint8_t * texDataVulkan;
+    int imageIndex = 0;
+    uint8_t *finaloutput;
+    Uniform m_modelViewMatrixUniform;
+    VkDescriptorPool m_descriptorPool;
+    VkDescriptorSet m_descriptorSet;
+    GVR_VK_Indices m_indices;
+
+    //uint m_threadCount;
+    //ThreadPool m_threadPool;
 };
 
 
 extern VulkanCore gvrVulkanCore;
-
+}
 #endif //FRAMEWORK_VULKANCORE_H
