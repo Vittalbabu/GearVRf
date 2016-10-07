@@ -29,7 +29,8 @@
 #include <math.h>
 #include <thread>
 
-#include <shaderc/shaderc.hpp>
+//#include <shaderc/shaderc.hpp>
+//#include "shaderc.hpp"
 #define UINT64_MAX 99999
 namespace gvr {
 
@@ -194,6 +195,25 @@ void VulkanCore::InitSurface()
 
 bool VulkanCore::InitDevice() {
     VkResult ret = VK_SUCCESS;
+
+    const std::vector<const char*> validationLayers = {
+            "VK_LAYER_LUNARG_standard_validation"
+    };
+
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+
+    LOGE("Vulkan Validations layers found %d", layerCount);
+
+
+
+
+
+
     // Akin to when creating the instance, we can query extensions supported by the physical device
     // that we have selected to use.
     uint32_t deviceExtensionCount = 0;
@@ -1202,7 +1222,7 @@ void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeli
     ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     ms.pSampleMask = nullptr;
     ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
+/*
     shaderc::Compiler compiler;
     shaderc::CompileOptions options;
 
@@ -1257,17 +1277,17 @@ void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeli
         LOGE("Vulkan shader fragcompiled shader");
 
     std::vector<uint32_t> result_frag(module_frag.cbegin(), module_frag.cend());
-
+*/
     // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
         VkPipelineShaderStageCreateInfo shaderStages[2] = {};
         shaderStages[0].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = CreateShaderModule( result_vert, result_vert.size());//CreateShaderModuleAscii( (const uint32_t*)&shader_tri_vert[0], shader_tri_vert_size);//
+        shaderStages[0].module = CreateShaderModuleAscii( (const uint32_t*)&shader_tri_vert[0], shader_tri_vert_size);//CreateShaderModule( result_vert, result_vert.size());////
         shaderStages[0].pName  = "main";
         shaderStages[1].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = CreateShaderModule( result_frag, result_frag.size());//CreateShaderModuleAscii( (const uint32_t*)&shader_tri_frag[0], shader_tri_frag_size);//
+        shaderStages[1].module = CreateShaderModuleAscii( (const uint32_t*)&shader_tri_frag[0], shader_tri_frag_size);//CreateShaderModule( result_frag, result_frag.size());////
         shaderStages[1].pName  = "main";
 
 

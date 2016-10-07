@@ -25,9 +25,24 @@ LOCAL_MODULE    := jnlua
 LOCAL_SRC_FILES := ../prebuilt/$(TARGET_ARCH_ABI)/libjnlua.so
 include $(PREBUILT_SHARED_LIBRARY)
 
+include $(CLEAR_VARS)
+LOCAL_MODULE    := VkLayer_device_limits
+LOCAL_SRC_FILES := ../prebuilt/$(TARGET_ARCH_ABI)/libVkLayer_device_limits.so
+include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_STATIC_LIBRARIES := shaderc
+LOCAL_MODULE    := VkLayer_core_validation
+LOCAL_SRC_FILES := ../prebuilt/$(TARGET_ARCH_ABI)/libVkLayer_core_validation.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE    := VkLayer_swapchain
+LOCAL_SRC_FILES := ../prebuilt/$(TARGET_ARCH_ABI)/libVkLayer_swapchain.so
+include $(PREBUILT_SHARED_LIBRARY)
+
+
+include $(CLEAR_VARS)
+#LOCAL_STATIC_LIBRARIES := shaderc
 
 include $(CLEAR_VARS)
 
@@ -93,7 +108,9 @@ LOCAL_SRC_FILES += $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
 LOCAL_SHARED_LIBRARIES += assimp
 LOCAL_SHARED_LIBRARIES += jnlua
-LOCAL_STATIC_LIBRARIES += shaderc
+#LOCAL_STATIC_LIBRARIES += shaderc
+LOCAL_SHARED_LIBRARIES += VkLayer_device_limits
+LOCAL_SHARED_LIBRARIES += VkLayer_core_validation
 
 LOCAL_ARM_NEON := true
 
@@ -112,4 +129,4 @@ LOCAL_CFLAGS := -Wattributes
 LOCAL_LDLIBS += -ljnigraphics -llog -lGLESv3 -lEGL -lz -landroid
 
 include $(BUILD_SHARED_LIBRARY)
-$(call import-module, third_party/shaderc)
+#$(call import-module, third_party/shaderc)

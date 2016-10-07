@@ -29,6 +29,7 @@
 #include "objects/components/camera.h"
 #include "objects/components/render_data.h"
 #include "objects/textures/render_texture.h"
+#include "objects/mesh.h"
 #include "shaders/shader_manager.h"
 #include "shaders/post_effect_shader_manager.h"
 #include "util/gvr_gl.h"
@@ -40,5 +41,64 @@
 #include <unordered_set>
 
 namespace gvr {
+    void VulkanRenderer::renderCamera(Scene* scene, Camera* camera,
+                                      ShaderManager* shader_manager,
+                                      PostEffectShaderManager* post_effect_shader_manager,
+                                      RenderTexture* post_effect_render_texture_a,
+                                      RenderTexture* post_effect_render_texture_b) {
+
+/*
+        int swapChainIndex =  vulkanCore_->AcquireNextImage();
+         vulkanCore_->initPipelineMetaData(swapChainIndex);
+        vulkanCore_->bindCommandBuffer(swapChainIndex);
+      //  LOGI("VK calling draw %d", render_data_vector.size());
+        for(auto &render_data : render_data_vector) {
+         //   render_data->mesh()->generateVAO(vulkanCore_->getDevice(), vulkanCore_);
+            //GVR_VK_Vertices* vkVertices_ = render_data->mesh()->getVKVertices();
+            GVR_VK_Vertices& vkVertices_ = vulkanCore_->getVKVertices();
+            VkPipeline& m_pipeline = render_data->getVKPipeline();
+
+            VkGraphicsPipelineCreateInfo& m_pipelineCreateInfo_ = vulkanCore_->getPipelineCreateInfo();
+        //    vulkanCore_->updatePipelineInfo(m_pipelineCreateInfo_,vkVertices_.vi);
+            vulkanCore_->createGraphicsPipeline(m_pipeline, m_pipelineCreateInfo_);
+            vulkanCore_->UpdateUniforms(scene,camera, render_data);
+            vulkanCore_->bindRenderData(render_data, swapChainIndex);
+        }
+        vulkanCore_->unBindCommandBuffer(swapChainIndex);
+        vulkanCore_->DrawFrame(swapChainIndex);*/
+
+        std::vector <VkDescriptorSet> allDescriptors;
+        //  LOGI("VK calling draw %d", render_data_vector.size());
+        int swapChainIndex = vulkanCore_->AcquireNextImage();
+
+        for(auto &rdata : render_data_vector) {
+            //     LOGI("VK calling rdata");
+            // Creating and initializing Uniform Buffer for Each Render Data
+            if(rdata->uniform_dirty){
+                const std::vector<glm::vec3>& vertices=  rdata->mesh()->vertices();
+                const std::vector<unsigned short> & indices =  rdata->mesh()->triangles();
+                vulkanCore_->InitVertexBuffersFromRenderData(vertices, rdata->m_vertices, rdata->m_indices, indices);
+                //vulkanCore_->InitVertexBuffersFromRenderData(rdata->m_vertices, rdata->m_indices);
+                vulkanCore_->InitUniformBuffersForRenderData(rdata->m_modelViewMatrixUniform);
+                vulkanCore_->InitUniformBuffersForRenderDataLights(rdata->m_lightUniform);
+
+                vulkanCore_->InitDescriptorSetForRenderData(rdata->m_modelViewMatrixUniform, rdata->m_lightUniform, rdata->m_descriptorSet);
+                vulkanCore_->InitPipelineForRenderData(rdata->m_vertices, rdata->m_pipeline);
+
+                rdata->uniform_dirty = false;
+            }
+
+            allDescriptors.push_back(rdata->m_descriptorSet);
+            vulkanCore_->UpdateUniforms(scene,camera, rdata);
+
+            //vulkanCore_->DrawFrame();
+            //break;
+        }
+        //int swapChainIndex = vulkanCore_->AcquireNextImage();
+        //vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex, rdata->m_pipeline, rdata->m_vertices, rdata->m_indices);
+        vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex, render_data_vector);//rdata->m_pipeline, rdata->m_vertices, rdata->m_indices);
+        vulkanCore_->DrawFrameForRenderData(swapChainIndex);
+
+    }
 
 }

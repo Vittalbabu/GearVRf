@@ -41,62 +41,70 @@
 #include <unordered_map>
 #include "batch_manager.h"
 #include "renderer.h"
+#include "vulkan/vulkanCore.h"
 namespace gvr {
 
-class Camera;
-class Scene;
-class SceneObject;
-class PostEffectData;
-class PostEffectShaderManager;
-class RenderData;
-class RenderTexture;
-class ShaderManager;
-class Light;
+    class Camera;
+    class Scene;
+    class SceneObject;
+    class PostEffectData;
+    class PostEffectShaderManager;
+    class RenderData;
+    class RenderTexture;
+    class ShaderManager;
+    class Light;
 
-class VulkanRenderer: public Renderer {
-    friend class Renderer;
-protected:
-    VulkanRenderer(){}
-    virtual ~VulkanRenderer(){}
+    class VulkanRenderer: public Renderer {
+        friend class Renderer;
+    protected:
+        VulkanRenderer() : vulkanCore_(nullptr) {
+            vulkanCore_ = VulkanCore::getInstance();
+        }
+        virtual ~VulkanRenderer(){}
 
-public:
-    // pure virtual
-     void renderCamera(Scene* scene, Camera* camera,
-             ShaderManager* shader_manager,
-             PostEffectShaderManager* post_effect_shader_manager,
-             RenderTexture* post_effect_render_texture_a,
-             RenderTexture* post_effect_render_texture_b) { }
-   void renderCamera(Scene* scene, Camera* camera, int viewportX,
-             int viewportY, int viewportWidth, int viewportHeight,
-             ShaderManager* shader_manager,
-             PostEffectShaderManager* post_effect_shader_manager,
-             RenderTexture* post_effect_render_texture_a,
-             RenderTexture* post_effect_render_texture_b){}
-   void renderCamera(Scene* scene, Camera* camera, int framebufferId,
-             int viewportX, int viewportY, int viewportWidth, int viewportHeight,
-             ShaderManager* shader_manager,
-             PostEffectShaderManager* post_effect_shader_manager,
-             RenderTexture* post_effect_render_texture_a,
-             RenderTexture* post_effect_render_texture_b){}
-   void renderCamera(Scene* scene, Camera* camera,
-             RenderTexture* render_texture, ShaderManager* shader_manager,
-             PostEffectShaderManager* post_effect_shader_manager,
-             RenderTexture* post_effect_render_texture_a,
-             RenderTexture* post_effect_render_texture_b){}
-    void restoreRenderStates(RenderData* render_data){}
-    void setRenderStates(RenderData* render_data, RenderState& rstate){}
-    void renderShadowMap(RenderState& rstate, Camera* camera, GLuint framebufferId, std::vector<SceneObject*>& scene_objects){}
-    void makeShadowMaps(Scene* scene, ShaderManager* shader_manager, int width, int height){}
-    void set_face_culling(int cull_face){}
+    public:
+        // pure virtual
+        void renderCamera(Scene* scene, Camera* camera,
+                          ShaderManager* shader_manager,
+                          PostEffectShaderManager* post_effect_shader_manager,
+                          RenderTexture* post_effect_render_texture_a,
+                          RenderTexture* post_effect_render_texture_b);
 
-private:
-    void renderMesh(RenderState& rstate, RenderData* render_data){}
-    void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material){}
-    void occlusion_cull(Scene* scene,
-                std::vector<SceneObject*>& scene_objects,
-                ShaderManager *shader_manager, glm::mat4 vp_matrix){}
+        void renderCamera(Scene* scene, Camera* camera, int viewportX,
+                          int viewportY, int viewportWidth, int viewportHeight,
+                          ShaderManager* shader_manager,
+                          PostEffectShaderManager* post_effect_shader_manager,
+                          RenderTexture* post_effect_render_texture_a,
+                          RenderTexture* post_effect_render_texture_b){}
+        void renderCamera(Scene* scene, Camera* camera, int framebufferId,
+                          int viewportX, int viewportY, int viewportWidth, int viewportHeight,
+                          ShaderManager* shader_manager,
+                          PostEffectShaderManager* post_effect_shader_manager,
+                          RenderTexture* post_effect_render_texture_a,
+                          RenderTexture* post_effect_render_texture_b){}
+        void renderCamera(Scene* scene, Camera* camera,
+                          RenderTexture* render_texture, ShaderManager* shader_manager,
+                          PostEffectShaderManager* post_effect_shader_manager,
+                          RenderTexture* post_effect_render_texture_a,
+                          RenderTexture* post_effect_render_texture_b){}
+        void restoreRenderStates(RenderData* render_data){}
+        void setRenderStates(RenderData* render_data, RenderState& rstate){}
+        void renderShadowMap(RenderState& rstate, Camera* camera, GLuint framebufferId, std::vector<SceneObject*>& scene_objects){}
+        void makeShadowMaps(Scene* scene, ShaderManager* shader_manager, int width, int height){}
+        void set_face_culling(int cull_face){}
+
+    private:
+        VulkanCore* vulkanCore_;
+        void renderMesh(RenderState& rstate, RenderData* render_data){}
+        void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material){}
+        void occlusion_cull(Scene* scene,
+                            std::vector<SceneObject*>& scene_objects,
+                            ShaderManager *shader_manager, glm::mat4 vp_matrix){
+
+            occlusion_cull_init(scene, scene_objects);
+        }
 
 
-};
+    };
 }
 #endif //FRAMEWORK_VULKANRENDERER_H
