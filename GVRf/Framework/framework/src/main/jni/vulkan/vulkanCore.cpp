@@ -488,7 +488,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
        m_height = height;//240;//surfaceCapabilities.currentExtent.height;
 
     // Make true for System's Swap Chain
-    if(1) {
+    if(0) {
         uint32_t formatCount;
         ret = vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount,
                                                    nullptr);
