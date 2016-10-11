@@ -323,6 +323,7 @@ private:
     void BuildCmdBuffer();
 
     void InitUniformBuffers();
+    void CreateValidationCallbacks();
 
 
     bool m_Vulkan_Initialised;
@@ -370,6 +371,10 @@ private:
     VkDescriptorSet m_descriptorSet;
     GVR_VK_Indices m_indices;
 
+    PFN_vkCreateDebugReportCallbackEXT  mCreateDebugReportCallbackEXT;
+    PFN_vkDestroyDebugReportCallbackEXT mDestroyDebugReportCallbackEXT;
+    PFN_vkDebugReportMessageEXT         mDebugReportMessageCallback;
+    VkDebugReportCallbackEXT            mDebugReportCallback;
     //uint m_threadCount;
     //ThreadPool m_threadPool;
 };

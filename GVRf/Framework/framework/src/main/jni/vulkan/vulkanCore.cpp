@@ -39,8 +39,176 @@ uint8_t *oculusTexData;
 #define QUEUE_INDEX_MAX 99999
 #define VERTEX_BUFFER_BIND_ID 0
 
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(
+            VkDebugReportFlagsEXT msgFlags,
+            VkDebugReportObjectTypeEXT objType,
+            uint64_t srcObject, size_t location,
+            int32_t msgCode, const char * pLayerPrefix,
+            const char * pMsg, void * pUserData )
+    {
+        // allocate a string to build up the validation message we'll report
+        char *message = (char *)malloc(strlen(pMsg) + 100);
+        assert(message);
+
+        if (msgFlags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+        {
+            sprintf(message, "INFORMATION: [%s] Code %d : %s\n", pLayerPrefix, msgCode, pMsg);
+        }
+        else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+        {
+            sprintf(message, "WARNING: [%s] Code %d : %s\n", pLayerPrefix, msgCode, pMsg);
+        }
+        else if (msgFlags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+        {
+            sprintf(message, "PERFORMANCE WARNING: [%s] Code %d : %s\n", pLayerPrefix, msgCode, pMsg);
+        }
+        else if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+        {
+            if (msgCode == 8)
+            {
+                // Ignore for now...vkCreateSwapChainKHR() called with pCreateInfo->imageExtent = (..,..), which is not equal to the currentExtent = (..,..) return by vkGetPhysicalDeviceSurfaceCapabilitiesKHR()
+                return false;
+            }
+            else if (msgCode == 53)
+            {
+                // Ignore for now...Command Buffer 0x..... is already in use and not marked for simultaneous use
+                return false;
+            }
+            else if (msgCode == 7)
+            {
+                // Ignore for now...Cannot clear attachment 1 with invalid first layout VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                // http://stackoverflow.com/questions/38445001/layout-transition-between-multiple-subpasses-in-vulkan/38446072
+                return false;
+            }
+            sprintf(message, "ERROR: [%s] Code %d : %s\n", pLayerPrefix, msgCode, pMsg);
+
+        }
+        else if (msgFlags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+        {
+            sprintf(message, "DEBUG: [%s] Code %d : %s\n", pLayerPrefix, msgCode, pMsg);
+        }
+        else
+        {
+            // Not sure what else???
+            return false;
+        }
+        // Log it!
+        LOGI("Vulkan %s", message);
+
+        free(message);
+
+        // false indicates that layer should not bail-out of an API call that had validation failures.
+        // This may mean that the app dies inside the driver due to invalid parameter(s).
+        // That's what would happen without validation layers, so we'll keep that behavior here.
+        return false;
+    }
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+            VkDebugReportFlagsEXT flags,
+            VkDebugReportObjectTypeEXT objType,
+            uint64_t obj,
+            size_t location,
+            int32_t code,
+            const char* layerPrefix,
+            const char* msg,
+            void* userData) {
+
+        LOGI("Vulkan error");
+
+        return VK_FALSE;
+    }
+
+
+void VulkanCore::CreateValidationCallbacks(){
+
+    VkDebugReportCallbackCreateInfoEXT createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+    createInfo.pfnCallback = debugCallback;
+
+    auto func = (PFN_vkCreateDebugReportCallbackEXT) vkGetInstanceProcAddr(m_instance, "vkCreateDebugReportCallbackEXT");
+    if (func != nullptr) {
+        func(m_instance, &createInfo, nullptr, &mDebugReportCallback);
+    } else {
+        LOGI("Vulkan error while create");
+    }
+    /*
+    VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = {};
+    dbgCreateInfo.sType         = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+    dbgCreateInfo.pNext         = nullptr;
+    dbgCreateInfo.pfnCallback   = DebugReportCallback;
+    dbgCreateInfo.pUserData     = nullptr;
+    dbgCreateInfo.flags         =   VK_DEBUG_REPORT_ERROR_BIT_EXT;//               |
+                                   // VK_DEBUG_REPORT_WARNING_BIT_EXT             |
+                                   // VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+                                    // Uncomment this flag for verbose information logging
+                                    //VK_DEBUG_REPORT_INFORMATION_BIT_EXT         |
+                                   // VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+
+    mCreateDebugReportCallbackEXT   = NULL;
+    mCreateDebugReportCallbackEXT   = (PFN_vkCreateDebugReportCallbackEXT)  vkGetInstanceProcAddr( m_instance, "vkCreateDebugReportCallbackEXT");
+    mDestroyDebugReportCallbackEXT  = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr( m_instance, "vkDestroyDebugReportCallbackEXT");
+    mDebugReportMessageCallback     = (PFN_vkDebugReportMessageEXT)         vkGetInstanceProcAddr( m_instance, "vkDebugReportMessageEXT");
+    GVR_VK_CHECK(mCreateDebugReportCallbackEXT);
+    GVR_VK_CHECK(mDestroyDebugReportCallbackEXT);
+    GVR_VK_CHECK(mDebugReportMessageCallback);
+    if(mCreateDebugReportCallbackEXT == NULL)
+        LOGI("Vulkan Before vkCreateDebugReportCallbackEXT is null");
+
+    LOGI("Vulkan Before vkCreateDebugReportCallbackEXT");
+    //VkDebugReportCallbackEXT            mDebugReportCallback;
+    VkResult ret = mCreateDebugReportCallbackEXT(m_instance, &dbgCreateInfo, NULL, &mDebugReportCallback);
+    //VkResult ret = mCreateDebugReportCallbackEXT(m_instance, &dbgCreateInfo, NULL, NULL);
+    LOGI("Vulkan after vkCreateDebugReportCallbackEXT");
+    GVR_VK_CHECK(!ret);*/
+}
+
 bool VulkanCore::CreateInstance(){
     VkResult ret = VK_SUCCESS;
+
+
+    // Validation Layers
+    const std::vector<const char*> mInstanceLayers = {
+            "VK_LAYER_LUNARG_core_validation"
+    };
+
+    uint32_t numInstanceLayers = 0;
+    vkEnumerateInstanceLayerProperties(&numInstanceLayers, nullptr);
+
+    // Enumerate instance layers with valid pointer in last parameter
+    VkLayerProperties* layerProperties = (VkLayerProperties*)malloc(numInstanceLayers * sizeof(VkLayerProperties));
+    vkEnumerateInstanceLayerProperties(&numInstanceLayers, layerProperties);
+
+    LOGE("Vulkan Instance Layer  found: %d", numInstanceLayers);
+    for(int i = 0; i < numInstanceLayers; i++)
+        LOGE("Vulkan layers from get %s", layerProperties[i].layerName);
+    // Make sure the desired instance validation layers are available
+    // NOTE:  These are not listed in an arbitrary order.  Threading must be
+    //        first, and unique_objects must be last.  This is the order they
+    //        will be inserted by the loader.
+    int mEnabledInstanceLayerCount = mInstanceLayers.size();
+    LOGE("Vulkan Instance Layer  found: %d", mEnabledInstanceLayerCount);
+    for (uint32_t i = 0; i < mEnabledInstanceLayerCount; i++)
+    {
+        bool found = false;
+        for (uint32_t j = 0; j < numInstanceLayers; j++)
+        {
+            if (strcmp(mInstanceLayers[i], layerProperties[j].layerName) == 0)
+            {
+                LOGE("Vulkan Instance Layer Found ound: %s", mInstanceLayers[i]);
+            }
+        }
+        if (!found)
+        {
+            LOGE("Vulkan Instance Layer not found: %s", mInstanceLayers[i]);
+        }
+    }
+    // Validation Layers
+
+
+
+    //mEnabledInstanceLayerCount = 0;
+
 
     // Discover the number of extensions listed in the instance properties in order to allocate
     // a buffer large enough to hold them.
@@ -82,6 +250,8 @@ bool VulkanCore::CreateInstance(){
         return false;
     }
 
+    extensionNames[enabledExtensionCount++] = "VK_EXT_debug_report";
+
     // We specify the Vulkan version our application was built with,
     // as well as names and versions for our application and engine,
     // if applicable. This allows the driver to gain insight to what
@@ -97,20 +267,24 @@ bool VulkanCore::CreateInstance(){
 
     // Creation information for the instance points to details about
     // the application, and also the list of extensions to enable.
+
+    const char* temp = "VK_LAYER_LUNARG_device_limits";
+
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceCreateInfo.pNext = nullptr;
     instanceCreateInfo.pApplicationInfo = &applicationInfo;
-    instanceCreateInfo.enabledLayerCount = 0;
-    instanceCreateInfo.ppEnabledLayerNames = nullptr;
+    instanceCreateInfo.enabledLayerCount = mEnabledInstanceLayerCount;
+    instanceCreateInfo.ppEnabledLayerNames = mEnabledInstanceLayerCount==0 ? nullptr : mInstanceLayers.data();
     instanceCreateInfo.enabledExtensionCount = enabledExtensionCount;
     instanceCreateInfo.ppEnabledExtensionNames = extensionNames;
 
 
     // The main Vulkan instance is created with the creation infos above.
     // We do not specify a custom memory allocator for instance creation.
+    LOGI("Vulkan before create instance");
     ret = vkCreateInstance(&instanceCreateInfo, nullptr, &(m_instance));
-
+    LOGI("Vulkan after create instance");
     // we can delete the list of extensions after calling vkCreateInstance
     delete[] instanceExtensions;
 
@@ -119,10 +293,10 @@ bool VulkanCore::CreateInstance(){
     // an application is built with, exposed through VkApplicationInfo, is
     // newer than the driver present on a device.
     if (ret == VK_ERROR_INCOMPATIBLE_DRIVER) {
-        LOGE("Cannot find a compatible Vulkan installable client driver: vkCreateInstance Failure");
+        LOGE("Vulkan Cannot find a compatible Vulkan installable client driver: vkCreateInstance Failure");
         return false;
     } else if (ret == VK_ERROR_EXTENSION_NOT_PRESENT) {
-        LOGE("Cannot find a specified extension library: vkCreateInstance Failure");
+        LOGE("Vulkan Cannot find a specified extension library: vkCreateInstance Failure");
         return false;
     } else {
         GVR_VK_CHECK(!ret);
@@ -195,24 +369,6 @@ void VulkanCore::InitSurface()
 
 bool VulkanCore::InitDevice() {
     VkResult ret = VK_SUCCESS;
-
-    const std::vector<const char*> validationLayers = {
-            "VK_LAYER_LUNARG_standard_validation"
-    };
-
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-
-    LOGE("Vulkan Validations layers found %d", layerCount);
-
-
-
-
-
 
     // Akin to when creating the instance, we can query extensions supported by the physical device
     // that we have selected to use.
@@ -330,6 +486,67 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
     VkResult ret = VK_SUCCESS;
        m_width = width;// 320;//surfaceCapabilities.currentExtent.width;
        m_height = height;//240;//surfaceCapabilities.currentExtent.height;
+
+    // Make true for System's Swap Chain
+    if(1) {
+        uint32_t formatCount;
+        ret = vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount,
+                                                   nullptr);
+        GVR_VK_CHECK(!ret);
+
+        VkSurfaceFormatKHR *surfFormats = new VkSurfaceFormatKHR[formatCount];
+        ret = vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount,
+                                                   surfFormats);
+        GVR_VK_CHECK(!ret);
+
+        // If the format list includes just one entry of VK_FORMAT_UNDEFINED,
+        // the surface has no preferred format.  Otherwise, at least one
+        // supported format will be returned. For the purposes of this sample,
+        // we use the first format returned.
+        if (formatCount == 1 && surfFormats[0].format == VK_FORMAT_UNDEFINED) {
+            m_surfaceFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
+            m_surfaceFormat.colorSpace = surfFormats[0].colorSpace;
+        }
+        else {
+            m_surfaceFormat = surfFormats[0];
+        }
+
+        delete[] surfFormats;
+
+        VkSurfaceCapabilitiesKHR surfaceCapabilities;
+        ret = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &surfaceCapabilities);
+        GVR_VK_CHECK(!ret);
+
+        m_width  = surfaceCapabilities.currentExtent.width;
+        m_height = surfaceCapabilities.currentExtent.height;
+
+        VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
+        swapchainCreateInfo.sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        swapchainCreateInfo.surface               = m_surface;
+        swapchainCreateInfo.minImageCount         = surfaceCapabilities.minImageCount;
+        swapchainCreateInfo.imageFormat           = m_surfaceFormat.format;
+        swapchainCreateInfo.imageColorSpace       = m_surfaceFormat.colorSpace;
+        swapchainCreateInfo.imageExtent.width     = m_width;
+        swapchainCreateInfo.imageExtent.height    = m_height;
+        swapchainCreateInfo.imageUsage            = surfaceCapabilities.supportedUsageFlags;
+        swapchainCreateInfo.preTransform          = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        swapchainCreateInfo.imageArrayLayers      = 1;
+        swapchainCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
+        swapchainCreateInfo.compositeAlpha        = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+        swapchainCreateInfo.presentMode           = VK_PRESENT_MODE_FIFO_KHR;
+        swapchainCreateInfo.clipped               = VK_TRUE;
+
+        ret = vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, nullptr, &m_swapchain);
+        GVR_VK_CHECK(!ret);
+
+        // Query the number of swapchain images. This is the number of images in the internal
+        // queue.
+        ret = vkGetSwapchainImagesKHR(m_device, m_swapchain, &m_swapchainImageCount, nullptr);
+        GVR_VK_CHECK(!ret);
+
+        LOGI("Swapchain Image Count: %d\n", m_swapchainImageCount);
+    }
+
 
    VkImageCreateInfo imageCreateInfo = {};
        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1847,6 +2064,8 @@ void VulkanCore::initVulkanCore(ANativeWindow * newNativeWindow){
         m_Vulkan_Initialised = false;
         return;
     }
+
+   //CreateValidationCallbacks();
 
     if(GetPhysicalDevices() == false){
         m_Vulkan_Initialised = false;
