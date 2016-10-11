@@ -250,7 +250,7 @@ bool VulkanCore::CreateInstance(){
         return false;
     }
 
-    extensionNames[enabledExtensionCount++] = "VK_EXT_debug_report";
+    //extensionNames[enabledExtensionCount++] = "VK_EXT_debug_report";
 
     // We specify the Vulkan version our application was built with,
     // as well as names and versions for our application and engine,
@@ -269,6 +269,7 @@ bool VulkanCore::CreateInstance(){
     // the application, and also the list of extensions to enable.
 
     const char* temp = "VK_LAYER_LUNARG_device_limits";
+    mEnabledInstanceLayerCount = 0;
 
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
