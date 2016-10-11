@@ -40,6 +40,8 @@ import android.util.DisplayMetrics;
 import android.view.Choreographer;
 import android.view.Choreographer.FrameCallback;
 import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.widget.FrameLayout;
 
 /**
  * Keep Oculus-specifics here
@@ -134,6 +136,9 @@ class OvrVrapiActivityHandler implements OvrActivityHandler {
 
     @Override
     public void onSetScript() {
+        FrameLayout frameLayout = new FrameLayout(mActivity);
+
+
         mSurfaceView = new GLSurfaceView(mActivity);
 
         mSurfaceView.setPreserveEGLContextOnPause(true);
@@ -144,7 +149,35 @@ class OvrVrapiActivityHandler implements OvrActivityHandler {
         mSurfaceView.setRenderer(mRenderer);
         mSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
-        mActivity.setContentView(mSurfaceView);
+        frameLayout.addView(mSurfaceView);
+
+        //create a surface for vulkan
+        SurfaceView vulkanSurfaceView = new SurfaceView(mActivity);
+        vulkanSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder surfaceHolder) {
+                Log.d("Vulkan", "surfaceCreated");
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+                Log.d("Vulkan", "surfaceChanged");
+                long vulkanCoreObj;
+                vulkanCoreObj = NativeVulkanCore.getInstance(surfaceHolder.getSurface());
+                if (vulkanCoreObj != 0) {
+                    Log.i("Vulkan", "Vulkan Instance On surface created at Vulkan Java Side");
+                } else {
+                    Log.i("Vulkan", "Error : On surface  No Instance created at Vulkan Java Side");
+                }
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+                Log.d("Vulkan", "surfaceDestroyed");
+            }
+        });
+        frameLayout.addView(vulkanSurfaceView);
+        mActivity.setContentView(frameLayout);
 
         final DisplayMetrics metrics = new DisplayMetrics();
         mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -439,4 +472,8 @@ class OvrVrapiActivityHandler implements OvrActivityHandler {
     private static final int VRAPI_INITIALIZE_PERMISSIONS_ERROR = -2;
 
     private static final String TAG = "OvrVrapiActivityHandler";
+}
+
+class NativeVulkanCore {
+    static native long getInstance(Object surface);
 }

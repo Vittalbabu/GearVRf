@@ -23,6 +23,7 @@
 #include "vulkan/vulkan_wrapper.h"
 #include <vector>
 #include "glm/glm.hpp"
+#include "util/gvr_log.h"
 //#include "vulkanThreadPool.h"
 
 #define GVR_VK_CHECK(X) if (!(X)) { LOGD("VK_CHECK Failure"); assert((X));}
@@ -278,13 +279,15 @@ class VulkanCore {
 public:
     // Return NULL if Vulkan inititialisation failed. NULL denotes no Vulkan support for this device.
     static VulkanCore* getInstance(ANativeWindow * newNativeWindow = nullptr) {
-
-
-        //if (!theInstance) {
+        if (!theInstance) {
+            LOGI("Creating a new VulkanCore instance");
             theInstance = new VulkanCore(newNativeWindow);
-        //}
-        //if (theInstance->m_Vulkan_Initialised)
+        }else{
+            LOGI("VulkanCore instance already created");
+        }
+        if (theInstance->m_Vulkan_Initialised) {
             return theInstance;
+        }
         return NULL;
     }
     void UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data);

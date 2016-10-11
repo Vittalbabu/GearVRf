@@ -15,7 +15,6 @@
 
 #include "vulkanCore.h"
 #include "vulkanInfoWrapper.h"
-#include "util/gvr_log.h"
 #include <assert.h>
 #include <cstring>
 #include <iostream>

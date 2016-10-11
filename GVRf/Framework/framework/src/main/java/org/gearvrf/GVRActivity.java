@@ -219,54 +219,6 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
                     IActivityEvents.class,
                     "onResume");
         }
-
-        findSurfaceView(mRenderableViewGroup,0);
-        Log.i("Vulkan", "Calling getInstance "+ view.getHolder().getSurface());
-
-    }
-
-
-
-    void findSurfaceView(View view, int level) {
-        //Log.d("Vulkan", "View " + view + " at level " + level);
-
-        if (view instanceof SurfaceView) {
-            Log.d("Vulkan", "Found surfaceView");
-            // Add your surface view here
-            this.view = (SurfaceView) view;
-            this.view.getHolder().addCallback(new SurfaceHolder.Callback() {
-                @Override
-                public void surfaceCreated(SurfaceHolder surfaceHolder) {
-                    Log.d("Vulkan", "surfaceCreated");
-                }
-
-                @Override
-                public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-                    Log.d("Vulkan", "surfaceChanged");
-                    long vulkanCoreObj;
-                    vulkanCoreObj = NativeVulkanCore.getInstance(surfaceHolder.getSurface());
-                    if (vulkanCoreObj != 0)
-                        Log.i("Vulkan", "Vulkan Instance On surface created at Vulkan Java Side");
-                    else
-                        Log.i("Vulkan", "Error : On surface  No Instance created at Vulkan Java" +
-                                " Side");
-                }
-
-                @Override
-                public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-                    Log.d("Vulkan", "surfaceDestroyed");
-                }
-            });
-        }
-
-        if (view instanceof ViewGroup) {
-            int count = 0;
-            int size = ((ViewGroup) view).getChildCount();
-
-            for (count = 0; count < size; count++) {
-                findSurfaceView(((ViewGroup) view).getChildAt(count), level + 1);
-            }
-        }
     }
 
     @Override
@@ -747,8 +699,4 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
     }
 
 
-}
-
-class NativeVulkanCore {
-    static native long getInstance(Object surface);
 }
