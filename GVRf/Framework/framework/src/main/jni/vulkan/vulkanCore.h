@@ -326,6 +326,7 @@ private:
 
     void InitUniformBuffers();
     void CreateValidationCallbacks();
+    void SetNextBackBuffer();
 
 
     bool m_Vulkan_Initialised;

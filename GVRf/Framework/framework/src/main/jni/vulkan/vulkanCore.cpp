@@ -489,7 +489,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
        m_height = height;//240;//surfaceCapabilities.currentExtent.height;
 
     // Make true for System's Swap Chain
-    if(1) {
+   // if(1) {
         uint32_t formatCount;
         ret = vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount,
                                                    nullptr);
@@ -546,8 +546,52 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
         GVR_VK_CHECK(!ret);
 
         LOGI("Swapchain Image Count: %d\n", m_swapchainImageCount);
+
+    // Now we can retrieve these images, as to use them in rendering as our framebuffers.
+    VkImage* pSwapchainImages = new VkImage[m_swapchainImageCount];
+    ret = vkGetSwapchainImagesKHR(m_device, m_swapchain, &m_swapchainImageCount, pSwapchainImages);
+    GVR_VK_CHECK(!ret);
+
+    // We prepare our own representation of the swapchain buffers, for keeping track
+    // of resources during rendering.
+    m_swapchainBuffers = new GVR_VK_SwapchainBuffer[m_swapchainImageCount];
+    GVR_VK_CHECK(m_swapchainBuffers);
+
+
+    // From the images obtained from the swapchain, we create image views.
+    // This gives us context into the image.
+    VkImageViewCreateInfo imageViewCreateInfo = {};
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    imageViewCreateInfo.pNext = nullptr;
+    imageViewCreateInfo.format = m_surfaceFormat.format;
+    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount = 1;
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.flags = 0;
+
+    for (uint32_t i = 0; i < m_swapchainImageCount; i++) {
+        // We create an Imageview for each swapchain image, and track
+        // the view and image in our swapchainBuffers object.
+        m_swapchainBuffers[i].image = pSwapchainImages[i];
+        imageViewCreateInfo.image = pSwapchainImages[i];
+
+        VkResult err = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_swapchainBuffers[i].view);
+        GVR_VK_CHECK(!err);
     }
 
+    // At this point, we have the references now in our swapchainBuffer object
+    delete [] pSwapchainImages;
+
+
+  //  }
+/*
 
    VkImageCreateInfo imageCreateInfo = {};
        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -670,7 +714,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
 
 
 
-
+*/
 
 
    m_depthBuffers = new GVR_VK_DepthBuffer[m_swapchainImageCount];
@@ -752,6 +796,22 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
        // Allocating memory for output image
         oculusTexData = (uint8_t*)malloc(m_width*m_height*4* sizeof(uint8_t));
  }
+
+void VulkanCore::SetNextBackBuffer()
+{
+        VkResult ret = VK_SUCCESS;
+
+        // Get the next image to render to, then queue a wait until the image is ready
+        ret  = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_backBufferSemaphore, VK_NULL_HANDLE, &m_swapchainCurrentIdx);
+        if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
+            LOGW("VK_ERROR_OUT_OF_DATE_KHR not handled in sample");
+        } else if (ret == VK_SUBOPTIMAL_KHR) {
+            LOGW("VK_SUBOPTIMAL_KHR not handled in sample");
+        }
+        GVR_VK_CHECK(!ret);
+
+}
+
 
 bool VulkanCore::GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex)
 {
@@ -1849,23 +1909,28 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
   //  LOGI("Vulkna Swapchain Image number of %d", m_swapchainCurrentIdx);
     VkFence nullFence = waitFences[m_swapchainCurrentIdx];
 
+    LOGI("Vulkan befpre  SetNextBackBuffer");
+    SetNextBackBuffer();
+    LOGI("Vulkan after SetNextBackBuffer");
+
     VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.pNext = nullptr;
         submitInfo.waitSemaphoreCount = 0;
-        submitInfo.pWaitSemaphores = nullptr;//&m_backBufferSemaphore;
+        submitInfo.pWaitSemaphores = &m_backBufferSemaphore;
         submitInfo.pWaitDstStageMask = nullptr;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_swapchainBuffers[m_swapchainCurrentIdx].cmdBuffer;
         submitInfo.signalSemaphoreCount = 0;
-        submitInfo.pSignalSemaphores = nullptr;//&m_renderCompleteSemaphore;
+        submitInfo.pSignalSemaphores = &m_renderCompleteSemaphore;
 
   //  LOGI("Vulkan after vkqueue before submit");
-    err = vkQueueSubmit(m_queue, 1, &submitInfo,  waitFences[m_swapchainCurrentIdx]);
+   // err = vkQueueSubmit(m_queue, 1, &submitInfo,  waitFences[m_swapchainCurrentIdx]);
+    err = vkQueueSubmit(m_queue, 1, &submitInfo,  VK_NULL_HANDLE);
     GVR_VK_CHECK(!err);
  //   LOGI("Vulkan after vkqueue submit %d", err);
-    err = vkWaitForFences(m_device, 1, &waitFences[m_swapchainCurrentIdx], VK_TRUE, 4294967295U);
-    GVR_VK_CHECK(!err);
+ //   err = vkWaitForFences(m_device, 1, &waitFences[m_swapchainCurrentIdx], VK_TRUE, 4294967295U);
+ //   GVR_VK_CHECK(!err);
 
 
 
@@ -1880,7 +1945,7 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
     copyRegion.dstOffset = 0; // Optional
     copyRegion.size = outputImage[m_swapchainCurrentIdx].size;
     vkCmdCopyBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].buf, outputImage[m_swapchainCurrentIdx].buf, 1, &copyRegion);
-    /* VkExtent3D extent3D = {};
+    VkExtent3D extent3D = {};
               extent3D.width = m_width;
               extent3D.height = m_height;
      VkBufferImageCopy region = { 0 };
@@ -1889,7 +1954,7 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
                  region.imageExtent = extent3D;
 
 
-    vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputImage.buf, 1,  &region);*/
+    vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputImage[m_swapchainCurrentIdx].buf, 1,  &region);
     vkEndCommandBuffer(trnCmdBuf);
 
     VkSubmitInfo ssubmitInfo = {};
