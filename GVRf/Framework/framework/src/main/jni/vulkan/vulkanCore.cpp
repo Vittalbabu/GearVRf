@@ -401,7 +401,7 @@ bool VulkanCore::InitDevice() {
         extensionNames[enabledExtensionCount++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
     }
 
-    //InitSurface();
+    InitSurface();
 
     // Before we create our main Vulkan device, we must ensure our physical device
     // has queue families which can perform the actions we require. For this, we request
@@ -489,7 +489,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
        m_height = height;//240;//surfaceCapabilities.currentExtent.height;
 
     // Make true for System's Swap Chain
-    if(0) {
+    if(1) {
         uint32_t formatCount;
         ret = vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount,
                                                    nullptr);

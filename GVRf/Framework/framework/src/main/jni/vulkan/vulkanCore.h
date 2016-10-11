@@ -278,10 +278,12 @@ class VulkanCore {
 public:
     // Return NULL if Vulkan inititialisation failed. NULL denotes no Vulkan support for this device.
     static VulkanCore* getInstance(ANativeWindow * newNativeWindow = nullptr) {
-        if (!theInstance) {
+
+
+        //if (!theInstance) {
             theInstance = new VulkanCore(newNativeWindow);
-        }
-        if (theInstance->m_Vulkan_Initialised)
+        //}
+        //if (theInstance->m_Vulkan_Initialised)
             return theInstance;
         return NULL;
     }

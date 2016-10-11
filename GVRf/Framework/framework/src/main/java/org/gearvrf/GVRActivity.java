@@ -40,6 +40,8 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -68,6 +70,7 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
     private GVRMain mGVRMain;
     private VrAppSettings mAppSettings;
     private static View mFullScreenView = null;
+    private SurfaceView view;
 
     // Group of views that are going to be drawn
     // by some GVRViewSceneObject to the scene.
@@ -139,6 +142,7 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         mRenderableViewGroup = (ViewGroup) findViewById(android.R.id.content).getRootView();
+
         mDockEventReceiver = new DockEventReceiver(this,
                 new Runnable() {
                     @Override
@@ -146,11 +150,11 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
                         handleOnDock();
                     }
                 }, new Runnable() {
-                    @Override
-                    public void run() {
-                        handleOnUndock();
-                    }
-                });
+            @Override
+            public void run() {
+                handleOnUndock();
+            }
+        });
         mDockEventReceiver.start();
 
         mActivityNative = mDelegate.getActivityNative();
@@ -214,6 +218,54 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
                     this,
                     IActivityEvents.class,
                     "onResume");
+        }
+
+        findSurfaceView(mRenderableViewGroup,0);
+        Log.i("Vulkan", "Calling getInstance "+ view.getHolder().getSurface());
+
+    }
+
+
+
+    void findSurfaceView(View view, int level) {
+        //Log.d("Vulkan", "View " + view + " at level " + level);
+
+        if (view instanceof SurfaceView) {
+            Log.d("Vulkan", "Found surfaceView");
+            // Add your surface view here
+            this.view = (SurfaceView) view;
+            this.view.getHolder().addCallback(new SurfaceHolder.Callback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder surfaceHolder) {
+                    Log.d("Vulkan", "surfaceCreated");
+                }
+
+                @Override
+                public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+                    Log.d("Vulkan", "surfaceChanged");
+                    long vulkanCoreObj;
+                    vulkanCoreObj = NativeVulkanCore.getInstance(surfaceHolder.getSurface());
+                    if (vulkanCoreObj != 0)
+                        Log.i("Vulkan", "Vulkan Instance On surface created at Vulkan Java Side");
+                    else
+                        Log.i("Vulkan", "Error : On surface  No Instance created at Vulkan Java" +
+                                " Side");
+                }
+
+                @Override
+                public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+                    Log.d("Vulkan", "surfaceDestroyed");
+                }
+            });
+        }
+
+        if (view instanceof ViewGroup) {
+            int count = 0;
+            int size = ((ViewGroup) view).getChildCount();
+
+            for (count = 0; count < size; count++) {
+                findSurfaceView(((ViewGroup) view).getChildAt(count), level + 1);
+            }
         }
     }
 
@@ -693,4 +745,10 @@ public class GVRActivity extends Activity implements IEventReceiver, IScriptable
         GVRConfigurationManager makeConfigurationManager(GVRActivity activity);
         void parseXmlSettings(AssetManager assetManager, String dataFilename);
     }
+
+
+}
+
+class NativeVulkanCore {
+    static native long getInstance(Object surface);
 }
