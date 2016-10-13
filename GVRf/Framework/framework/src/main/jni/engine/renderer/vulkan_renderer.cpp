@@ -69,7 +69,7 @@ namespace gvr {
 
         std::vector <VkDescriptorSet> allDescriptors;
         //  LOGI("VK calling draw %d", render_data_vector.size());
-        int swapChainIndex = vulkanCore_->AcquireNextImage();
+        int swapChainIndex = vulkanCore_->SetNextBackBuffer();//AcquireNextImage();
 
         for(auto &rdata : render_data_vector) {
             //     LOGI("VK calling rdata");

@@ -488,7 +488,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
        m_height = height;//240;//surfaceCapabilities.currentExtent.height;
 
     // Make true for System's Swap Chain
-   // if(1) {
+  //  if(0) {
         uint32_t formatCount;
         ret = vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &formatCount,
                                                    nullptr);
@@ -508,8 +508,10 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
             m_surfaceFormat.colorSpace = surfFormats[0].colorSpace;
         }
         else {
-            m_surfaceFormat = surfFormats[0];
+            m_surfaceFormat =  surfFormats[0];
         }
+
+        m_surfaceFormat.format =  VK_FORMAT_R8G8B8A8_UNORM;
 
         delete[] surfFormats;
 
@@ -517,8 +519,8 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
         ret = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &surfaceCapabilities);
         GVR_VK_CHECK(!ret);
 
-        m_width  = surfaceCapabilities.currentExtent.width;
-        m_height = surfaceCapabilities.currentExtent.height;
+        //m_width  = surfaceCapabilities.currentExtent.width;
+        //m_height = surfaceCapabilities.currentExtent.height;
 
         VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
         swapchainCreateInfo.sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -528,7 +530,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
         swapchainCreateInfo.imageColorSpace       = m_surfaceFormat.colorSpace;
         swapchainCreateInfo.imageExtent.width     = m_width;
         swapchainCreateInfo.imageExtent.height    = m_height;
-        swapchainCreateInfo.imageUsage            = surfaceCapabilities.supportedUsageFlags;
+        swapchainCreateInfo.imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;//surfaceCapabilities.supportedUsageFlags;
         swapchainCreateInfo.preTransform          = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
         swapchainCreateInfo.imageArrayLayers      = 1;
         swapchainCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
@@ -555,6 +557,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
     // of resources during rendering.
     m_swapchainBuffers = new GVR_VK_SwapchainBuffer[m_swapchainImageCount];
     GVR_VK_CHECK(m_swapchainBuffers);
+        m_outputBuffers = new OutputBuffer[m_swapchainImageCount];
 
 
     // From the images obtained from the swapchain, we create image views.
@@ -575,6 +578,7 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     imageViewCreateInfo.flags = 0;
 
+    VkMemoryRequirements memReqs;
     for (uint32_t i = 0; i < m_swapchainImageCount; i++) {
         // We create an Imageview for each swapchain image, and track
         // the view and image in our swapchainBuffers object.
@@ -583,13 +587,59 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
 
         VkResult err = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_swapchainBuffers[i].view);
         GVR_VK_CHECK(!err);
+
+
+        VkBufferCreateInfo outputinfo = {};
+        outputinfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        outputinfo.size = m_width*m_height*4* sizeof(uint8_t);//memReqs.size;
+        outputinfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        outputinfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+
+
+        err = vkCreateBuffer(m_device, &outputinfo, nullptr, &m_outputBuffers[i].imageOutputBuffer);
+        GVR_VK_CHECK(!err);
+
+        vkGetBufferMemoryRequirements(m_device, m_outputBuffers[i].imageOutputBuffer, &memReqs);
+
+        m_outputBuffers[i].size =  memReqs.size;
+      //  LOGI("Vulkan buffer size %u \t",  memReqs.size);
+
+        // Allocate Memory
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = 0;
+
+        uint32_t memoryTypeIndex;
+        if(GetMemoryTypeFromProperties(memReqs.memoryTypeBits,  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &memoryTypeIndex)!=true)
+            LOGI("Vulkan failed got memory requirements");
+
+        memAlloc.memoryTypeIndex = memoryTypeIndex;
+        err = vkAllocateMemory(m_device, &memAlloc, nullptr, &m_outputBuffers[i].memory);
+        GVR_VK_CHECK(!err);
+
+        // Bind our buffer to the memory.
+        err = vkBindBufferMemory(m_device, m_outputBuffers[i].imageOutputBuffer, m_outputBuffers[i].memory, 0);
+        GVR_VK_CHECK(!err);
+
+        uint8_t * data;
+        err = vkMapMemory(m_device, m_outputBuffers[i].memory, 0, m_outputBuffers[i].size, 0, (void **)&data);
+        GVR_VK_CHECK(!err);
+        for (int i = 0; i < (m_width*m_height)-4; i++) {
+            data[i] = 255; data[i+1] = 0; data[i+2] = 0; data[i+3] = 255;
+
+            i+=3;
+            //break;
+        }
+        vkUnmapMemory(m_device,m_outputBuffers[i].memory);
     }
 
     // At this point, we have the references now in our swapchainBuffer object
     delete [] pSwapchainImages;
 
 
-  //  }
+   // }
 /*
 
    VkImageCreateInfo imageCreateInfo = {};
@@ -796,20 +846,49 @@ VkMemoryAllocateInfo memoryAllocateInfo = {};
         oculusTexData = (uint8_t*)malloc(m_width*m_height*4* sizeof(uint8_t));
  }
 
-void VulkanCore::SetNextBackBuffer()
-{
+    int VulkanCore::SetNextBackBuffer()
+    {
         VkResult ret = VK_SUCCESS;
 
         // Get the next image to render to, then queue a wait until the image is ready
         ret  = vkAcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, m_backBufferSemaphore, VK_NULL_HANDLE, &m_swapchainCurrentIdx);
+        LOGI("Vulkan acquired image %d ", m_swapchainCurrentIdx);
         if (ret == VK_ERROR_OUT_OF_DATE_KHR) {
             LOGW("VK_ERROR_OUT_OF_DATE_KHR not handled in sample");
         } else if (ret == VK_SUBOPTIMAL_KHR) {
             LOGW("VK_SUBOPTIMAL_KHR not handled in sample");
         }
         GVR_VK_CHECK(!ret);
+        return m_swapchainCurrentIdx;
 
-}
+    }
+
+///////////////////////////////////////////////////////////////////////////////
+
+    void VulkanCore::PresentBackBuffer()
+    {
+        VkResult ret = VK_SUCCESS;
+
+        // Use WSI to present. The semaphore chain used to signal rendering
+        // completion allows the operation to wait before the present is
+        // completed.
+        VkPresentInfoKHR presentInfo = {};
+        presentInfo.sType          = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains    = &m_swapchain;
+        presentInfo.pImageIndices  = &m_swapchainCurrentIdx;
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores= &m_renderCompleteSemaphore;
+
+        ret = vkQueuePresentKHR(m_queue, &presentInfo);
+        GVR_VK_CHECK(!ret);
+
+
+
+
+        // Obtain the back buffer for the next frame.
+        //SetNextBackBuffer();
+    }
 
 
 bool VulkanCore::GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex)
@@ -1326,7 +1405,7 @@ void VulkanCore::InitRenderPass(){
     // of attachment.
     VkAttachmentDescription attachmentDescriptions[2] = {};
     attachmentDescriptions[0].flags = 0;
-    attachmentDescriptions[0].format = VK_FORMAT_R8G8B8A8_UNORM;//.format;
+    attachmentDescriptions[0].format =m_surfaceFormat.format;
     attachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
     attachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1729,8 +1808,8 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
             preRenderBarrier.pNext = nullptr;
             preRenderBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
             preRenderBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            preRenderBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            preRenderBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            preRenderBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            preRenderBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
             preRenderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             preRenderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             preRenderBarrier.image = m_swapchainBuffers[i].image;
@@ -1850,21 +1929,28 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
             copyRegion.dstOffset = 0; // Optional
             copyRegion.size = outputImage.size;
             vkCmdCopyBuffer(cmdBuffer, m_swapchainBuffers[m_swapchainCurrentIdx].buf, outputImage.buf, 1, &copyRegion);*/
-  /*      VkExtent3D extent3D = {};
+    vkCmdEndRenderPass(cmdBuffer);
+
+        VkExtent3D extent3D = {};
                       extent3D.width = m_width;
                       extent3D.height = m_height;
-        VkBufferImageCopy region = { 0 };
-                        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                        region.imageSubresource.layerCount = 1;
-                         region.imageExtent = extent3D;
+
+    /*
+    VkBufferImageCopy region = { 0 };
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent.width = m_width;
+    region.imageExtent.height = m_height;
+    region.imageExtent.depth = 1;
 
 
-        vkCmdCopyImageToBuffer(cmdBuffer, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, outputImage.buf, 1,  &region);
-*/
+        LOGI("Vulkan inage %d and %d", m_width, m_height);
+       // vkCmdCopyImageToBuffer(cmdBuffer, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, outputImage.buf, 1,  &region);
+    vkCmdCopyImageToBuffer(cmdBuffer, m_swapchainBuffers[i].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outputBuffers[i].imageOutputBuffer, 1,  &region);*/
 
 
 
-        vkCmdEndRenderPass(cmdBuffer);
+
 
             // As stated earlier, now transition the swapchain image to the PRESENT mode.
             VkImageMemoryBarrier prePresentBarrier = {};
@@ -1872,8 +1958,8 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
             prePresentBarrier.pNext = nullptr;
             prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
             prePresentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-            prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             prePresentBarrier.image = m_swapchainBuffers[i].image;
@@ -1883,7 +1969,7 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
             prePresentBarrier.subresourceRange.layerCount = 0;
 
             vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                                  0, 0, nullptr, 0, nullptr, 1, &prePresentBarrier);
 
             // By ending the command buffer, it is put out of record mode.
@@ -1909,30 +1995,27 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
     VkFence nullFence = waitFences[m_swapchainCurrentIdx];
 
     LOGI("Vulkan befpre  SetNextBackBuffer");
-    SetNextBackBuffer();
+   // SetNextBackBuffer();
     LOGI("Vulkan after SetNextBackBuffer");
 
     VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submitInfo.pNext = nullptr;
-        submitInfo.waitSemaphoreCount = 0;
+        submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = &m_backBufferSemaphore;
         submitInfo.pWaitDstStageMask = nullptr;
         submitInfo.commandBufferCount = 1;
         submitInfo.pCommandBuffers = &m_swapchainBuffers[m_swapchainCurrentIdx].cmdBuffer;
-        submitInfo.signalSemaphoreCount = 0;
+        submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = &m_renderCompleteSemaphore;
 
-  //  LOGI("Vulkan after vkqueue before submit");
-   // err = vkQueueSubmit(m_queue, 1, &submitInfo,  waitFences[m_swapchainCurrentIdx]);
-    err = vkQueueSubmit(m_queue, 1, &submitInfo,  VK_NULL_HANDLE);
+    LOGI("Vulkan after vkqueue before submit");
+    err = vkQueueSubmit(m_queue, 1, &submitInfo,  waitFences[m_swapchainCurrentIdx]);
+ //   err = vkQueueSubmit(m_queue, 1, &submitInfo,  VK_NULL_HANDLE);
     GVR_VK_CHECK(!err);
- //   LOGI("Vulkan after vkqueue submit %d", err);
- //   err = vkWaitForFences(m_device, 1, &waitFences[m_swapchainCurrentIdx], VK_TRUE, 4294967295U);
- //   GVR_VK_CHECK(!err);
-
-
-
+   LOGI("Vulkan after vkqueue submit %d", err);
+    err = vkWaitForFences(m_device, 1, &waitFences[m_swapchainCurrentIdx], VK_TRUE, 4294967295U);
+   GVR_VK_CHECK(!err);
 
     VkCommandBuffer trnCmdBuf = GetTransientCmdBuffer();
     VkCommandBufferBeginInfo beginInfo = {};
@@ -1942,29 +2025,36 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
     VkBufferCopy copyRegion = {};
     copyRegion.srcOffset = 0; // Optional
     copyRegion.dstOffset = 0; // Optional
-    copyRegion.size = outputImage[m_swapchainCurrentIdx].size;
-    vkCmdCopyBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].buf, outputImage[m_swapchainCurrentIdx].buf, 1, &copyRegion);
-    VkExtent3D extent3D = {};
+    copyRegion.size = m_outputBuffers[m_swapchainCurrentIdx].size;//outputImage[m_swapchainCurrentIdx].size;
+    //vkCmdCopyBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].buf, outputImage[m_swapchainCurrentIdx].buf, 1, &copyRegion);
+   VkExtent3D extent3D = {};
               extent3D.width = m_width;
               extent3D.height = m_height;
-     VkBufferImageCopy region = { 0 };
-                region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                region.imageSubresource.layerCount = 1;
-                 region.imageExtent = extent3D;
+    VkBufferImageCopy region = { 0 };
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent.width = m_width;
+    region.imageExtent.height = m_height;
+    region.imageExtent.depth = 1;
 
-
-    vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputImage[m_swapchainCurrentIdx].buf, 1,  &region);
-    vkEndCommandBuffer(trnCmdBuf);
+    //vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outputImage[m_swapchainCurrentIdx].buf, 1,  &region);
+    LOGI("Vulkan abefore vkCmdCopyImageToBuffer");
+    vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outputBuffers[m_swapchainCurrentIdx].imageOutputBuffer, 1,  &region);
+    //GVR_VK_CHECK(!err);
+    err = vkEndCommandBuffer(trnCmdBuf);
+    GVR_VK_CHECK(!err);
 
     VkSubmitInfo ssubmitInfo = {};
     ssubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     ssubmitInfo.commandBufferCount = 1;
     ssubmitInfo.pCommandBuffers = &trnCmdBuf;
 
-    vkQueueSubmit(m_queue, 1, &ssubmitInfo, VK_NULL_HANDLE);
+    LOGI("Vulkan avkQueueSubmit before submit");
+    err = vkQueueSubmit(m_queue, 1, &ssubmitInfo, VK_NULL_HANDLE);
+    GVR_VK_CHECK(!err)
     vkQueueWaitIdle(m_queue);
     vkFreeCommandBuffers(m_device, m_commandPoolTrans, 1, &trnCmdBuf);
-
+    LOGI("Vulkan after vkFreeCommandBufferst");
 
 
 
@@ -1984,9 +2074,11 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
 */
     uint8_t * data;
     //err = vkMapMemory(m_device, m_swapchainBuffers[m_swapchainCurrentIdx].mem, 0, m_swapchainBuffers[m_swapchainCurrentIdx].size, 0, (void **)&data);
-    err = vkMapMemory(m_device, outputImage[m_swapchainCurrentIdx].mem, 0, outputImage[m_swapchainCurrentIdx].size, 0, (void **)&data);
+    LOGI("Vulkan vkMapMemorye");
+    err = vkMapMemory(m_device, m_outputBuffers[m_swapchainCurrentIdx].memory, 0, m_outputBuffers[m_swapchainCurrentIdx].size, 0, (void **)&data);
     GVR_VK_CHECK(!err);
     oculusTexData = data;
+    LOGI("Vulkan display %d", m_swapchainCurrentIdx);
 
  //   LOGI("Vulkna size of %d", sizeof(oculusTexData));
   //  memcpy(oculusTexData, data, (m_width*m_height*4* sizeof(uint8_t)));
@@ -2001,14 +2093,15 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
 
     //oculusTexData = data;
    // texDataVulkan = data;//finaloutput;
- //   LOGI("Vulkan data reading done");
-    vkUnmapMemory(m_device,outputImage[m_swapchainCurrentIdx].mem);
+    LOGI("Vulkan data reading done");
+    vkUnmapMemory(m_device,m_outputBuffers[m_swapchainCurrentIdx].memory);
     //vkUnmapMemory(m_device,m_swapchainBuffers[m_swapchainCurrentIdx].mem);
 
     // Makes Fence Un-signalled
     err = vkResetFences(m_device, 1, &waitFences[m_swapchainCurrentIdx]);
     GVR_VK_CHECK(!err);
- //   LOGI("Vulkan after vkResetFences submit");
+    LOGI("Vulkan after vkResetFences submit");
+    PresentBackBuffer();
 }
 
 

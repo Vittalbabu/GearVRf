@@ -302,6 +302,7 @@ public:
       void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeline &m_pipeline);
       VkShaderModule CreateShaderModuleAscii(const uint32_t* code, uint32_t size);
       void BuildSecondaryCmdBuffer(VkCommandBuffer secondaryCmdBuff, VkCommandBufferBeginInfo secondaryBeginInfo, RenderData* renderData, VkDescriptorSet allDescriptors);
+    int SetNextBackBuffer();
 private:
     std::vector<VkFence> waitFences;
     static VulkanCore* theInstance;
@@ -329,7 +330,8 @@ private:
 
     void InitUniformBuffers();
     void CreateValidationCallbacks();
-    void SetNextBackBuffer();
+
+    void PresentBackBuffer();
 
 
     bool m_Vulkan_Initialised;
