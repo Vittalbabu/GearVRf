@@ -28,7 +28,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "vulkan/vulkan_headers.h"
 #include <math.h>       /* sqrt */
-//#include <shaderc/shaderc.hpp>
+#include <shaderc/shaderc.hpp>
 #define UINT64_MAX 99999
 namespace gvr {
 void Descriptor::createBuffer(VkDevice &device,VulkanCore* vk){
@@ -804,7 +804,7 @@ void VulkanCore::InitVertexBuffersFromRenderData(const std::vector<glm::vec3>& v
 }
 void VulkanCore::InitLayoutRenderData(RenderData* rdata){
     VkResult ret = VK_SUCCESS;
-    Descriptor& transform = rdata->getDescriptor();
+    Descriptor& transform = rdata->getVkData().getDescriptor();
     VkDescriptorSetLayoutBinding& transform_uniformBinding = transform.getLayoutBinding();
 
              VkDescriptorSetLayoutBinding uniformAndSamplerBinding[2] = {};
@@ -814,19 +814,24 @@ void VulkanCore::InitLayoutRenderData(RenderData* rdata){
              uniformAndSamplerBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
              uniformAndSamplerBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
              uniformAndSamplerBinding[0].pImmutableSamplers = nullptr;
+    uniformAndSamplerBinding[0] = transform_uniformBinding;
+    Descriptor& material_descriptor = rdata->material(0)->getDescriptor();
+    VkDescriptorSetLayoutBinding& material_uniformBinding = material_descriptor.getLayoutBinding();
+   uniformAndSamplerBinding[1] = material_uniformBinding;
+
 
             VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
             descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
             descriptorSetLayoutCreateInfo.pNext = nullptr;
-            descriptorSetLayoutCreateInfo.bindingCount = 1;//2;
-            descriptorSetLayoutCreateInfo.pBindings = &transform_uniformBinding;
+            descriptorSetLayoutCreateInfo.bindingCount = 2;//2;
+            descriptorSetLayoutCreateInfo.pBindings = &uniformAndSamplerBinding[0];
 
-            VkDescriptorSetLayout&  descriptorLayout = rdata->getDescriptorLayout();
+            VkDescriptorSetLayout&  descriptorLayout = rdata->getVkData().getDescriptorLayout();
 
             ret = vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorLayout);
             GVR_VK_CHECK(!ret);
 
-            VkPipelineLayout& pipelineLayout = rdata->getPipelineLayout();
+            VkPipelineLayout& pipelineLayout = rdata->getVkData().getPipelineLayout();
 
             VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
             pipelineLayoutCreateInfo.sType              = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1187,30 +1192,86 @@ void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderDa
     ds.stencilTestEnable = VK_FALSE;
     ds.front = ds.back;
 
-    // We do not use multisample
-    VkPipelineMultisampleStateCreateInfo   ms = {};
-    ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    ms.pSampleMask = nullptr;
-    ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+     // We do not use multisample
+     VkPipelineMultisampleStateCreateInfo   ms = {};
+     ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+     ms.pSampleMask = nullptr;
+     ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    // We define two shader stages: our vertex and fragment shader.
-        // they are embedded as SPIR-V into a header file for ease of deployment.
-        VkPipelineShaderStageCreateInfo shaderStages[2] = {};
-        shaderStages[0].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = CreateShaderModuleAscii( (const uint32_t*)&shader_tri_vert[0], shader_tri_vert_size);//CreateShaderModule( result_vert, result_vert.size());//
-        shaderStages[0].pName  = "main";
-        shaderStages[1].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = CreateShaderModuleAscii( (const uint32_t*)&shader_tri_frag[0], shader_tri_frag_size);//CreateShaderModule( result_frag, result_frag.size());//
-        shaderStages[1].pName  = "main";
+     shaderc::Compiler compiler;
+     shaderc::CompileOptions options;
+
+     options.AddMacroDefinition("MY_DEFINE", "1");
+
+     std::string vertexShaderData = std::string("") +
+     "#version 400 \n"+
+     "#extension GL_ARB_separate_shader_objects : enable \n"+
+     "#extension GL_ARB_shading_language_420pack : enable \n"+
+     "layout (std140, set = 0, binding = 0) uniform matrix { mat4 mvp; } matrices;\n"+
+     "layout (location = 0) in vec3 pos; \n"+
+     "void main() { \n"+
+     "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n"+
+     "}";
+
+     shaderc_shader_kind kind = shaderc_glsl_default_vertex_shader;
+     shaderc::SpvCompilationResult module_vert = compiler.CompileGlslToSpv(vertexShaderData.c_str(), vertexShaderData.size(), kind, "VulkanShader", options);
+     if (module_vert.GetCompilationStatus() != shaderc_compilation_status_success) {
+     //std::cerr << module.GetErrorMessage();
+     LOGI("Vulkan shader unable to compile shader %s", module_vert.GetErrorMessage().c_str());
+     }
+     else
+     LOGE("Vulkan shader compiled shader");
+
+     std::vector<uint32_t> result_vert(module_vert.cbegin(), module_vert.cend());
+
+
+     std::string data_frag = std::string("") +
+     "#version 400 \n"+
+     "#extension GL_ARB_separate_shader_objects : enable \n"+
+     "#extension GL_ARB_shading_language_420pack : enable \n"+
+     "layout (std140, set = 0, binding = 1) uniform lightEffects {\n"+
+     "vec4 ambient_color;\n"+
+     "vec4 diffuse_color;\n"+
+     "vec4 specular_color;\n"+
+     "vec4 emissive_color;\n"+
+     "float specular_exponent;\n"+
+     "} lightEffectsObj;"+
+     "layout (location = 0) out vec4 uFragColor;  \n"+
+     "void main() {  \n"+
+     " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n"+
+     "   uFragColor = lightEffectsObj.ambient_color;  \n"+
+     "}";
+
+     shaderc_shader_kind  kind_frag = shaderc_glsl_default_fragment_shader;
+     shaderc::SpvCompilationResult module_frag = compiler.CompileGlslToSpv(data_frag.c_str(), data_frag.size(), kind_frag, "VulkanShaderFrag", options);
+     if (module_frag.GetCompilationStatus() != shaderc_compilation_status_success) {
+     //std::cerr << module.GetErrorMessage();
+     LOGI("Vulkan shader unable to compile shader %s", module_frag.GetErrorMessage().c_str());
+     }
+     else
+         LOGE("Vulkan shader fragcompiled shader");
+
+     std::vector<uint32_t> result_frag(module_frag.cbegin(), module_frag.cend());
+
+     // We define two shader stages: our vertex and fragment shader.
+         // they are embedded as SPIR-V into a header file for ease of deployment.
+         VkPipelineShaderStageCreateInfo shaderStages[2] = {};
+         shaderStages[0].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+         shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
+         shaderStages[0].module = CreateShaderModule( result_vert, result_vert.size());//CreateShaderModuleAscii( (const uint32_t*)&shader_tri_vert[0], shader_tri_vert_size);//
+         shaderStages[0].pName  = "main";
+         shaderStages[1].sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+         shaderStages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+         shaderStages[1].module = CreateShaderModule( result_frag, result_frag.size());//CreateShaderModuleAscii( (const uint32_t*)&shader_tri_frag[0], shader_tri_frag_size);//
+         shaderStages[1].pName  = "main";
+
 
 
     // Out graphics pipeline records all state information, including our renderpass
         // and pipeline layout. We do not have any dynamic state in this example.
         VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
         pipelineCreateInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineCreateInfo.layout              = rdata->m_pipelineLayout;
+        pipelineCreateInfo.layout              = rdata->getVkData().m_pipelineLayout;
         pipelineCreateInfo.pVertexInputState   = &vi;
         pipelineCreateInfo.pInputAssemblyState = &ia;
         pipelineCreateInfo.pRasterizationState = &rs;
@@ -1225,7 +1286,7 @@ void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderDa
 
     VkPipelineCache pipelineCache = VK_NULL_HANDLE;
         LOGI("Vulkan graphics call before");
-        err = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &(rdata->m_pipeline));
+        err = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &(rdata->getVkData().m_pipeline));
         GVR_VK_CHECK(!err);
         LOGI("Vulkan graphics call aftere");
 
@@ -1388,25 +1449,25 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
 
         // Set our pipeline. This holds all major state
                 // the pipeline defines, for example, that the vertex buffer is a triangle list.
-                vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_data_vector[j]->m_pipeline);
+                vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_data_vector[j]->getVkData().m_pipeline);
 
         //bind out descriptor set, which handles our uniforms and samplers
-        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_data_vector[j]->m_pipelineLayout, 0, 1, &allDescriptors[j], 0, NULL);
+        vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_data_vector[j]->getVkData().m_pipelineLayout, 0, 1, &allDescriptors[j], 0, NULL);
 
         // Bind our vertex buffer, with a 0 offset.
         VkDeviceSize offsets[1] = {0};
-        GVR_VK_Vertices vert = render_data_vector[j]->m_vertices;
+        GVR_VK_Vertices& vert = render_data_vector[j]->getVkData().getVkVertices();
         if(&(vert.buf) != NULL)
             LOGE("buf is not nuull");
         vkCmdBindVertexBuffers(cmdBuffer, VERTEX_BUFFER_BIND_ID, 1, &(vert.buf), offsets);
 
         // Bind triangle index buffer
-                vkCmdBindIndexBuffer(cmdBuffer, (render_data_vector[j]->m_indices).buffer, 0, VK_INDEX_TYPE_UINT16);
+                vkCmdBindIndexBuffer(cmdBuffer, (render_data_vector[j]->getVkData().getVkIndices()).buffer, 0, VK_INDEX_TYPE_UINT16);
                 // Issue a draw command, with our 3 vertices.
                 //vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
                 //vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->m_indices).count, 1, 0, 0, 1);
-                LOGI("Vulkan number of indeices %d", (render_data_vector[j]->m_indices).count);
-                vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->m_indices).count, 1, 0, 0, 1);
+                LOGI("Vulkan number of indeices %d", (render_data_vector[j]->getVkData().getVkIndices()).count);
+                vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->getVkData().getVkIndices()).count, 1, 0, 0, 1);
          }
         // Now our render pass has ended.
         vkCmdEndRenderPass(cmdBuffer);
@@ -1504,7 +1565,16 @@ void VulkanCore::DrawFrameForRenderData(int &swapChainIndex){
     LOGI("Vulkan after vkResetFences submit");
 }
 
+void VulkanCore::updateMaterialUniform(Scene* scene, Camera* camera, RenderData* render_data){
+      Material* mat = render_data->material(0);
+      Descriptor& desc = mat->getDescriptor();
+      VulkanUniformBlock& material_ubo = desc.getUBO();
 
+      glm::vec4 ambient = glm::vec4(1,1,1,1);  //= mat->getVec4("color");
+      material_ubo.setVec4("ambient_color",ambient);
+      material_ubo.updateBuffer(m_device,this);
+
+}
 void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data)
 {
 
@@ -1528,7 +1598,7 @@ void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render
     memcpy(pData, (const void*) &modelViewProjection, sizeof(modelViewProjection));
 
     vkUnmapMemory(m_device, render_data->m_modelViewMatrixUniform.mem);
-*/    Descriptor& desc = render_data->getDescriptor();
+*/    Descriptor& desc = render_data->getVkData().getDescriptor();
       VulkanUniformBlock& transform_ubo = desc.getUBO();
 
 
@@ -1539,61 +1609,52 @@ void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render
 }
 
 
-void VulkanCore::InitDescriptorSetForRenderData(GVR_Uniform &m_modelViewMatrixUniform, RenderData* rdata) { //VkDescriptorSet &m_descriptorSet) {
+void VulkanCore::InitDescriptorSetForRenderData(RenderData* rdata) { //VkDescriptorSet &m_descriptorSet) {
     //Create a pool with the amount of descriptors we require
     VkDescriptorPoolSize poolSize[2] = {};
     poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize[0].descriptorCount = 1;
 
-    // poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    //  poolSize[1].descriptorCount = 1;
+    poolSize[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSize[1].descriptorCount = 1;
 
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptorPoolCreateInfo.pNext = nullptr;
     descriptorPoolCreateInfo.maxSets = 1;
-    descriptorPoolCreateInfo.poolSizeCount = 1;//2;
+    descriptorPoolCreateInfo.poolSizeCount = 2;//2;
     descriptorPoolCreateInfo.pPoolSizes = poolSize;
 
     VkResult  err;
-    err = vkCreateDescriptorPool(m_device, &descriptorPoolCreateInfo, NULL, &m_descriptorPool);
+    VkDescriptorPool& descriptorPool=  rdata->getVkData().getDescriptorPool();
+    err = vkCreateDescriptorPool(m_device, &descriptorPoolCreateInfo, NULL, &descriptorPool);
     GVR_VK_CHECK(!err);
-    VkDescriptorSetLayout& descriptorLayout =  rdata->getDescriptorLayout();
+    VkDescriptorSetLayout& descriptorLayout =  rdata->getVkData().getDescriptorLayout();
 
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
     descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorSetAllocateInfo.pNext = nullptr;
-    descriptorSetAllocateInfo.descriptorPool = m_descriptorPool;
+    descriptorSetAllocateInfo.descriptorPool = descriptorPool;
     descriptorSetAllocateInfo.descriptorSetCount = 1;
     descriptorSetAllocateInfo.pSetLayouts = &descriptorLayout;
 
-    err = vkAllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, &(rdata->m_descriptorSet));
+    VkDescriptorSet& descriptorSet = rdata->getVkData().getDescriptorSet();
+    err = vkAllocateDescriptorSets(m_device, &descriptorSetAllocateInfo, &descriptorSet);
     GVR_VK_CHECK(!err);
 
-    Descriptor& desc = rdata->getDescriptor();
-    VulkanUniformBlock& ubo = desc.getUBO();
-    GVR_Uniform& UbufferInfo = ubo.getBuffer();
-    VkWriteDescriptorSet& write = desc.getDescriptorSet();
-    write.dstSet = (rdata->m_descriptorSet);
-
-
+    Descriptor& transform_desc = rdata->getVkData().getDescriptor();
+    VkWriteDescriptorSet& write = transform_desc.getDescriptorSet();
+    write.dstSet = descriptorSet;
+    Descriptor& mat_desc = rdata->material(0)->getDescriptor();
+    VkWriteDescriptorSet& write1 = mat_desc.getDescriptorSet();
+    write1.dstSet = descriptorSet;
     VkWriteDescriptorSet writes[2] = {};
-    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writes[0].dstBinding = 0;
-                         writes[0].dstSet = (rdata->m_descriptorSet);
-                         writes[0].descriptorCount = 1;
-                         writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-                         writes[0].pBufferInfo = &UbufferInfo.bufferInfo;
+    writes[0] = write;
+    writes[1] = write1;
 
-                         /*writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                         writes[1].dstBinding = 1;
-                         writes[1].dstSet = m_descriptorSet;
-                         writes[1].descriptorCount = 1;
-                         writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                         writes[1].pImageInfo = &descriptorImageInfo;*/
-                         LOGI("Vulkan before update sdectiptor");
-                         vkUpdateDescriptorSets(m_device, 1, &write, 0, nullptr);
-                         LOGI("Vulkan after update sdectiptor");
+    LOGI("Vulkan before update sdectiptor");
+    vkUpdateDescriptorSets(m_device, 2, &writes[0], 0, nullptr);
+    LOGI("Vulkan after update sdectiptor");
 }
 
 void VulkanCore::initVulkanCore(ANativeWindow * newNativeWindow){

@@ -31,6 +31,8 @@
 #include "objects/components/render_data.h"
 
 #include "objects/components/event_handler.h"
+#include "vulkan/vulkanCore.h"
+#include "vulkan/vulkan_headers.h"
 namespace gvr {
 class RenderData;
 class Color;
@@ -61,7 +63,7 @@ public:
 
     explicit Material(ShaderType shader_type) :
             shader_type_(shader_type), textures_(), floats_(), vec2s_(), vec3s_(), vec4s_(), shader_feature_set_(
-                    0),listener_(new Listener()) {
+                    0),listener_(new Listener()), vk_descriptor("float4 ambient_color, float4 diffuse_color, float4 specular_color, float4 emissive_color, float specular_exponent"){
         switch (shader_type) {
         default:
             vec3s_["color"] = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -244,7 +246,15 @@ public:
     void notify_listener(bool dirty){
         listener_->notify_listeners(dirty);
     }
-
+    void createDescriptor(VkDevice &device,VulkanCore* vk){
+        vk_descriptor.createBuffer(device,vk);
+        vk_descriptor.createLayoutBinding(MATERIAL_UBO_INDEX,VK_SHADER_STAGE_FRAGMENT_BIT);
+        VkDescriptorSet desc;
+        vk_descriptor.createDescriptorWriteInfo(MATERIAL_UBO_INDEX,VK_SHADER_STAGE_FRAGMENT_BIT, desc);
+    }
+    Descriptor& getDescriptor(){
+        return vk_descriptor;
+    }
 private:
     Material(const Material& material);
     Material(Material&& material);
@@ -252,6 +262,7 @@ private:
     Material& operator=(Material&& material);
 
 private:
+    Descriptor vk_descriptor;
     Listener* listener_;
     ShaderType shader_type_;
     std::map<std::string, Texture*> textures_;

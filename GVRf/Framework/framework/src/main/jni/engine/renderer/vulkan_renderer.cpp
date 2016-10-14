@@ -59,23 +59,26 @@ namespace gvr {
                 const std::vector<glm::vec3>& vertices=  rdata->mesh()->vertices();
                  const std::vector<unsigned short> & indices =  rdata->mesh()->triangles();
 
-               rdata->createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
-                vulkanCore_->InitLayoutRenderData(rdata);
-                vulkanCore_->InitVertexBuffersFromRenderData(vertices, rdata->m_vertices, rdata->m_indices, indices);
+               rdata->getVkData().createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
 
+                rdata->material(0)->createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
 
+              vulkanCore_->InitLayoutRenderData(rdata);
+                GVR_VK_Vertices& vert = rdata->getVkData().getVkVertices();
+               GVR_VK_Indices& indices1 = rdata->getVkData().getVkIndices();
+                vulkanCore_->InitVertexBuffersFromRenderData(vertices, vert, indices1, indices);
 
-                VulkanUniformBlock& transform_ubo = rdata->getTransformUBO();
-                transform_ubo.createBuffer(vulkanCore_->getDevice(),vulkanCore_);
-                GVR_Uniform& transformUbo = transform_ubo.getBuffer();
+               //  VulkanUniformBlock& transform_ubo = rdata->getTransformUBO();
+              //  transform_ubo.createBuffer(vulkanCore_->getDevice(),vulkanCore_);
+              //  GVR_Uniform& transformUbo = transform_ubo.getBuffer();
 
-                vulkanCore_->InitDescriptorSetForRenderData(transformUbo, rdata);
-                vulkanCore_->InitPipelineForRenderData(rdata->m_vertices, rdata);
-
+                vulkanCore_->InitDescriptorSetForRenderData( rdata);
+                vulkanCore_->InitPipelineForRenderData(vert, rdata);
+                vulkanCore_->updateMaterialUniform(scene,camera, rdata);
                 rdata->uniform_dirty = false;
                 }
 
-                    allDescriptors.push_back(rdata->m_descriptorSet);
+                    allDescriptors.push_back(rdata->getVkData().m_descriptorSet);
                     vulkanCore_->UpdateUniforms(scene,camera, rdata);
 
 

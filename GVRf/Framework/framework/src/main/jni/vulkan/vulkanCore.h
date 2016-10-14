@@ -197,9 +197,10 @@ public:
         return NULL;
     }
     void InitLayoutRenderData(RenderData* rdata);
+    void updateMaterialUniform(Scene* scene, Camera* camera, RenderData* render_data);
     void UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data);
      void InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform);
-     void InitDescriptorSetForRenderData(GVR_Uniform &m_modelViewMatrixUniform, RenderData* rdata);
+     void InitDescriptorSetForRenderData(RenderData* rdata);
      void BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors, int &swapChainIndex, std::vector<RenderData*>& render_data_vector);
      void DrawFrameForRenderData(int &swapChainIndex);
       int AcquireNextImage();

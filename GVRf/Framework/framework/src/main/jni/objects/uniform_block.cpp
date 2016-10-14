@@ -89,7 +89,7 @@ bool UniformBlock::setIntVec(std::string name, const int* val, int n) {
 bool UniformBlock::setVec2(std::string name, const glm::vec2& val)
 {
     int bytesize = 2 * sizeof(float);
-    char* data = getData(name, bytesize);
+    float* data = (float*)getData(name, bytesize);
     if (data != NULL)
     {
         data[0] = val.x;
@@ -103,7 +103,7 @@ bool UniformBlock::setVec2(std::string name, const glm::vec2& val)
 bool UniformBlock::setVec3(std::string name, const glm::vec3& val)
 {
     int bytesize = 3 * sizeof(float);
-    char* data = getData(name, bytesize);
+    float* data = (float*)getData(name, bytesize);
     if (data != NULL)
     {
         data[0] = val.x;
@@ -118,7 +118,7 @@ bool UniformBlock::setVec3(std::string name, const glm::vec3& val)
 bool UniformBlock::setVec4(std::string name, const glm::vec4& val)
 {
     int bytesize = 4 * sizeof(float);
-    char* data = getData(name, bytesize);
+    float* data = (float*)getData(name, bytesize);
     if (data != NULL)
     {
         data[0] = val.x;
@@ -559,7 +559,7 @@ void VulkanUniformBlock::createBuffer(VkDevice &device,VulkanCore* vk){
       //err = vkCreateBuffer(m_device, &bufferCreateInfo, NULL, &m_modelViewMatrixUniform.buf);
       err = vkCreateBuffer(device, gvr::BufferCreateInfo(TotalSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT), NULL, &m_bufferInfo.buf);
       assert(!err);
-
+        LOGE("size of the buffer is %d" ,TotalSize);
       // Obtain the requirements on memory for this buffer
       VkMemoryRequirements mem_reqs;
       vkGetBufferMemoryRequirements(device, m_bufferInfo.buf, &mem_reqs);
