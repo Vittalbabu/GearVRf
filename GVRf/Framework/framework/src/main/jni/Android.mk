@@ -29,6 +29,8 @@ include $(CLEAR_VARS)
 LOCAL_STATIC_LIBRARIES := shaderc
 
 include $(CLEAR_VARS)
+
+include $(CLEAR_VARS)
 LOCAL_MODULE := gvrf
 
 FILE_LIST := $(wildcard $(LOCAL_PATH)/*.cpp)

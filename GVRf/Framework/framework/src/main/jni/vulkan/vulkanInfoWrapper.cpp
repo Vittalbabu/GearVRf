@@ -68,6 +68,35 @@ ImageViewCreateInfo::ImageViewCreateInfo(VkImage aImage, VkImageViewType aType, 
     mInfo.subresourceRange.levelCount = aMipLevels;
     mInfo.viewType = aType;
 }
+DescriptorWrite::DescriptorWrite(VkStructureType type, int& index, VkDescriptorSet& descriptor, int descriptorCount, VkDescriptorType& descriptorType,
+            VkDescriptorBufferInfo& info, VkDescriptorImageInfo* descriptorImageInfo):
+    write()
+{
+    write.sType = type;
+    write.dstBinding = index;
+    write.dstSet = descriptor;
+    write.descriptorCount = 1;
+    write.pBufferInfo = &info;
+
+    if(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER == descriptorType){
+        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        write.pImageInfo = descriptorImageInfo;
+    }
+    else
+         write.descriptorType = descriptorType;
+
+}
+DescriptorLayout::DescriptorLayout(int binding, int descriptorCount, VkDescriptorType& descriptorType, int stageFlags, int immulableSamplers):
+    uniformAndSamplerBinding()
+{
+  uniformAndSamplerBinding.binding = binding;
+  uniformAndSamplerBinding.descriptorCount = descriptorCount;
+  uniformAndSamplerBinding.descriptorType = descriptorType;
+  uniformAndSamplerBinding.stageFlags = stageFlags;
+  uniformAndSamplerBinding.pImmutableSamplers = nullptr;
+
+
+}
 
 CmdPoolCreateInfo::CmdPoolCreateInfo(VkCommandPoolCreateFlags aFlags, uint32_t aFamilyIndex)
     : mInfo()

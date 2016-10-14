@@ -6,6 +6,51 @@
 #include <vulkan/vulkan.h>
 
 namespace gvr {
+struct GVR_VK_SwapchainBuffer
+{
+    VkImage image;
+    VkCommandBuffer cmdBuffer;
+    VkImageView view;
+    VkDeviceSize size;
+    VkDeviceMemory mem;
+    VkBuffer buf;
+};
+
+struct GVR_VK_DepthBuffer {
+    VkFormat format;
+    VkImage image;
+    VkDeviceMemory mem;
+    VkImageView view;
+};
+
+struct GVR_VK_Vertices {
+    VkBuffer buf;
+    VkDeviceMemory mem;
+    VkPipelineVertexInputStateCreateInfo vi;
+    VkVertexInputBindingDescription      vi_bindings[1];
+    VkVertexInputAttributeDescription    vi_attrs[2];
+};
+
+struct GVR_Uniform {
+    VkBuffer buf;
+    VkDeviceMemory mem;
+    VkDescriptorBufferInfo bufferInfo;
+    VkDeviceSize allocSize;
+};
+
+struct OutputBuffer
+{
+    VkBuffer imageOutputBuffer;
+    VkDeviceMemory memory;
+    VkDeviceSize size;
+};
+
+// Index buffer
+struct GVR_VK_Indices {
+    VkDeviceMemory memory;
+    VkBuffer buffer;
+    uint32_t count;
+};
 
 class ImageCreateInfo final
     {
@@ -62,7 +107,30 @@ class CmdPoolCreateInfo final
             return &mInfo;
         }
     };
+class DescriptorWrite final
+{
+    VkWriteDescriptorSet write;
+    public:
+        explicit DescriptorWrite(VkStructureType type, int& index, VkDescriptorSet& descriptor, int descriptorCount, VkDescriptorType& descriptorType, VkDescriptorBufferInfo& info,
+                                    VkDescriptorImageInfo* descriptorImageInfo =0);
 
+           operator const VkWriteDescriptorSet*() const
+           {
+               return &write;
+           }
+
+};
+
+class  DescriptorLayout final
+{
+    VkDescriptorSetLayoutBinding uniformAndSamplerBinding;
+    public:
+        explicit DescriptorLayout(int binding, int descriptorCount, VkDescriptorType& descriptorType, int stageFlags, int immulableSamplers);
+        operator const VkDescriptorSetLayoutBinding*()const
+        {
+            return &uniformAndSamplerBinding;
+        }
+};
 class CmdBufferCreateInfo final
     {
         VkCommandBufferAllocateInfo mInfo;
