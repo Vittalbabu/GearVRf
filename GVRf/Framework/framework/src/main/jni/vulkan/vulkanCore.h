@@ -196,15 +196,16 @@ public:
             return theInstance;
         return NULL;
     }
+    void InitLayoutRenderData(RenderData* rdata);
     void UpdateUniforms(Scene* scene, Camera* camera, RenderData* render_data);
      void InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform);
-     void InitDescriptorSetForRenderData(GVR_Uniform &m_modelViewMatrixUniform, VkDescriptorSet &m_descriptorSet);
+     void InitDescriptorSetForRenderData(GVR_Uniform &m_modelViewMatrixUniform, RenderData* rdata);
      void BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors, int &swapChainIndex, std::vector<RenderData*>& render_data_vector);
      void DrawFrameForRenderData(int &swapChainIndex);
       int AcquireNextImage();
       void InitVertexBuffersFromRenderData(const std::vector<glm::vec3>& vertices, GVR_VK_Vertices &m_vertices, GVR_VK_Indices &m_indices, const std::vector<unsigned short> & indices);
      //void InitVertexBuffersFromRenderData(GVR_VK_Vertices &m_vertices, GVR_VK_Indices &m_indices);
-      void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, VkPipeline &m_pipeline);
+      void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData* );
       VkShaderModule CreateShaderModuleAscii(const uint32_t* code, uint32_t size);
       bool GetMemoryTypeFromProperties( uint32_t typeBits, VkFlags requirements_mask, uint32_t* typeIndex);
        VkDevice& getDevice(){

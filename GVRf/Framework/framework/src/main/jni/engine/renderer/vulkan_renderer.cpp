@@ -47,25 +47,6 @@ namespace gvr {
              RenderTexture* post_effect_render_texture_a,
              RenderTexture* post_effect_render_texture_b) {
 
-/*
-        int swapChainIndex =  vulkanCore_->AcquireNextImage();
-         vulkanCore_->initPipelineMetaData(swapChainIndex);
-        vulkanCore_->bindCommandBuffer(swapChainIndex);
-      //  LOGI("VK calling draw %d", render_data_vector.size());
-        for(auto &render_data : render_data_vector) {
-         //   render_data->mesh()->generateVAO(vulkanCore_->getDevice(), vulkanCore_);
-            //GVR_VK_Vertices* vkVertices_ = render_data->mesh()->getVKVertices();
-            GVR_VK_Vertices& vkVertices_ = vulkanCore_->getVKVertices();
-            VkPipeline& m_pipeline = render_data->getVKPipeline();
-
-            VkGraphicsPipelineCreateInfo& m_pipelineCreateInfo_ = vulkanCore_->getPipelineCreateInfo();
-        //    vulkanCore_->updatePipelineInfo(m_pipelineCreateInfo_,vkVertices_.vi);
-            vulkanCore_->createGraphicsPipeline(m_pipeline, m_pipelineCreateInfo_);
-            vulkanCore_->UpdateUniforms(scene,camera, render_data);
-            vulkanCore_->bindRenderData(render_data, swapChainIndex);
-        }
-        vulkanCore_->unBindCommandBuffer(swapChainIndex);
-        vulkanCore_->DrawFrame(swapChainIndex);*/
 
             std::vector <VkDescriptorSet> allDescriptors;
               //  LOGI("VK calling draw %d", render_data_vector.size());
@@ -77,15 +58,19 @@ namespace gvr {
                 if(rdata->uniform_dirty){
                 const std::vector<glm::vec3>& vertices=  rdata->mesh()->vertices();
                  const std::vector<unsigned short> & indices =  rdata->mesh()->triangles();
+
+               rdata->createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
+                vulkanCore_->InitLayoutRenderData(rdata);
                 vulkanCore_->InitVertexBuffersFromRenderData(vertices, rdata->m_vertices, rdata->m_indices, indices);
-                //vulkanCore_->InitVertexBuffersFromRenderData(rdata->m_vertices, rdata->m_indices);
+
+
+
                 VulkanUniformBlock& transform_ubo = rdata->getTransformUBO();
                 transform_ubo.createBuffer(vulkanCore_->getDevice(),vulkanCore_);
-             //   vulkanCore_->InitUniformBuffersForRenderData(rdata->m_modelViewMatrixUniform);
                 GVR_Uniform& transformUbo = transform_ubo.getBuffer();
-                // vulkanCore_->InitUniformBuffersForRenderData(transformUbo);
-                vulkanCore_->InitDescriptorSetForRenderData(transformUbo, rdata->m_descriptorSet);
-                vulkanCore_->InitPipelineForRenderData(rdata->m_vertices, rdata->m_pipeline);
+
+                vulkanCore_->InitDescriptorSetForRenderData(transformUbo, rdata);
+                vulkanCore_->InitPipelineForRenderData(rdata->m_vertices, rdata);
 
                 rdata->uniform_dirty = false;
                 }
@@ -94,12 +79,8 @@ namespace gvr {
                     vulkanCore_->UpdateUniforms(scene,camera, rdata);
 
 
-                    //vulkanCore_->DrawFrame();
-                    //break;
                 }
-                //int swapChainIndex = vulkanCore_->AcquireNextImage();
-                //vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex, rdata->m_pipeline, rdata->m_vertices, rdata->m_indices);
-                vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex, render_data_vector);//rdata->m_pipeline, rdata->m_vertices, rdata->m_indices);
+                 vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex, render_data_vector);
                 vulkanCore_->DrawFrameForRenderData(swapChainIndex);
 
      }

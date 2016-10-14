@@ -32,6 +32,7 @@
 #include<sstream>
 #include "objects/uniform_block.h"
 #include "vulkan/vulkanCore.h"
+#include "vulkan/vulkan_headers.h"
 typedef unsigned long Long;
 namespace gvr {
 
@@ -68,7 +69,7 @@ public:
 
     RenderData() :
             Component(RenderData::getComponentType()), mesh_(0), light_(0), use_light_(
-                    false), use_lightmap_(false), batching_(true), render_mask_(
+                    false), use_lightmap_(false), batching_(true), vk_descriptor("mat4 mvp"), render_mask_(
                     DEFAULT_RENDER_MASK), batch_(nullptr), rendering_order_(
                     DEFAULT_RENDERING_ORDER), hash_code_dirty_(true), offset_(
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
@@ -340,14 +341,36 @@ public:
         }
         return hash_code;
     }
+
+    void createDescriptor(VkDevice &device,VulkanCore* vk){
+         vk_descriptor.createBuffer(device,vk);
+          vk_descriptor.createLayoutBinding(TRANSFORM_UBO_INDEX,VK_SHADER_STAGE_VERTEX_BIT);
+          VkDescriptorSet desc;
+         vk_descriptor.createDescriptorWriteInfo(TRANSFORM_UBO_INDEX,VK_SHADER_STAGE_VERTEX_BIT, desc);
+     }
+
     VkPipeline& getVKPipeline(){
         return m_pipeline;
     }
     VulkanUniformBlock& getTransformUBO(){
         return transform_UBO;
     }
-
-
+    Descriptor& getDescriptor(){
+        return vk_descriptor;
+    }
+    VkPipelineLayout& getPipelineLayout(){
+        return m_pipelineLayout;
+    }
+    VkDescriptorSetLayout& getDescriptorLayout(){
+        return m_descriptorLayout;
+    }
+    VkDescriptorPool& getDescriptorPool(){
+        return m_descriptorPool;
+    }
+    VkDescriptorSet& getDescriptorSet(){
+        return m_descriptorSet;
+    }
+VkPipelineLayout  m_pipelineLayout;
     // Vulkan
         VulkanUniformBlock transform_UBO;
         GVR_Uniform m_modelViewMatrixUniform;
@@ -364,7 +387,10 @@ private:
     RenderData& operator=(RenderData&& render_data);
 
 private:
+VkDescriptorPool m_descriptorPool;
+VkDescriptorSetLayout m_descriptorLayout;
 
+ Descriptor vk_descriptor;
     static const int DEFAULT_RENDER_MASK = Left | Right;
     static const int DEFAULT_RENDERING_ORDER = Geometry;
     Mesh* mesh_;

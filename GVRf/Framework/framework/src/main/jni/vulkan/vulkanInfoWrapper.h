@@ -106,7 +106,30 @@ class CmdPoolCreateInfo final
             return &mInfo;
         }
     };
+class DescriptorWrite final
+{
+    VkWriteDescriptorSet write;
+    public:
+        explicit DescriptorWrite(VkStructureType type, int& index, VkDescriptorSet& descriptor, int descriptorCount, VkDescriptorType& descriptorType, VkDescriptorBufferInfo& info,
+                                    VkDescriptorImageInfo* descriptorImageInfo =0);
 
+           operator const VkWriteDescriptorSet*() const
+           {
+               return &write;
+           }
+
+};
+
+class  DescriptorLayout final
+{
+    VkDescriptorSetLayoutBinding uniformAndSamplerBinding;
+    public:
+        explicit DescriptorLayout(int binding, int descriptorCount, VkDescriptorType& descriptorType, int stageFlags, int immulableSamplers);
+        operator const VkDescriptorSetLayoutBinding*()const
+        {
+            return &uniformAndSamplerBinding;
+        }
+};
 class CmdBufferCreateInfo final
     {
         VkCommandBufferAllocateInfo mInfo;

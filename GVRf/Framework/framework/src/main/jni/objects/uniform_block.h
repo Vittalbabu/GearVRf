@@ -23,6 +23,9 @@
 #include <map>
 #include <vector>
 #include "vulkan/vulkanInfoWrapper.h"
+#define TRANSFORM_UBO_INDEX 0
+#define MATERIAL_UBO_INDEX  1
+#define SAMPLER_UBO_INDEX   2
 namespace gvr {
 class SceneObject;
 //struct GVR_Uniform;
