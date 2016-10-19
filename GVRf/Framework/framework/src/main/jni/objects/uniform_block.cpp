@@ -41,7 +41,8 @@ UniformBlock::UniformBlock() :
 
 bool UniformBlock::setInt(std::string name, int val)
 {
-    char* data = getData(name, sizeof(int));
+    int size = sizeof(int);
+    char* data = getData(name, size);
     if (data != NULL)
     {
         *((int*) data) = val;
@@ -52,7 +53,8 @@ bool UniformBlock::setInt(std::string name, int val)
 }
 
 bool UniformBlock::setFloat(std::string name, float val) {
-    char* data = getData(name, sizeof(float));
+    int size = sizeof(float);
+    char* data = getData(name, size);
     if (data != NULL)
     {
         *((float*) data) = val;
@@ -147,21 +149,24 @@ bool UniformBlock::setMat4(std::string name, const glm::mat4& val)
 
 const glm::vec2* UniformBlock::getVec2(std::string name) const
 {
-    const char* data = getData(name, 2 * sizeof(float));
+    int size = 2 * sizeof(float);
+    const char* data = getData(name, size);
     if (data != NULL)
         return (reinterpret_cast<const glm::vec2*>(data));
     return NULL;
 }
 
 const glm::vec3* UniformBlock::getVec3(std::string name) const {
-    const char* data = getData(name, 3 * sizeof(float));
+    int size = 3 * sizeof(float);
+    const char* data = getData(name, size);
     if (data != NULL)
         return (reinterpret_cast<const glm::vec3*> (data));
     return NULL;
 }
 
 const glm::vec4* UniformBlock::getVec4(std::string name) const {
-    const char* data = getData(name, 4 * sizeof(float));
+    int size = 4 * sizeof(float);
+    const char* data = getData(name, size);
     if (data != NULL)
         return (reinterpret_cast<const glm::vec4*> (data));
     return NULL;
@@ -169,7 +174,8 @@ const glm::vec4* UniformBlock::getVec4(std::string name) const {
 
 int UniformBlock::getInt(std::string name) const
 {
-    const char* data = getData(name, sizeof(int));
+    int size = sizeof(int);
+    const char* data = getData(name, size);
     if (data != NULL)
         return *(reinterpret_cast<const int*> (data));
     return 0;
@@ -177,7 +183,8 @@ int UniformBlock::getInt(std::string name) const
 
 float UniformBlock::getFloat(std::string name) const
 {
-    const char* data = getData(name, sizeof(float));
+    int size = sizeof(float);
+    const char* data = getData(name, size);
     if (data != NULL)
         return *(reinterpret_cast<const float*> (data));
     return 0.0f;
@@ -185,10 +192,11 @@ float UniformBlock::getFloat(std::string name) const
 
 bool UniformBlock::getIntVec(std::string name, int* val, int n) const
 {
-    const char* data = getData(name, n * sizeof(int));
+    int size = n * sizeof(int);
+    const char* data = getData(name, size);
     if (data != NULL)
     {
-        memcpy((char*) val, data, n * sizeof(int));
+        memcpy((char*) val, data,size);
         return true;
     }
     LOGE("ERROR: UniformBlock element %s not found\n", name.c_str());
@@ -197,10 +205,11 @@ bool UniformBlock::getIntVec(std::string name, int* val, int n) const
 
 bool UniformBlock::getVec(std::string name, float* val, int n) const
 {
-    const char* data = getData(name, n * sizeof(float));
+    int size =  n * sizeof(float);
+    const char* data = getData(name, size);
     if (data != NULL)
     {
-        memcpy((char*) val, data, n * sizeof(float));
+        memcpy((char*) val, data, size);
         return true;
     }
     LOGE("ERROR: UniformBlock element %s not found\n", name.c_str());
@@ -252,6 +261,14 @@ void   UniformBlock::parseDescriptor()
         while (std::isalnum(*p) || (*p == '_'))
             ++p;
         name_size = p - name_start;
+
+        // check if it is array
+        int array_size = 1;
+        if( (*p == '[')){
+            array_size = (*(p+1)) - 48;
+            p = p + 3;
+        }
+
         if (name_size == 0)
         {
             LOGE("UniformBlock: SYNTAX ERROR: expecting uniform name\n");
@@ -264,7 +281,7 @@ void   UniformBlock::parseDescriptor()
         uniform.Name = name;
         uniform.Type = type;
         uniform.Offset = offset;
-        uniform.Size = calcSize(type);                // get number of bytes
+        uniform.Size = calcSize(type) * array_size;                // get number of bytes
         if (uniform.Size == 0)
             continue;
         if (offset & VEC4_BOUNDARY)                   // pad to 4 float boundary?
@@ -310,7 +327,7 @@ int UniformBlock::calcSize(std::string type) const
     return 0;
 }
 
-UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int bytesize)
+UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int& bytesize)
 {
     auto it = UniformMap.find(name);
     if (it == UniformMap.end())
@@ -324,10 +341,11 @@ UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int bytesize)
         LOGE("ERROR: UniformBlock element %s is %d bytes, should be %d bytes\n", name.c_str(), bytesize, u.Size);
         return NULL;
     }
+    bytesize = u.Size;
     return &u;
 }
 
-const UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int bytesize) const
+const UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int& bytesize) const
 {
     auto it = UniformMap.find(name);
     if (it == UniformMap.end())
@@ -341,28 +359,27 @@ const UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int byte
         LOGE("ERROR: UniformBlock element %s is %d bytes, should be %d bytes\n", name.c_str(), bytesize, u.Size);
         return NULL;
     }
+    bytesize = u.Size;
     return &u;
 }
 
-const char* UniformBlock::getData(std::string name, int bytesize) const
+const char* UniformBlock::getData(std::string name, int& bytesize) const
 {
     const Uniform* u = getUniform(name, bytesize);
     if (u == NULL)
         return NULL;
     char* data = (char*) UniformData;
     data += u->Offset;
-    LOGE("offset is %d ", u->Offset);
     return data;
 }
 
-char* UniformBlock::getData(std::string name, int bytesize)
+char* UniformBlock::getData(std::string name, int& bytesize)
 {
     Uniform* u = getUniform(name, bytesize);
     if (u == NULL)
         return NULL;
     char* data = (char*) UniformData;
     data += u->Offset;
-    LOGE("offset is %d ", u->Offset);
     return data;
 }
 

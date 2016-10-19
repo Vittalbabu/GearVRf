@@ -30,6 +30,7 @@
 #include "objects/render_pass.h"
 #include "objects/material.h"
 #include<sstream>
+#include "objects/uniform_block.h"
 
 typedef unsigned long Long;
 namespace gvr {
@@ -72,8 +73,13 @@ public:
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
                     1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true) {
-    }
+                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true), gl_ubo_(nullptr){
+        /* if(use_multiview)
+            uniform_desc_ = "     mat4 u_view_[2];
+                                  mat4 u_mvp_[2];
+                                  mat4 u_mv_[2];
+                                  mat4 u_mv_it_[2]; mat4 u_model;"
+   */ }
 
     void copy(const RenderData& rdata) {
         Component(rdata.getComponentType());
@@ -345,8 +351,25 @@ public:
         }
         return hash_code;
     }
+    void bindUbo(int program_id){
+
+        if(gl_ubo_== nullptr){
+           gl_ubo_ = new GLUniformBlock(uniform_desc_);
+           gl_ubo_->setGLBindingPoint(MATERIAL_UBO_INDEX);
+           gl_ubo_->setBlockName("Material_ubo");
+           gl_ubo_->bindBuffer(program_id);
+        }
+
+
+    }
+    GLUniformBlock* getUbo(){
+        return gl_ubo_;
+    }
+
 private:
-    //  RenderData(const RenderData& render_data);
+    GLUniformBlock *gl_ubo_;
+    std::string uniform_desc_;
+     //  RenderData(const RenderData& render_data);
     RenderData(RenderData&& render_data);
     RenderData& operator=(const RenderData& render_data);
     RenderData& operator=(RenderData&& render_data);

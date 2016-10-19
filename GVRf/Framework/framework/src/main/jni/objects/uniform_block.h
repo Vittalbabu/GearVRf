@@ -374,8 +374,9 @@ protected:
      * @param bytesize byte size of uniform.
      * @return pointer to Uniform structure describing the uniform or NULL on failure
      */
-    Uniform* getUniform(std::string name, int bytesize);
-    const Uniform* getUniform(std::string name, int bytesize) const;
+    Uniform* getUniform(std::string name, int& bytesize);
+    const Uniform* getUniform(std::string name, int& bytesize) const;
+
 
     /**
      * Get a pointer to the value for the named uniform.
@@ -383,8 +384,8 @@ protected:
      * @param bytesize number of bytes uniform occupies
      * @return pointer to start of uniform value or NULL if not found.
      */
-    char* getData(std::string name, int bytesize);
-    const char* getData(std::string name, int bytesize) const;
+    char* getData(std::string name, int& bytesize);
+    const char* getData(std::string name, int& bytesize) const;
 
     /*
      * Marks the uniform block as dirty for all shaders.
