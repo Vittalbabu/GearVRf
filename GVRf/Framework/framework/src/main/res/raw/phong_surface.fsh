@@ -6,12 +6,14 @@ uniform sampler2D opacityTexture;
 uniform sampler2D lightmapTexture;
 uniform sampler2D emissiveTexture;
 uniform sampler2D normalTexture;
-
+/*
 uniform vec4 ambient_color;
 uniform vec4 diffuse_color;
 uniform vec4 specular_color;
 uniform vec4 emissive_color;
 uniform float specular_exponent;
+*/
+
 uniform vec2 u_lightmap_offset;
 uniform vec2 u_lightmap_scale;
 
@@ -31,7 +33,8 @@ Surface @ShaderName()
 	vec4 specular = specular_color;
 	vec4 ambient = ambient_color;
 	vec3 viewspaceNormal;
-	
+//	diffuse = vec4( 0.660000 ,0.080000 ,0.040000, 1);
+//	ambient = vec4(1.0,1,1,1);
 #ifdef HAS_ambientTexture
 	ambient *= texture(ambientTexture, diffuse_coord.xy);
 #endif

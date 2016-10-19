@@ -2,19 +2,42 @@
 #ifdef HAS_MULTIVIEW
 #extension GL_OVR_multiview2 : enable
 layout(num_views = 2) in;
+flat out int view_id;
+#endif
+
+
+#ifdef HAS_MULTIVIEW
 uniform mat4 u_view_[2];
 uniform mat4 u_mvp_[2];
 uniform mat4 u_mv_[2];
 uniform mat4 u_mv_it_[2];
-flat out int view_id;
 #else
 uniform mat4 u_view;
 uniform mat4 u_mvp;
 uniform mat4 u_mv;
 uniform mat4 u_mv_it;
 #endif	
-
 uniform mat4 u_model;
+
+/*
+layout (std140) uniform Transform_ubo{
+ #ifdef HAS_MULTIVIEW
+     mat4 u_view_[2];
+     mat4 u_mvp_[2];
+     mat4 u_mv_[2];
+     mat4 u_mv_it_[2];
+ #else
+     mat4 u_view;
+     mat4 u_mvp;
+     mat4 u_mv;
+     mat4 u_mv_it;
+ #endif
+     mat4 u_model;
+
+};
+
+*/
+
 in vec3 a_position;
 in vec2 a_texcoord;
 in vec3 a_normal;

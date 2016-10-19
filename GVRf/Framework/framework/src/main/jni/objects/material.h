@@ -30,17 +30,18 @@
 #include "objects/textures/texture.h"
 #include "objects/components/render_data.h"
 #include "objects/components/event_handler.h"
-
+#include "objects/uniform_block.h"
 namespace gvr {
 class RenderData;
 class Color;
 
 class Material: public ShaderData {
 public:
-    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()) {
+    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),gl_ubo_(nullptr) {
     }
 
     ~Material() {
+        delete gl_ubo_;
     }
 
 
@@ -120,8 +121,28 @@ public:
     void notify_listener(bool dirty){
         listener_->notify_listeners(dirty);
     }
+   void setUniformDesc(std::string uniform_desc){
+        uniform_desc_ = uniform_desc;
+    }
+    void bindUbo(int program_id){
+
+        if(gl_ubo_== nullptr){
+           gl_ubo_ = new GLUniformBlock(uniform_desc_);
+           gl_ubo_->setGLBindingPoint(MATERIAL_UBO_INDEX);
+           gl_ubo_->setBlockName("Material_ubo");
+           gl_ubo_->bindBuffer(program_id);
+        }
+
+
+    }
+    GLUniformBlock* getUbo(){
+        return gl_ubo_;
+    }
 
 private:
+    GLUniformBlock *gl_ubo_;
+    std::string uniform_desc_;
+
     Material(const Material& material);
     Material(Material&& material);
     Material& operator=(const Material& material);

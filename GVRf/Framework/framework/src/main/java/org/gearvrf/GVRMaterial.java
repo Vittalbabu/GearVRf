@@ -146,6 +146,7 @@ public class GVRMaterial extends GVRPostEffect
         GVRShader shader = mShaderId.getTemplate(gvrContext);
         mUniformDescriptor = shader.getUniformDescriptor();
         mTextureDescriptor = shader.getTextureDescriptor();
+        NativeMaterial.setUniformDescriptor(getNative(),mUniformDescriptor);
         shader.setMaterialDefaults(this);
         this.mShaderFeatureSet = 0;
     }
@@ -655,6 +656,6 @@ public class GVRMaterial extends GVRPostEffect
 
 class NativeMaterial {
     static native long ctor();
-
+    static native void setUniformDescriptor (long material, String mUniformDescriptor);
     static native void setShaderFeatureSet(long material, int featureSet);
 }

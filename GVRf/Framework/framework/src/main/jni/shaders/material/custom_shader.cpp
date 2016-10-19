@@ -75,15 +75,24 @@ namespace gvr {
 
     void UniformUpdate::visit(const std::string& key, const std::string& type, int size)
     {
-        int loc = shader_->getLocation(key);
+    int loc;
+/*        int loc = shader_->getLocation(key);
         if (loc < 0)
         {
             LOGE("SHADER::uniform: %s location not found", key.c_str());
             return;
         }
+ */
+        GLUniformBlock* ubo = material_->getUbo();
+
+
+        if(ubo == nullptr)
+            return;
+
         const float* fv;
         const int* iv;
-        if (Shader::LOG_SHADER) LOGE("SHADER::uniform:value: %s location: %d", key.c_str(), loc);
+        if (Shader::LOG_SHADER)
+         LOGE("SHADER::uniform:value: %s location: %d", key.c_str(), loc);
         switch (tolower(type[0]))
         {
             case 'f':
@@ -92,23 +101,28 @@ namespace gvr {
             if (fv != NULL) {
                 switch (size) {
                     case 1:
-                    glUniform1fv(loc, 1, fv);
+                    ubo->setFloat(key, *fv);
+                    //glUniform1fv(loc, 1, fv);
                     break;
 
                     case 2:
-                    glUniform2fv(loc, 1, fv);
+                    ubo->setVec(key,fv, 2);
+                    //glUniform2fv(loc, 1, fv);
                     break;
 
                     case 3:
-                    glUniform3fv(loc, 1, fv);
+                    ubo->setVec(key,fv, 3);
+               //     glUniform3fv(loc, 1, fv);
                     break;
 
                     case 4:
-                    glUniform4fv(loc, 1, fv);
+                     ubo->setVec(key,fv, 4);
+               //     glUniform4fv(loc, 1, fv);
                     break;
 
                     case 16:
-                    glUniformMatrix4fv(loc, 1, 0, fv);
+                    ubo->setVec(key,fv, 16);
+             //       glUniformMatrix4fv(loc, 1, 0, fv);
                     break;
                 }
             }
@@ -120,19 +134,23 @@ namespace gvr {
                 switch (size)
                 {
                     case 1:
-                    glUniform1iv(loc, 1, iv);
+                    ubo->setInt(key,*iv);
+                    //glUniform1iv(loc, 1, iv);
                     break;
 
                     case 2:
-                    glUniform2iv(loc, 1, iv);
+                    ubo->setIntVec(key,iv,2);
+                    //glUniform2iv(loc, 1, iv);
                     break;
 
                     case 3:
-                    glUniform3iv(loc, 1, iv);
+                    ubo->setIntVec(key,iv,3);
+                    //glUniform3iv(loc, 1, iv);
                     break;
 
                     case 4:
-                    glUniform4iv(loc, 1, iv);
+                    ubo->setIntVec(key,iv, 4);
+                   // glUniform4iv(loc, 1, iv);
                     break;
                 }
             break;
@@ -253,12 +271,12 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
             std::lock_guard <std::mutex> lock(textureVariablesLock_);
             forEach(textureDescriptor_, uvisit);
         }
-        if (LOG_SHADER) LOGD("SHADER: getting uniform locations");
+     /*   if (LOG_SHADER) LOGD("SHADER: getting uniform locations");
         {
             std::lock_guard <std::mutex> lock(uniformVariablesLock_);
             forEach(uniformDescriptor_, uvisit);
         }
-        if (LOG_SHADER) LOGD("SHADER: getting attribute locations");
+       */ if (LOG_SHADER) LOGD("SHADER: getting attribute locations");
         {
             std::lock_guard <std::mutex> lock(attributeVariablesLock_);
             AttributeLocation avisit(this, mesh);
@@ -328,6 +346,7 @@ Shader::~Shader() {
 }
 
 void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* material) {
+    LOGE("in render");
     if (!material->areTexturesReady())
     {
         if (LOG_SHADER) LOGE("textures are not ready for %s", render_data->owner_object()->name().c_str());
@@ -416,10 +435,23 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     /*
      * Update material uniforms
      */
+
+     Material* mat = render_data->material(0);
+
+
+     if(!uniformDescriptor_.empty())
+        mat->bindUbo(program_->id());
+
+     GLUniformBlock* ubo = mat->getUbo();
+
     {
         std::lock_guard<std::mutex> lock(uniformVariablesLock_);
         UniformUpdate uvisit(this, material);
         forEach(uniformDescriptor_, uvisit);
+    }
+
+    if(ubo){
+        ubo->render(program_->id());
     }
 
     /*

@@ -30,6 +30,7 @@
 
 #include "objects/hybrid_object.h"
 #include "objects/textures/texture.h"
+#include "objects/uniform_block.h"
 
 namespace gvr {
 class Texture;
@@ -111,7 +112,7 @@ public:
     virtual void setVec2(const std::string& key, glm::vec2 vector) {
         vec2s_[key] = vector;
     }
-
+    virtual GLUniformBlock* getUbo(){}
     virtual const float* getFloatVec(const std::string& key, int numfloats) const
     {
         std::map<std::string, float>::const_iterator it1;

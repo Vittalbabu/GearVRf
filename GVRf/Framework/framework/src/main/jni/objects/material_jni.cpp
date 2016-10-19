@@ -29,6 +29,9 @@ extern "C" {
     JNIEXPORT jlong JNICALL
     Java_org_gearvrf_NativeMaterial_setShaderFeatureSet(JNIEnv * env, jobject obj,
             jlong jmaterial, jint feature_set);
+    JNIEXPORT jlong JNICALL
+    Java_org_gearvrf_NativeMaterial_setUniformDescriptor(JNIEnv * env, jobject obj,
+            jlong jmaterial, jstring uniform_descriptor);
 };
 
 JNIEXPORT jlong JNICALL
@@ -42,6 +45,17 @@ Java_org_gearvrf_NativeMaterial_setShaderFeatureSet(JNIEnv * env, jobject obj,
     jlong jmaterial, jint feature_set) {
 Material* material = reinterpret_cast<Material*>(jmaterial);
 material->set_shader_feature_set(feature_set);
+}
+JNIEXPORT jlong JNICALL
+    Java_org_gearvrf_NativeMaterial_setUniformDescriptor(JNIEnv * env, jobject obj,
+            jlong jmaterial, jstring uniform_descriptor){
+
+  Material* material = reinterpret_cast<Material*>(jmaterial);
+  const char* char_desc = env->GetStringUTFChars(uniform_descriptor, 0);
+  std::string native_desc = std::string(char_desc);
+  material->setUniformDesc(native_desc);
+  env->ReleaseStringUTFChars(uniform_descriptor, char_desc);
+
 }
 
 }

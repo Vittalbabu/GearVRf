@@ -3,7 +3,7 @@ uniform sampler2D diffuseTexture;
 #else
 uniform sampler2D u_texture;
 #endif
-
+/*
 uniform vec3 u_color;
 uniform float u_opacity;
 uniform vec4 ambient_color;
@@ -11,6 +11,7 @@ uniform vec4 diffuse_color;
 uniform vec4 specular_color;
 uniform vec4 emissive_color;
 uniform float specular_exponent;
+*/
 
 struct Surface
 {
