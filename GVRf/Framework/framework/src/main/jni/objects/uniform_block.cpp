@@ -134,13 +134,13 @@ bool UniformBlock::setVec4(std::string name, const glm::vec4& val)
     return false;
 }
 
-bool UniformBlock::setMat4(std::string name, const glm::mat4& val)
+bool UniformBlock::setMat4(std::string name, const float* val)
 {
     int bytesize = 16 * sizeof(float);
     char* data = getData(name, bytesize);
     if (data != NULL)
     {
-        memcpy(data, glm::value_ptr(val), bytesize);
+        memcpy(data, (val), bytesize);
         setDirty();
         return true;
     }

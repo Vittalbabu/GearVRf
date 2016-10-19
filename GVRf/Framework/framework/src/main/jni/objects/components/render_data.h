@@ -65,21 +65,7 @@ public:
         CullBack = 0, CullFront, CullNone
     };
 
-    RenderData() :
-            Component(RenderData::getComponentType()), mesh_(0), light_(0), use_light_(
-                    false), use_lightmap_(false), batching_(true), render_mask_(
-                    DEFAULT_RENDER_MASK), batch_(nullptr), rendering_order_(
-                    DEFAULT_RENDERING_ORDER), hash_code_dirty_(true), offset_(
-                    false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
-                    true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
-                    1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true), gl_ubo_(nullptr){
-        /* if(use_multiview)
-            uniform_desc_ = "     mat4 u_view_[2];
-                                  mat4 u_mvp_[2];
-                                  mat4 u_mv_[2];
-                                  mat4 u_mv_it_[2]; mat4 u_model;"
-   */ }
+    RenderData();
 
     void copy(const RenderData& rdata) {
         Component(rdata.getComponentType());
@@ -355,8 +341,8 @@ public:
 
         if(gl_ubo_== nullptr){
            gl_ubo_ = new GLUniformBlock(uniform_desc_);
-           gl_ubo_->setGLBindingPoint(MATERIAL_UBO_INDEX);
-           gl_ubo_->setBlockName("Material_ubo");
+           gl_ubo_->setGLBindingPoint(TRANSFORM_UBO_INDEX);
+           gl_ubo_->setBlockName("Transform_ubo");
            gl_ubo_->bindBuffer(program_id);
         }
 

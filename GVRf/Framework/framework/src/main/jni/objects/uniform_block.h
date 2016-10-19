@@ -235,7 +235,7 @@ public:
      * @see setVec
      * @see getVec
      */
-    bool setMat4(std::string name, const glm::mat4& val);
+    bool setMat4(std::string name,  const float* val);
 
     /**
      * Get the value of a 2D vector uniform.

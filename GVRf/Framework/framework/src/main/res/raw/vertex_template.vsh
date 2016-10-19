@@ -5,7 +5,7 @@ layout(num_views = 2) in;
 flat out int view_id;
 #endif
 
-
+/*
 #ifdef HAS_MULTIVIEW
 uniform mat4 u_view_[2];
 uniform mat4 u_mvp_[2];
@@ -18,8 +18,8 @@ uniform mat4 u_mv;
 uniform mat4 u_mv_it;
 #endif	
 uniform mat4 u_model;
+*/
 
-/*
 layout (std140) uniform Transform_ubo{
  #ifdef HAS_MULTIVIEW
      mat4 u_view_[2];
@@ -35,8 +35,6 @@ layout (std140) uniform Transform_ubo{
      mat4 u_model;
 
 };
-*/
-
 
 in vec3 a_position;
 in vec2 a_texcoord;

@@ -248,6 +248,8 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
             LOGE("Your shaders are not multiview");
             throw error;
         }
+        LOGE(" VTX is %s",vertexShader_.c_str());
+
         if (use_multiview) {
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp_[0]");
             u_view_ = glGetUniformLocation(program_->id(), "u_view_[0]");
@@ -383,9 +385,11 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     int a_bone_indices = glGetAttribLocation(program_->id(), "a_bone_indices");
     int a_bone_weights = glGetAttribLocation(program_->id(), "a_bone_weights");
     int u_bone_matrices = glGetUniformLocation(program_->id(), "u_bone_matrix[0]");
+    LOGE("a_bone_indices %d a_bone_weights %d u_bone_matrices %d" , a_bone_indices,a_bone_weights,u_bone_matrices);
     if ((a_bone_indices >= 0) ||
         (a_bone_weights >= 0) ||
         (u_bone_matrices >= 0)) {
+        LOGE("bones present");
         glm::mat4 finalTransform;
         mesh->setBoneLoc(a_bone_indices, a_bone_weights);
         mesh->generateBoneArrayBuffers(program_->id());
@@ -401,8 +405,25 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     /*
      * Update values of uniform variables
      */
+    render_data->bindUbo(program_->id());
+    GLUniformBlock* trans_ubo = render_data->getUbo();
+    if(use_multiview){
+        trans_ubo->setMat4("u_view_", glm::value_ptr(rstate->uniforms.u_view_[0]));
+        trans_ubo->setMat4("u_mvp_", glm::value_ptr(rstate->uniforms.u_mvp_[0]));
+        trans_ubo->setMat4("u_mv_", glm::value_ptr(rstate->uniforms.u_mv_[0]));
+        trans_ubo->setMat4("u_mv_it_", glm::value_ptr(rstate->uniforms.u_mv_it_[0]));
+    }
+    else {
+        trans_ubo->setMat4("u_view", glm::value_ptr(rstate->uniforms.u_view));
+        trans_ubo->setMat4("u_mvp", glm::value_ptr(rstate->uniforms.u_mvp));
+        trans_ubo->setMat4("u_mv", glm::value_ptr(rstate->uniforms.u_mv));
+        trans_ubo->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
+    }
+    trans_ubo->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
 
-    if (u_model_ != -1){
+    trans_ubo->render(program_->id());
+
+ /*   if (u_model_ != -1){
     	glUniformMatrix4fv(u_model_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_model));
     }
     if (u_mvp_ != -1) {
@@ -432,7 +453,7 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     if (u_right_ != 0) {
         glUniform1i(u_right_, rstate->uniforms.u_right ? 1 : 0);
     }
-    /*
+  */  /*
      * Update material uniforms
      */
 
@@ -442,7 +463,7 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
      if(!uniformDescriptor_.empty())
         mat->bindUbo(program_->id());
 
-     GLUniformBlock* ubo = mat->getUbo();
+     GLUniformBlock* mat_ubo = mat->getUbo();
 
     {
         std::lock_guard<std::mutex> lock(uniformVariablesLock_);
@@ -450,8 +471,8 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         forEach(uniformDescriptor_, uvisit);
     }
 
-    if(ubo){
-        ubo->render(program_->id());
+    if(mat_ubo){
+        mat_ubo->render(program_->id());
     }
 
     /*
