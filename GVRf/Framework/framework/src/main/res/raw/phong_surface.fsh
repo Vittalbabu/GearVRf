@@ -33,8 +33,7 @@ Surface @ShaderName()
 	vec4 specular = specular_color;
 	vec4 ambient = ambient_color;
 	vec3 viewspaceNormal;
-//	diffuse = vec4( 0.660000 ,0.080000 ,0.040000, 1);
-//	ambient = vec4(1.0,1,1,1);
+
 #ifdef HAS_ambientTexture
 	ambient *= texture(ambientTexture, diffuse_coord.xy);
 #endif

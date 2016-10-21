@@ -24,7 +24,7 @@ struct Surface
 
 Surface @ShaderName()
 {
-	vec4 diffuse = vec4(u_color, u_opacity);
+	vec4 diffuse = vec4(u_color.x,u_color.y,u_color.z, u_opacity.x);
 #ifdef HAS_LIGHTSOURCES
     diffuse *= diffuse_color;
 #endif

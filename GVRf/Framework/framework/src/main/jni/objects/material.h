@@ -37,7 +37,7 @@ class Color;
 
 class Material: public ShaderData {
 public:
-    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),gl_ubo_("float u_opacity; float3 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float specular_exponent") {
+    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),gl_ubo_("float4 u_opacity; float4 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float4 specular_exponent") {
     }
 
     ~Material() {

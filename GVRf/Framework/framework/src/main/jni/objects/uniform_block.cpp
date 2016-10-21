@@ -138,6 +138,7 @@ bool UniformBlock::setMat4(std::string name, const float* val)
 {
     int bytesize = 16 * sizeof(float);
     char* data = getData(name, bytesize);
+   // LOGE("size is %d ", bytesize);
     if (data != NULL)
     {
         memcpy(data, (val), bytesize);
