@@ -397,6 +397,7 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     SceneObject *owner = render_data->owner_object();
     ShaderManager *shader_manager = rstate.shader_manager;
 
+
     if (rstate.material_override != nullptr) {
         curr_material = rstate.material_override;
     }
@@ -414,6 +415,7 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     rstate.uniforms.u_mv_it = glm::inverseTranspose(rstate.uniforms.u_mv);
     rstate.uniforms.u_mvp = rstate.uniforms.u_proj * rstate.uniforms.u_mv;
     rstate.uniforms.u_right = rstate.render_mask & RenderData::RenderMaskBit::Right;
+    LOGE("material in renderMaterialShader %p", rstate.material_override);
 
     if (use_multiview) {
         rstate.uniforms.u_view_[0] = rstate.scene->main_camera_rig()->left_camera()->getViewMatrix();

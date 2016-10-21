@@ -37,11 +37,11 @@ class Color;
 
 class Material: public ShaderData {
 public:
-    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),gl_ubo_(nullptr) {
+    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),gl_ubo_("float u_opacity; float3 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float specular_exponent") {
     }
 
     ~Material() {
-        delete gl_ubo_;
+        //delete gl_ubo_;
     }
 
 
@@ -124,7 +124,7 @@ public:
    void setUniformDesc(std::string uniform_desc){
         uniform_desc_ = uniform_desc;
     }
-    void bindUbo(int program_id){
+/*  void bindUbo(int program_id){
 
         if(gl_ubo_== nullptr){
            gl_ubo_ = new GLUniformBlock(uniform_desc_);
@@ -132,17 +132,28 @@ public:
            gl_ubo_->setBlockName("Material_ubo");
            gl_ubo_->bindBuffer(program_id);
         }
-
-
     }
     GLUniformBlock* getUbo(){
         return gl_ubo_;
     }
+*/
 
+ void bindUbo(int program_id){
+        if(!ubo_init){
+            ubo_init = true;
+           gl_ubo_.setGLBindingPoint(MATERIAL_UBO_INDEX);
+           gl_ubo_.setBlockName("Material_ubo");
+           gl_ubo_.bindBuffer(program_id);
+
+        }
+    }
+    GLUniformBlock& getUbo(){
+        return gl_ubo_;
+    }
 private:
-    GLUniformBlock *gl_ubo_;
+    GLUniformBlock gl_ubo_;
     std::string uniform_desc_;
-
+    bool ubo_init = false;
     Material(const Material& material);
     Material(Material&& material);
     Material& operator=(const Material& material);

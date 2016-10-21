@@ -337,23 +337,37 @@ public:
         }
         return hash_code;
     }
-    void bindUbo(int program_id){
-
-        if(gl_ubo_== nullptr){
-           gl_ubo_ = new GLUniformBlock(uniform_desc_);
-           gl_ubo_->setGLBindingPoint(TRANSFORM_UBO_INDEX);
-           gl_ubo_->setBlockName("Transform_ubo");
-           gl_ubo_->bindBuffer(program_id);
-        }
-
-
+    void bindTransformUbo(int program_id){
+        if(transform_ubo_ == nullptr)
+            transform_ubo_ = bindUbo(program_id,TRANSFORM_UBO_INDEX,"Transform_ubo",uniform_desc_.c_str());
+        else
+            transform_ubo_->bindBuffer(program_id);
     }
-    GLUniformBlock* getUbo(){
-        return gl_ubo_;
+    void bindBonesUbo(int program_id){
+        if(bones_ubo_ == nullptr)
+            bones_ubo_ = bindUbo(program_id,BONES_UBO_INDEX,"Bones_ubo","mat4 u_bone_matrix[60];" );
+        else
+            bones_ubo_->bindBuffer(program_id);
+    }
+
+    GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
+           GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
+           gl_ubo_->setGLBindingPoint(index);
+           gl_ubo_->setBlockName(name);
+           gl_ubo_->bindBuffer(program_id);
+           return gl_ubo_;
+    }
+
+    GLUniformBlock* getTransformUbo(){
+        return transform_ubo_;
+    }
+    GLUniformBlock* getBonesUbo(){
+        return bones_ubo_;
     }
 
 private:
-    GLUniformBlock *gl_ubo_;
+    GLUniformBlock *transform_ubo_;
+    GLUniformBlock *bones_ubo_;
     std::string uniform_desc_;
      //  RenderData(const RenderData& render_data);
     RenderData(RenderData&& render_data);

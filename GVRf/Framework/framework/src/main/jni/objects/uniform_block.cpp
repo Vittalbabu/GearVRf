@@ -141,7 +141,7 @@ bool UniformBlock::setMat4(std::string name, const float* val)
     if (data != NULL)
     {
         memcpy(data, (val), bytesize);
-        setDirty();
+        //setDirty();
         return true;
     }
     return false;
@@ -263,11 +263,20 @@ void   UniformBlock::parseDescriptor()
         name_size = p - name_start;
 
         // check if it is array
-        int array_size = 1;
+        int array_size = 0;
+
         if( (*p == '[')){
-            array_size = (*(p+1)) - 48;
-            p = p + 3;
+            ++p;
+            while(std::isdigit(*p))   {
+                array_size = array_size * 10 + ((*p) - 48);
+                ++p;
+            }
+
+            ++p;
         }
+        else
+            array_size = 1;
+
 
         if (name_size == 0)
         {
@@ -425,15 +434,18 @@ void GLUniformBlock::bindBuffer(GLuint programId)
         checkGlError("bindUBO ");
         LOGD("UniformBlock: %s bound to #%d at index %d buffer = %d\n", BlockName.c_str(), GLBindingPoint, GLBlockIndex, GLBuffer);
     }
+    else {
+        glBindBuffer(GL_UNIFORM_BUFFER, GLBuffer);
+    }
 }
 
 void GLUniformBlock::render(GLuint programId)
 {
-    auto it = Dirty.find(programId);
+ //   auto it = Dirty.find(programId);
 
 //    if (it != Dirty.end() && !it->second)
 //        return;
-    Dirty[programId] = false;
+ //   Dirty[programId] = false;
     if (GLBuffer == 0)
         bindBuffer(programId);
     if (GLBuffer >= 0)

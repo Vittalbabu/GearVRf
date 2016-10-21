@@ -28,11 +28,12 @@ RenderData:: RenderData() :
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
                     1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true), gl_ubo_(nullptr){
+                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true), transform_ubo_(nullptr), bones_ubo_(nullptr){
          if(use_multiview)
             uniform_desc_ = " mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
           else
             uniform_desc_ = " mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model;";
+
     }
 void RenderData::add_pass(RenderPass* render_pass) {
     render_pass_list_.push_back(render_pass);
