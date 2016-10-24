@@ -132,21 +132,12 @@ public:
      */
     void setDescriptor(const std::string& descriptor)
     {
-       /* if (!Descriptor.empty())
+        if (!Descriptor.empty())
         {
             LOGE("UniformBlock: ERROR: descriptor cannot be changed once it is set\n");
             return;
         }
-        */
-        // when descriptor is set, we need to invalidate existing buffer
-        descriptor_changed_ = true;
-        if ((UniformData != NULL) && ownData)
-         {
-             free(UniformData);
-         }
-        UniformData = NULL;
-        TotalSize = 0;
-        UniformMap.clear();
+
         Descriptor = descriptor;
         parseDescriptor();
     }
@@ -402,7 +393,6 @@ protected:
      * Marks the uniform block as dirty for all shaders.
      */
     virtual void setDirty() { }
-    bool descriptor_changed_;
     bool        ownData;        // true if this uniform owns its data block
     std::string BlockName;      // uniform block name in shadere
     std::string Descriptor;     // descriptor with name, type and size of uniforms

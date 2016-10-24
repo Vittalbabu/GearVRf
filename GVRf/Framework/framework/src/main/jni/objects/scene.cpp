@@ -29,13 +29,18 @@ Scene::Scene() :
         HybridObject(),
         main_camera_rig_(),
         frustum_flag_(false),
-        dirtyFlag_(0),
+        dirtyFlag_(0),transform_ubo_(nullptr),
         occlusion_flag_(false),
         pick_visible_(true),
         is_shadowmap_invalid(true) {
     if (main_scene() == NULL) {
         set_main_scene(this);
     }
+    if(use_multiview)
+        uniform_desc_ = " mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
+    else
+        uniform_desc_ = " mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model;";
+
 }
 
 Scene::~Scene() {

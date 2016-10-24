@@ -19,22 +19,6 @@
 #include "objects/render_pass.h"
 #include "engine/renderer/renderer.h"
 namespace gvr {
-extern bool use_multiview;
-RenderData:: RenderData() :
-            Component(RenderData::getComponentType()), mesh_(0), light_(0), use_light_(
-                    false), use_lightmap_(false), batching_(true), render_mask_(
-                    DEFAULT_RENDER_MASK), batch_(nullptr), rendering_order_(
-                    DEFAULT_RENDERING_ORDER), hash_code_dirty_(true), offset_(
-                    false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
-                    true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
-                    1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0), bone_ubo_init_(false), shaderID_(0), renderdata_dirty_(true), transform_ubo_(nullptr), bones_ubo_("mat4 u_bone_matrix[60];"){
-         if(use_multiview)
-            uniform_desc_ = "mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
-          else
-            uniform_desc_ = " mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model;";
-
-    }
 void RenderData::add_pass(RenderPass* render_pass) {
     render_pass_list_.push_back(render_pass);
     render_pass->add_listener(this);

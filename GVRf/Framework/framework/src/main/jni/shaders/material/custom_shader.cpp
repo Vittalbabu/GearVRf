@@ -157,7 +157,7 @@ namespace gvr {
     {
         int loc;
 
-        GLUniformBlock& ubo = material_->getUbo();
+        GLUniformBlock* ubo = material_->getMatUbo();
 
         const float* fv;
         const int* iv;
@@ -173,28 +173,28 @@ namespace gvr {
                 switch (size) {
                     case 1:
                     data.x = *fv;
-                    ubo.setVec(key,glm::value_ptr(data), 4);
+                    ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
                     case 2:
                     data.x = *fv;
                     data.y = fv[1];
-                    ubo.setVec(key,glm::value_ptr(data), 4);
+                    ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
                     case 3:
                      data.x = fv[0];
                      data.y=  fv[1];
                      data.z = fv[2];
-                     ubo.setVec(key,glm::value_ptr(data), 4);
+                     ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
                     case 4:
-                     ubo.setVec(key,fv, 4);
+                     ubo->setVec(key,fv, 4);
                     break;
 
                     case 16:
-                    ubo.setVec(key,fv, 16);
+                    ubo->setVec(key,fv, 16);
                     break;
                 }
             }
@@ -206,22 +206,22 @@ namespace gvr {
                 switch (size)
                 {
                     case 1:
-                    ubo.setInt(key,*iv);
+                    ubo->setInt(key,*iv);
                     //glUniform1iv(loc, 1, iv);
                     break;
 
                     case 2:
-                    ubo.setIntVec(key,iv,2);
+                    ubo->setIntVec(key,iv,2);
                     //glUniform2iv(loc, 1, iv);
                     break;
 
                     case 3:
-                    ubo.setIntVec(key,iv,3);
+                    ubo->setIntVec(key,iv,3);
                     //glUniform3iv(loc, 1, iv);
                     break;
 
                     case 4:
-                    ubo.setIntVec(key,iv, 4);
+                    ubo->setIntVec(key,iv, 4);
                    // glUniform4iv(loc, 1, iv);
                     break;
                 }
@@ -316,12 +316,7 @@ Shader::Shader(int id,
       textureDescriptor_(textureDescriptor),
       vertexDescriptor_(vertexDescriptor),
       vertexShader_(vertex_shader),
-      fragmentShader_(fragment_shader), transform_ubo_(nullptr) {
-
-      if(use_multiview)
-          uniform_desc_ = " mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
-      else
-          uniform_desc_ = " mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model;";
+      fragmentShader_(fragment_shader) {
 
 }
 
@@ -489,86 +484,61 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
          //   glUniformMatrix4fv(u_bone_matrices + i, 1, GL_FALSE, glm::value_ptr(finalTransform));
         }
         render_data->bindBonesUbo(program_->id());
-        GLUniformBlock& bones_ubo = render_data->getBonesUbo();
+        GLUniformBlock* bones_ubo = render_data->getBonesUbo();
 
         std::vector<glm::mat4>& bone_matrices = mesh->getVertexBoneData().getBoneMatrices();
-        bones_ubo.setMat4("u_bone_matrix", &bone_matrices[0][0][0]);
-        bones_ubo.render(program_->id());
+        bones_ubo->setMat4("u_bone_matrix", &bone_matrices[0][0][0]);
+        bones_ubo->render(program_->id());
 
         checkGlError("Shader after bones");
     }
     /*
      * Update values of uniform variables
      */
-     bindTransformUbo(program_->id());
+     rstate->scene->bindTransformUbo(program_->id());
+     GLUniformBlock* transform_ubo =  rstate->scene->getTransformUbo();
+
      if(use_multiview){
-        transform_ubo_->setMat4("u_view_", glm::value_ptr(rstate->uniforms.u_view_[0]));
-        transform_ubo_->setMat4("u_mvp_", glm::value_ptr(rstate->uniforms.u_mvp_[0]));
-        transform_ubo_->setMat4("u_mv_", glm::value_ptr(rstate->uniforms.u_mv_[0]));
-        transform_ubo_->setMat4("u_mv_it_", glm::value_ptr(rstate->uniforms.u_mv_it_[0]));
+        transform_ubo->setMat4("u_view_", glm::value_ptr(rstate->uniforms.u_view_[0]));
+        transform_ubo->setMat4("u_mvp_", glm::value_ptr(rstate->uniforms.u_mvp_[0]));
+        transform_ubo->setMat4("u_mv_", glm::value_ptr(rstate->uniforms.u_mv_[0]));
+        transform_ubo->setMat4("u_mv_it_", glm::value_ptr(rstate->uniforms.u_mv_it_[0]));
     }
     else {
-        transform_ubo_->setMat4("u_view", glm::value_ptr(rstate->uniforms.u_view));
-        transform_ubo_->setMat4("u_mvp", glm::value_ptr(rstate->uniforms.u_mvp));
-        transform_ubo_->setMat4("u_mv", glm::value_ptr(rstate->uniforms.u_mv));
-        transform_ubo_->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
+        transform_ubo->setMat4("u_view", glm::value_ptr(rstate->uniforms.u_view));
+        transform_ubo->setMat4("u_mvp", glm::value_ptr(rstate->uniforms.u_mvp));
+        transform_ubo->setMat4("u_mv", glm::value_ptr(rstate->uniforms.u_mv));
+        transform_ubo->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
     }
-    transform_ubo_->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
-    if(program_ == nullptr || transform_ubo_ == nullptr)
+    transform_ubo->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
+    if(program_ == nullptr || transform_ubo == nullptr)
         LOGE("program or ubo is null");
 
-    transform_ubo_->render(program_->id());
+    transform_ubo->render(program_->id());
 
- /*   if (u_model_ != -1){
-    	glUniformMatrix4fv(u_model_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_model));
-    }
-    if (u_mvp_ != -1) {
-        if(use_multiview)
-            glUniformMatrix4fv(u_mvp_, 2, GL_FALSE, glm::value_ptr(rstate->uniforms.u_mvp_[0]));
-        else
-            glUniformMatrix4fv(u_mvp_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_mvp));
-    }
-    if (u_view_ != -1) {
-        if(use_multiview)
-            glUniformMatrix4fv(u_view_, 2, GL_FALSE, glm::value_ptr(rstate->uniforms.u_view_[0]));
-        else
-            glUniformMatrix4fv(u_view_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_view));
-    }
-    if (u_mv_ != -1) {
-       if(use_multiview)
-           glUniformMatrix4fv(u_mv_, 2, GL_FALSE, glm::value_ptr(rstate->uniforms.u_mv_[0]));
-       else
-          glUniformMatrix4fv(u_mv_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_mv));
-    }
-    if (u_mv_it_ != -1) {
-        if(use_multiview)
-            glUniformMatrix4fv(u_mv_it_, 2, GL_FALSE, glm::value_ptr(rstate->uniforms.u_mv_it_[0]));
-        else
-            glUniformMatrix4fv(u_mv_it_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_mv_it));
-    }
-    if (u_right_ != 0) {
-        glUniform1i(u_right_, rstate->uniforms.u_right ? 1 : 0);
-    }
-  */  /*
+    /*
      * Update material uniforms
      */
 
      //Material* mat = render_data->material(0);
-    LOGE("material in render %p and descriptor is %s ", material, uniformDescriptor_.c_str());
-    Material* mat = static_cast<Material*>(material);
+  //  LOGE("material in render %p and descriptor is %s ", material, uniformDescriptor_.c_str());
+
+     Material* mat = static_cast<Material*>(material);
      if(!uniformDescriptor_.empty())
-        mat->bindUbo(program_->id());
+        mat->bindMaterialUbo(program_->id());
 
-     GLUniformBlock& mat_ubo = mat->getUbo();
+     GLUniformBlock* mat_ubo = mat->getMatUbo();
 
+    if(mat && mat->isMaterialDirty())
     {
         std::lock_guard<std::mutex> lock(uniformVariablesLock_);
         UniformUpdate uvisit(this, material);
         forEach(uniformDescriptor_, uvisit);
+        mat->setMaterialDirty(false);
     }
 
-    if(1){
-        mat_ubo.render(program_->id());
+    if(mat_ubo){
+        mat_ubo->render(program_->id());
     }
 
     /*

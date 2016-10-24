@@ -113,7 +113,7 @@ public:
     virtual void setVec2(const std::string& key, glm::vec2 vector) {
         vec2s_[key] = vector;
     }
-    virtual GLUniformBlock& getUbo(){}
+    virtual GLUniformBlock* getMatUbo(){}
     virtual const float* getFloatVec(const std::string& key, int numfloats) const
     {
         std::map<std::string, float>::const_iterator it1;

@@ -21,7 +21,7 @@ namespace gvr {
 
 UniformBlock::UniformBlock(const std::string& descriptor) :
         //Descriptor(descriptor),
-        TotalSize(0),descriptor_changed_(true),
+        TotalSize(0),
         UniformData(NULL)
 {
     ownData = false;
@@ -142,7 +142,7 @@ bool UniformBlock::setMat4(std::string name, const float* val)
     if (data != NULL)
     {
         memcpy(data, (val), bytesize);
-        //setDirty();
+        setDirty();
         return true;
     }
     return false;
@@ -418,9 +418,8 @@ void GLUniformBlock::bindBuffer(GLuint programId)
 
     if (GLBindingPoint < 0)
         return;
-    if (GLBlockIndex < 0 || descriptor_changed_)
+    if (GLBlockIndex < 0)
     {
-        descriptor_changed_ = false;
         GLBlockIndex = glGetUniformBlockIndex(programId, BlockName.c_str());
         if (GLBlockIndex < 0)
         {
@@ -438,17 +437,20 @@ void GLUniformBlock::bindBuffer(GLuint programId)
     }
     else {
         glBindBuffer(GL_UNIFORM_BUFFER, GLBuffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, GLBindingPoint, GLBuffer);
     }
 }
 
 void GLUniformBlock::render(GLuint programId)
 {
- //   auto it = Dirty.find(programId);
+    auto it = Dirty.find(programId);
 
-//    if (it != Dirty.end() && !it->second)
-//        return;
- //   Dirty[programId] = false;
-    if (GLBuffer == 0 || descriptor_changed_)
+    if (it != Dirty.end() && !it->second)
+        return;
+
+    LOGE("it should not come hrere");
+    Dirty[programId] = false;
+    if (GLBuffer == 0 )
         bindBuffer(programId);
     if (GLBuffer >= 0)
     {

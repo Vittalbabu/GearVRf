@@ -37,7 +37,8 @@ class Color;
 
 class Material: public ShaderData {
 public:
-    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),gl_ubo_("float4 u_opacity; float4 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float4 specular_exponent") {
+    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),mat_ubo_(nullptr),material_dirty_(true),
+    uniform_desc_("float4 u_opacity; float4 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float4 specular_exponent") {
     }
 
     ~Material() {
@@ -56,12 +57,14 @@ public:
     virtual void setFloat(const std::string& key, float value) {
         ShaderData::setFloat(key, value);
         listener_->notify_listeners(true);
+        material_dirty_ = true;
     }
 
 
     virtual void setVec2(const std::string& key, glm::vec2 vector) {
         ShaderData::setVec2(key, vector);
         listener_->notify_listeners(true);
+         material_dirty_ = true;
     }
 
 
@@ -73,6 +76,7 @@ public:
     virtual void setVec4(const std::string& key, glm::vec4 vector) {
         ShaderData::setVec4(key, vector);
         listener_->notify_listeners(true);
+         material_dirty_ = true;
     }
 
     bool hasTexture() const {
@@ -82,6 +86,7 @@ public:
     virtual void setMat4(const std::string& key, glm::mat4 matrix) {
         ShaderData::setMat4(key, matrix);
         listener_->notify_listeners(true);
+         material_dirty_ = true;
     }
 
     int get_shader_feature_set() {
@@ -95,7 +100,9 @@ public:
     virtual bool isMainTextureReady() {
         return (main_texture != NULL) && main_texture->isReady();
     }
-
+    void setMaterialDirty(bool dirty){
+        material_dirty_ = dirty;
+    }
     bool isTextureReady(const std::string& name) {
         auto it = textures_.find(name);
         if (it != textures_.end()) {
@@ -122,24 +129,31 @@ public:
         listener_->notify_listeners(dirty);
     }
    void setUniformDesc(std::string uniform_desc){
-        uniform_desc_ = uniform_desc;
-      //  gl_ubo_.setDescriptor(uniform_desc_);
+       // uniform_desc_ = uniform_desc;
     }
-
- void bindUbo(int program_id){
-        if(!ubo_init){
-           ubo_init = true;
-           gl_ubo_.setGLBindingPoint(MATERIAL_UBO_INDEX);
-           gl_ubo_.setBlockName("Material_ubo");
-           gl_ubo_.bindBuffer(program_id);
-
-        }
+    bool isMaterialDirty(){
+        return material_dirty_;
     }
-    GLUniformBlock& getUbo(){
-        return gl_ubo_;
-    }
+      GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
+                       GLUniformBlock* ubo = new GLUniformBlock(desc);
+                       ubo->setGLBindingPoint(index);
+                       ubo->setBlockName(name);
+                       ubo->bindBuffer(program_id);
+                       return ubo;
+             }
+             void bindMaterialUbo(int program_id){
+                 if(mat_ubo_ == nullptr){
+                     mat_ubo_ = bindUbo(program_id,MATERIAL_UBO_INDEX,"Material_ubo",uniform_desc_.c_str() );
+                 }
+                 else
+                     mat_ubo_->bindBuffer(program_id);
+             }
+         GLUniformBlock* getMatUbo(){
+            return mat_ubo_;
+         }
 private:
-    GLUniformBlock gl_ubo_;
+    GLUniformBlock *mat_ubo_;
+    bool material_dirty_;
     std::string uniform_desc_;
     bool ubo_init = false;
     Material(const Material& material);

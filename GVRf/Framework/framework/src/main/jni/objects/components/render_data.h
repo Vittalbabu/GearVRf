@@ -31,7 +31,6 @@
 #include "objects/material.h"
 #include<sstream>
 #include "objects/uniform_block.h"
-
 typedef unsigned long Long;
 namespace gvr {
 class Mesh;
@@ -65,7 +64,16 @@ public:
         CullBack = 0, CullFront, CullNone
     };
 
-    RenderData();
+    RenderData() :
+            Component(RenderData::getComponentType()), mesh_(0), light_(0), use_light_(
+                    false), use_lightmap_(false), batching_(true), render_mask_(
+                    DEFAULT_RENDER_MASK), batch_(nullptr), rendering_order_(
+                    DEFAULT_RENDERING_ORDER), hash_code_dirty_(true), offset_(
+                    false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
+                    true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
+                    1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
+                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true), bones_ubo_(nullptr) {
+    }
 
     void copy(const RenderData& rdata) {
         Component(rdata.getComponentType());
@@ -337,46 +345,30 @@ public:
         }
         return hash_code;
     }
-    void bindTransformUbo(int program_id){
-        if(transform_ubo_ == nullptr)
-            transform_ubo_ = bindUbo(program_id,TRANSFORM_UBO_INDEX,"Transform_ubo",uniform_desc_.c_str());
-        else
-            transform_ubo_->bindBuffer(program_id);
-    }
-    void bindBonesUbo(int program_id){
-       if(!bone_ubo_init_){
-            bone_ubo_init_ = true;
-            bones_ubo_.setGLBindingPoint(BONES_UBO_INDEX);
-            bones_ubo_.setBlockName("Bones_ubo");
-            bones_ubo_.bindBuffer(program_id);
-       }
-    }
-
-    GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
-           GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
-           gl_ubo_->setGLBindingPoint(index);
-           gl_ubo_->setBlockName(name);
-           gl_ubo_->bindBuffer(program_id);
-           return gl_ubo_;
-    }
-
-    GLUniformBlock* getTransformUbo(){
-        return transform_ubo_;
-    }
-    GLUniformBlock & getBonesUbo(){
+        GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
+                   GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
+                   gl_ubo_->setGLBindingPoint(index);
+                   gl_ubo_->setBlockName(name);
+                   gl_ubo_->bindBuffer(program_id);
+                   return gl_ubo_;
+         }
+         void bindBonesUbo(int program_id){
+             if(bones_ubo_ == nullptr)
+                 bones_ubo_ = bindUbo(program_id,BONES_UBO_INDEX,"Bones_ubo","mat4 u_bone_matrix[60];" );
+             else
+                 bones_ubo_->bindBuffer(program_id);
+         }
+     GLUniformBlock* getBonesUbo(){
         return bones_ubo_;
-    }
+     }
 private:
-    bool bone_ubo_init_;
-    GLUniformBlock *transform_ubo_;
-    GLUniformBlock bones_ubo_;
-    std::string uniform_desc_;
-     //  RenderData(const RenderData& render_data);
+    //  RenderData(const RenderData& render_data);
     RenderData(RenderData&& render_data);
     RenderData& operator=(const RenderData& render_data);
     RenderData& operator=(RenderData&& render_data);
 
 private:
+    GLUniformBlock *bones_ubo_;
     static const int DEFAULT_RENDER_MASK = Left | Right;
     static const int DEFAULT_RENDERING_ORDER = Geometry;
     Mesh* mesh_;

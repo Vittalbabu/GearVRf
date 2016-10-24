@@ -141,25 +141,6 @@ public:
         locations_[key] = loc;
     }
 
-    void bindTransformUbo(int program_id){
-        if(transform_ubo_ == nullptr){
-            transform_ubo_ = bindUbo(program_id,TRANSFORM_UBO_INDEX,"Transform_ubo",uniform_desc_.c_str());
-         }
-        else {
-            transform_ubo_->bindBuffer(program_id);
-        }
-    }
-    GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
-           GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
-           gl_ubo_->setGLBindingPoint(index);
-           gl_ubo_->setBlockName(name);
-           gl_ubo_->bindBuffer(program_id);
-           return gl_ubo_;
-    }
-
-    GLUniformBlock* getTransformUbo(){
-        return transform_ubo_;
-    }
 
     /*
      * TODO: This is for batching. Roshan should implement it.
@@ -181,8 +162,6 @@ private:
     bool hasAttribute(const std::string& name) { return vertexDescriptor_.find(name) != std::string::npos; }
 
 private:
-    std::string uniform_desc_;
-    GLUniformBlock *transform_ubo_;
     GLProgram* program_;
     std::string signature_;
     int id_;
