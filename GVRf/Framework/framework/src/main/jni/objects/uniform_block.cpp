@@ -21,7 +21,7 @@ namespace gvr {
 
 UniformBlock::UniformBlock(const std::string& descriptor) :
         //Descriptor(descriptor),
-        TotalSize(0),
+        TotalSize(0),descriptor_changed_(true),
         UniformData(NULL)
 {
     ownData = false;
@@ -138,7 +138,7 @@ bool UniformBlock::setMat4(std::string name, const float* val)
 {
     int bytesize = 16 * sizeof(float);
     char* data = getData(name, bytesize);
-   // LOGE("size is %d ", bytesize);
+    LOGE("size is %d ", bytesize);
     if (data != NULL)
     {
         memcpy(data, (val), bytesize);
@@ -418,8 +418,9 @@ void GLUniformBlock::bindBuffer(GLuint programId)
 
     if (GLBindingPoint < 0)
         return;
-    if (GLBlockIndex < 0)
+    if (GLBlockIndex < 0 || descriptor_changed_)
     {
+        descriptor_changed_ = false;
         GLBlockIndex = glGetUniformBlockIndex(programId, BlockName.c_str());
         if (GLBlockIndex < 0)
         {
@@ -447,7 +448,7 @@ void GLUniformBlock::render(GLuint programId)
 //    if (it != Dirty.end() && !it->second)
 //        return;
  //   Dirty[programId] = false;
-    if (GLBuffer == 0)
+    if (GLBuffer == 0 || descriptor_changed_)
         bindBuffer(programId);
     if (GLBuffer >= 0)
     {

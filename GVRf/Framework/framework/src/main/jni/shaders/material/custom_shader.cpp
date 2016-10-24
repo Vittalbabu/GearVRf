@@ -316,7 +316,13 @@ Shader::Shader(int id,
       textureDescriptor_(textureDescriptor),
       vertexDescriptor_(vertexDescriptor),
       vertexShader_(vertex_shader),
-      fragmentShader_(fragment_shader) {
+      fragmentShader_(fragment_shader), transform_ubo_(nullptr) {
+
+      if(use_multiview)
+          uniform_desc_ = " mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
+      else
+          uniform_desc_ = " mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model;";
+
 }
 
 void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
@@ -480,40 +486,38 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
             nBones = MAX_BONES;
         for (int i = 0; i < nBones; ++i) {
             finalTransform = mesh->getVertexBoneData().getFinalBoneTransform(i);
-            glUniformMatrix4fv(u_bone_matrices + i, 1, GL_FALSE, glm::value_ptr(finalTransform));
+         //   glUniformMatrix4fv(u_bone_matrices + i, 1, GL_FALSE, glm::value_ptr(finalTransform));
         }
-       /* render_data->bindBonesUbo(program_->id());
-        GLUniformBlock* bones_ubo = render_data->getBonesUbo();
+        render_data->bindBonesUbo(program_->id());
+        GLUniformBlock& bones_ubo = render_data->getBonesUbo();
 
         std::vector<glm::mat4>& bone_matrices = mesh->getVertexBoneData().getBoneMatrices();
-        bones_ubo->setMat4("u_bone_matrix", &bone_matrices[0][0][0]);
-        bones_ubo->render(program_->id());
-*/
+        bones_ubo.setMat4("u_bone_matrix", &bone_matrices[0][0][0]);
+        bones_ubo.render(program_->id());
+
         checkGlError("Shader after bones");
     }
     /*
      * Update values of uniform variables
      */
-    render_data->bindTransformUbo(program_->id());
-    GLUniformBlock* trans_ubo = render_data->getTransformUbo();
-    if(trans_ubo == nullptr)
-        LOGE("transform ubo is null");
-    if(use_multiview){
-        trans_ubo->setMat4("u_view_", glm::value_ptr(rstate->uniforms.u_view_[0]));
-        trans_ubo->setMat4("u_mvp_", glm::value_ptr(rstate->uniforms.u_mvp_[0]));
-        trans_ubo->setMat4("u_mv_", glm::value_ptr(rstate->uniforms.u_mv_[0]));
-        trans_ubo->setMat4("u_mv_it_", glm::value_ptr(rstate->uniforms.u_mv_it_[0]));
+     bindTransformUbo(program_->id());
+     if(use_multiview){
+        transform_ubo_->setMat4("u_view_", glm::value_ptr(rstate->uniforms.u_view_[0]));
+        transform_ubo_->setMat4("u_mvp_", glm::value_ptr(rstate->uniforms.u_mvp_[0]));
+        transform_ubo_->setMat4("u_mv_", glm::value_ptr(rstate->uniforms.u_mv_[0]));
+        transform_ubo_->setMat4("u_mv_it_", glm::value_ptr(rstate->uniforms.u_mv_it_[0]));
     }
     else {
-        trans_ubo->setMat4("u_view", glm::value_ptr(rstate->uniforms.u_view));
-        trans_ubo->setMat4("u_mvp", glm::value_ptr(rstate->uniforms.u_mvp));
-        trans_ubo->setMat4("u_mv", glm::value_ptr(rstate->uniforms.u_mv));
-        trans_ubo->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
+        transform_ubo_->setMat4("u_view", glm::value_ptr(rstate->uniforms.u_view));
+        transform_ubo_->setMat4("u_mvp", glm::value_ptr(rstate->uniforms.u_mvp));
+        transform_ubo_->setMat4("u_mv", glm::value_ptr(rstate->uniforms.u_mv));
+        transform_ubo_->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
     }
-    trans_ubo->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
-    if(program_ == nullptr || trans_ubo == nullptr)
+    transform_ubo_->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
+    if(program_ == nullptr || transform_ubo_ == nullptr)
         LOGE("program or ubo is null");
-    trans_ubo->render(program_->id());
+
+    transform_ubo_->render(program_->id());
 
  /*   if (u_model_ != -1){
     	glUniformMatrix4fv(u_model_, 1, GL_FALSE, glm::value_ptr(rstate->uniforms.u_model));

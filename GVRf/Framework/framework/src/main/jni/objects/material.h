@@ -123,24 +123,12 @@ public:
     }
    void setUniformDesc(std::string uniform_desc){
         uniform_desc_ = uniform_desc;
+      //  gl_ubo_.setDescriptor(uniform_desc_);
     }
-/*  void bindUbo(int program_id){
-
-        if(gl_ubo_== nullptr){
-           gl_ubo_ = new GLUniformBlock(uniform_desc_);
-           gl_ubo_->setGLBindingPoint(MATERIAL_UBO_INDEX);
-           gl_ubo_->setBlockName("Material_ubo");
-           gl_ubo_->bindBuffer(program_id);
-        }
-    }
-    GLUniformBlock* getUbo(){
-        return gl_ubo_;
-    }
-*/
 
  void bindUbo(int program_id){
         if(!ubo_init){
-            ubo_init = true;
+           ubo_init = true;
            gl_ubo_.setGLBindingPoint(MATERIAL_UBO_INDEX);
            gl_ubo_.setBlockName("Material_ubo");
            gl_ubo_.bindBuffer(program_id);

@@ -28,9 +28,9 @@ RenderData:: RenderData() :
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
                     1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0), shaderID_(0), renderdata_dirty_(true), transform_ubo_(nullptr), bones_ubo_(nullptr){
+                    GL_TRIANGLES), texture_capturer(0), bone_ubo_init_(false), shaderID_(0), renderdata_dirty_(true), transform_ubo_(nullptr), bones_ubo_("mat4 u_bone_matrix[60];"){
          if(use_multiview)
-            uniform_desc_ = " mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
+            uniform_desc_ = "mat4 u_view_[2]; mat4 u_mvp_[2]; mat4 u_mv_[2]; mat4 u_mv_it_[2]; mat4 u_model;";
           else
             uniform_desc_ = " mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model;";
 
