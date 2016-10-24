@@ -58,9 +58,10 @@ import org.gearvrf.R;
            setSegment("VertexTemplate", vtxTemplate);
            setSegment("FragmentSurface", surfaceShader);
            setSegment("FragmentAddLight", addLight);
+           setSegment("VertexSkinShader", skinShader);
            setSegment("VertexShader", vtxShader);
            setSegment("VertexNormalShader", normalShader);
-           setSegment("VertexSkinShader", skinShader);
+
            mHasVariants = true;
            mUsesLights = true;
        }
@@ -80,7 +81,7 @@ import org.gearvrf.R;
            material.setVec4("specular_color",0.0f, 0.0f, 0.0f, 1.0f);
            material.setVec4("emissive_color", 0.0f, 0.0f, 0.0f, 1.0f);
            material.setFloat("specular_exponent", 0.0f);
-
+//          / material.setFloat("line_width", 1.0f);
        }
    }
 

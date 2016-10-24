@@ -336,7 +336,7 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
             LOGE("Your shaders are not multiview");
             throw error;
         }
-        LOGE(" VTX is %s",vertexShader_.c_str());
+        LOGE("vertex shader is %s", vertexShader_.c_str());
 
         if (use_multiview) {
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp_[0]");

@@ -344,11 +344,6 @@ public:
             transform_ubo_->bindBuffer(program_id);
     }
     void bindBonesUbo(int program_id){
-/*        if(bones_ubo_ == nullptr)
-            bones_ubo_ = bindUbo(program_id,BONES_UBO_INDEX,"Bones_ubo","mat4 u_bone_matrix[60];" );
-        else
-            bones_ubo_->bindBuffer(program_id);
-  */
        if(!bone_ubo_init_){
             bone_ubo_init_ = true;
             bones_ubo_.setGLBindingPoint(BONES_UBO_INDEX);
