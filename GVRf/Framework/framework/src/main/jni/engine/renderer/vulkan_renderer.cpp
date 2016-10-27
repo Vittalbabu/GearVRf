@@ -65,8 +65,8 @@ namespace gvr {
                 rdata->material(0)->createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
 
               vulkanCore_->InitLayoutRenderData(rdata);
-                GVR_VK_Vertices& vert = rdata->getVkData().getVkVertices();
-               GVR_VK_Indices& indices1 = rdata->getVkData().getVkIndices();
+                GVR_VK_Vertices& vert = rdata->mesh()->getVkVertices();
+               GVR_VK_Indices& indices1 = rdata->mesh()->getVkIndices();
                 vulkanCore_->InitVertexBuffersFromRenderData(vertices, vert, indices1, indices);
 
                 vulkanCore_->InitDescriptorSetForRenderData( rdata);

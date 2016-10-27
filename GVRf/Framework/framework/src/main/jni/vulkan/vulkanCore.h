@@ -69,6 +69,13 @@ public:
             return m_device;
        }
      void BuildSecondaryCmdBuffer(VkCommandBuffer secondaryCmdBuff, VkCommandBufferBeginInfo secondaryBeginInfo, RenderData* renderData, VkDescriptorSet allDescriptors);
+    const VkQueue& getVkQueue(){
+        return m_queue;
+    }
+     VkCommandBuffer GetTransientCmdBuffer();
+     VkCommandPool& getTransientCmdPool(){
+        return m_commandPoolTrans;
+     }
 
 private:
     std::vector<VkFence> waitFences;
@@ -88,7 +95,7 @@ private:
 
     void InitCommandbuffers();
     void InitTransientCmdPool();
-    VkCommandBuffer GetTransientCmdBuffer();
+
     void InitVertexBuffers();
     void InitLayouts();
     void InitRenderPass();

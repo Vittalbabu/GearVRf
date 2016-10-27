@@ -41,6 +41,16 @@
 #include "engine/memory/gl_delete.h"
 #include "objects/components/event_handler.h"
 namespace gvr {
+
+struct bindingInfo{
+    std::string name;
+	int binding;
+	int index;
+	int size;
+	int offset;
+	int stride;
+
+};
 class Mesh: public HybridObject {
 public:
     Mesh() :
@@ -390,9 +400,12 @@ public:
     void notify_listener(bool dirty){
         listener_->notify_listeners(dirty);
     }
-    GVR_VK_Vertices* getVKVertices(){
-        return vkVertices_;
-    }
+       GVR_VK_Vertices& getVkVertices(){
+            return m_vertices;
+        }
+        GVR_VK_Indices& getVkIndices(){
+            return m_indices;
+        }
 private:
     Mesh(const Mesh& mesh);
     Mesh(Mesh&& mesh);
@@ -400,6 +413,9 @@ private:
 
 
 private:
+    GVR_VK_Indices m_indices;
+    GVR_VK_Vertices m_vertices;
+
     GVR_VK_Vertices* vkVertices_;
     Listener* listener_;
     std::vector<glm::vec3> vertices_;
@@ -431,6 +447,7 @@ private:
     std::map<GLuint, GLVaoVboId> program_ids_;
 
     struct GLAttributeMapping {
+        std::string     data_type;
         GLuint          index;
         GLuint          size;
         GLenum          type;
@@ -458,6 +475,11 @@ private:
     bool bone_data_dirty_;
     GlDelete* deleter_ = nullptr;
     static std::vector<std::string> dynamicAttribute_Names_;
+
+ public:
+     void getAttribData(std::string& descriptor,std::vector<GLAttributeMapping>& bindings, int& total_size);
+     void generateVKBuffers(std::string& descriptor, VkDevice& m_device, VulkanCore* );
+
 };
 }
 #endif

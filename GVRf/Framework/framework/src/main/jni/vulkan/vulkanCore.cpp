@@ -1230,8 +1230,8 @@ void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderDa
     "#version 400 \n"+
     "#extension GL_ARB_separate_shader_objects : enable \n"+
     "#extension GL_ARB_shading_language_420pack : enable \n"+
-    "layout (std140, set = 0, binding = 0) uniform matrix { mat4 mvp; } matrices;\n"+
-    "layout (location = 0) in vec3 pos; \n"+
+    "layout (std140, binding = 0) uniform matrix { mat4 mvp; } matrices;\n"+
+    "in vec3 pos; \n"+
     "void main() { \n"+
     "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n"+
     "}";
@@ -1252,7 +1252,7 @@ void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderDa
     "#version 400 \n"+
     "#extension GL_ARB_separate_shader_objects : enable \n"+
     "#extension GL_ARB_shading_language_420pack : enable \n"+
-    "layout (std140, set = 0, binding = 1) uniform lightEffects {\n"+
+    "layout (std140, binding = 1) uniform lightEffects {\n"+
     "vec4 ambient_color;\n"+
     "vec4 diffuse_color;\n"+
     "vec4 specular_color;\n"+
@@ -1551,18 +1551,18 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
 
         // Bind our vertex buffer, with a 0 offset.
         VkDeviceSize offsets[1] = {0};
-        GVR_VK_Vertices& vert = render_data_vector[j]->getVkData().getVkVertices();
+        GVR_VK_Vertices& vert = render_data_vector[j]->mesh()->getVkVertices();
    //     if(&(vert.buf) != NULL)
    //         LOGE("buf is not nuull");
         vkCmdBindVertexBuffers(cmdBuffer, VERTEX_BUFFER_BIND_ID, 1, &(vert.buf), offsets);
 
         // Bind triangle index buffer
-                vkCmdBindIndexBuffer(cmdBuffer, (render_data_vector[j]->getVkData().getVkIndices()).buffer, 0, VK_INDEX_TYPE_UINT16);
+                vkCmdBindIndexBuffer(cmdBuffer, (render_data_vector[j]->mesh()->getVkIndices()).buffer, 0, VK_INDEX_TYPE_UINT16);
                 // Issue a draw command, with our 3 vertices.
                 //vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
                 //vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->m_indices).count, 1, 0, 0, 1);
        //         LOGI("Vulkan number of indeices %d", (render_data_vector[j]->m_indices).count);
-                vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->getVkData().getVkIndices()).count, 1, 0, 0, 1);
+                vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->mesh()->getVkIndices()).count, 1, 0, 0, 1);
          }
          }
         // Now our render pass has ended.

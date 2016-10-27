@@ -231,7 +231,7 @@ void   UniformBlock::parseDescriptor()
     TotalSize = 0;
     while (*p)
     {
-        while (std::isspace(*p))
+        while (std::isspace(*p) || *p == ',' )
             ++p;
         type_start = p;
         if (*p == 0)

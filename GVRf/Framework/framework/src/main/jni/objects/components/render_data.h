@@ -86,12 +86,7 @@ public:
     VkDescriptorSet& getDescriptorSet(){
         return m_descriptorSet;
     }
-    GVR_VK_Vertices& getVkVertices(){
-        return m_vertices;
-    }
-    GVR_VK_Indices& getVkIndices(){
-        return m_indices;
-    }
+
     VkPipelineLayout  m_pipelineLayout;
     // Vulkan
     VulkanUniformBlock transform_UBO;
@@ -101,8 +96,6 @@ public:
     VkDescriptorSet m_descriptorSet;
 
 private:
-    GVR_VK_Indices m_indices;
-    GVR_VK_Vertices m_vertices;
 
     VkDescriptorPool m_descriptorPool;
     VkDescriptorSetLayout m_descriptorLayout;
