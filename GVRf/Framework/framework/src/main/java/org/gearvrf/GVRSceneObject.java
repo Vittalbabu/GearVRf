@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 
 import org.gearvrf.GVRMaterial.GVRShaderType;
 import org.gearvrf.GVRMaterial.GVRShaderType.Texture;
+import org.gearvrf.asynchronous.GVRCompressedTexture;
 import org.gearvrf.script.IScriptable;
 import org.gearvrf.utility.Log;
 import org.joml.Vector3f;
@@ -224,7 +225,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
     public GVRSceneObject(GVRContext gvrContext, GVRAndroidResource mesh,
             GVRAndroidResource texture) {
         this(gvrContext, gvrContext.loadFutureMesh(mesh), gvrContext
-                .loadFutureTexture(texture));
+                .getAssetLoader().loadFutureTexture(texture));
     }
 
     /**
@@ -620,14 +621,14 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
     public GVRCollider getCollider() {
         return (GVRCollider) getComponent(GVRCollider.getComponentType());
     }
-    
+
     /**
      * Detach the object's current {@link GVRCollider}.
      */
     public void detachCollider() {
         detachComponent(GVRCollider.getComponentType());
     }
-    
+
     /**
      * Attach a default {@link GVREyePointeeHolder} to the object.
      * 
@@ -643,7 +644,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      *         <em>and</em> you have called either
      *         {@link GVRRenderData#setMesh(GVRMesh)} or
      *         {@link GVRRenderData#setMesh(Future)}; {@code false}, otherwise.
-     * @deprecated use attachComponent(new GVRMeshCollider(GVRContext))       
+     * @deprecated use attachComponent(new GVRMeshCollider(GVRContext))
      */
     public boolean attachEyePointeeHolder() {
         GVREyePointeeHolder holder = new GVREyePointeeHolder(getGVRContext());
@@ -756,6 +757,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
         mChildren.add(child);
         child.mParent = this;
         NativeSceneObject.addChildObject(getNative(), child.getNative());
+        child.onNewParentObject(this);
         return true;
     }
 
@@ -770,7 +772,31 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
         mChildren.remove(child);
         child.mParent = null;
         NativeSceneObject.removeChildObject(getNative(), child.getNative());
+        child.onRemoveParentObject(this);
     }
+
+    /**
+     * Called when the scene object gets a new parent.
+     *
+     * @param parent New parent of this scene object.
+     */
+    protected void onNewParentObject(GVRSceneObject parent) {
+        for (GVRComponent comp : mComponents.values()) {
+            comp.onNewOwnersParent(parent);
+        }
+    }
+
+    /**
+     * Called when is removed the parent of the scene object.
+     *
+     * @param parent Old parent of this scene object.
+     */
+    protected void onRemoveParentObject(GVRSceneObject parent) {
+        for (GVRComponent comp : mComponents.values()) {
+            comp.onRemoveOwnersParent(parent);
+        }
+    }
+
     /**
      * Add the owner of {@code childComponent} as a child of this object. (owner object of the
      * Adding a child will increase the
@@ -941,7 +967,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
 
     /**
      * Check if {@code otherObject} is colliding with this object.
-     * 
+     *
      * @param otherObject
      *            {@link GVRSceneObject Object} to check for collision with this
      *            object.
@@ -1012,8 +1038,22 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      */
     boolean intersectsBoundingVolume(float ox, float oy, float oz, float dx,
             float dy, float dz) {
-        return NativeSceneObject.intersectsBoundingVolume(getNative(), ox, oy,
+        return NativeSceneObject.rayIntersectsBoundingVolume(getNative(), ox, oy,
                 oz, dx, dy, dz);
+    }
+
+    /**
+     * Tests this {@link GVRSceneObject}'s hierarchical bounding volume against
+     * the provided {@link GVRSceneObject}'s hierarchical bounding volume.
+     *
+     * @param otherObject the {@link GVRSceneObject} to check for intersection.
+     * @return <code>true</code> if the object intersects with the
+     * {@link GVRSceneObject}s hierarchical bounding volume,
+     * <code>false</code> otherwise.
+     */
+    boolean intersectsBoundingVolume(GVRSceneObject otherObject) {
+        return NativeSceneObject.objectIntersectsBoundingVolume(getNative(), otherObject.getNative
+                ());
     }
 
     /**
@@ -1334,8 +1374,10 @@ class NativeSceneObject {
 
     static native void setEnable(long sceneObject, boolean flag);
     
-    static native boolean intersectsBoundingVolume(long sceneObject, float rox,
+    static native boolean rayIntersectsBoundingVolume(long sceneObject, float rox,
             float roy, float roz, float rdx, float rdy, float rdz);
+
+    static native boolean objectIntersectsBoundingVolume(long sceneObject, long otherObject);
 
     static native void setLODRange(long sceneObject, float minRange, float maxRange);
     static native float getLODMinRange(long sceneObject);

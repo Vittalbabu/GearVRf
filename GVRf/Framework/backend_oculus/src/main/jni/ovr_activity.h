@@ -17,7 +17,6 @@
 #ifndef ACTIVITY_JNI_H
 #define ACTIVITY_JNI_H
 
-#include "ovr_view_manager.h"
 #include "ovr_framebufferobject.h"
 #include "objects/components/camera.h"
 #include "objects/components/camera_rig.h"
@@ -27,7 +26,7 @@
 
 namespace gvr {
 
-class OvrCameraRig;
+class CameraRig;
 
 class GVRActivity
 {
@@ -37,11 +36,9 @@ public:
 
     bool updateSensoredScene();
     void setCameraRig(jlong cameraRig);
+    void setViewManager(jobject viewManager);
 
-    GVRViewManager viewManager_;
-
-    Camera* camera = nullptr;
-    OvrCameraRig* cameraRig_ = nullptr;   // this needs a global ref on the java object; todo
+    CameraRig* cameraRig_ = nullptr;   // this needs a global ref on the java object; todo
     bool sensoredSceneUpdated_ = false;
     HeadRotationProvider headRotationProvider_;
 
@@ -49,7 +46,7 @@ private:
     JNIEnv* envMainThread_ = nullptr;           // for use by the Java UI thread
 
     jclass activityClass_ = nullptr;            // must be looked up from main thread or FindClass() will fail
-    jclass activityRenderingCallbacksClass_ = nullptr;
+    jclass viewManagerClass_ = nullptr;
 
     jmethodID onDrawEyeMethodId = nullptr;
     jmethodID updateSensoredSceneMethodId = nullptr;
@@ -70,6 +67,7 @@ private:
     ovrHeadModelParms oculusHeadModelParms_;
 
     bool mResolveDepthConfiguration = false;
+    bool mUsingMultiview = false;
     int mWidthConfiguration = 0, mHeightConfiguration = 0, mMultisamplesConfiguration = 0;
     ovrTextureFormat mColorTextureFormatConfiguration = VRAPI_TEXTURE_FORMAT_NONE;
     ovrTextureFormat mDepthTextureFormatConfiguration = VRAPI_TEXTURE_FORMAT_NONE;
@@ -81,6 +79,8 @@ private:
     void initializeOculusJava(JNIEnv& env, ovrJava& oculusJava);
     void beginRenderingEye(const int eye);
     void endRenderingEye(const int eye);
+
+    jobject viewManager_ = nullptr;
 
 public:
     void onSurfaceCreated(JNIEnv& env);
@@ -94,6 +94,7 @@ public:
     void showConfirmQuit();
 
     bool isHmtConnected() const;
+    bool usingMultiview() const;
     ovrMobile* getOculusContext() { return oculusMobile_; }
     ovrHeadModelParms* getOculusHeadModelParms() { return &oculusHeadModelParms_; }
 };

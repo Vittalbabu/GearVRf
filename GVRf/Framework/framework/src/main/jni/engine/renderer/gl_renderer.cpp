@@ -220,6 +220,10 @@ void GLRenderer::renderShadowMap(RenderState& rstate, Camera* camera, GLuint fra
 
 	cullFromCamera(rstate.scene, camera, rstate.shader_manager, scene_objects);
 
+    GLint drawFbo = 0, readFbo = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
+
 	GL(glBindFramebuffer(GL_FRAMEBUFFER, framebufferId));
     GL(glViewport(rstate.viewportX, rstate.viewportY, rstate.viewportWidth, rstate.viewportHeight));
     glClearColor(0,0,0,1);
@@ -229,6 +233,9 @@ void GLRenderer::renderShadowMap(RenderState& rstate, Camera* camera, GLuint fra
             it != render_data_vector.end(); ++it) {
         GL(renderRenderData(rstate, *it));
     }
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
 }
 void GLRenderer::renderCamera(Scene* scene, Camera* camera,
         ShaderManager* shader_manager,
@@ -292,23 +299,15 @@ bool GLRenderer::checkTextureReady(Material* material) {
 
     //Skip custom shader here since they are rendering multiple textures
     //Check the textures later inside the rendering pass inside the custom shader
-    if (shaderType < 0
-            || shaderType >= Material::ShaderType::BUILTIN_SHADER_SIZE) {
+    if (shaderType < 0 || shaderType >= Material::ShaderType::BUILTIN_SHADER_SIZE)
+    {
         return true;
     }
-    //For regular shaders, check its main texture
-    else if (shaderType != Material::ShaderType::ASSIMP_SHADER) {
+    else
+    {
         return material->isMainTextureReady();
     }
-    //For ASSIMP_SHADER as diffused texture, check its main texture
-    //For non diffused texture, the rendering doesn't take any textures and needs to be skipped
-    else if (ISSET(material->get_shader_feature_set(), AS_DIFFUSE_TEXTURE)) {
-        return material->isMainTextureReady();
-    }
-    else {
-        return true;
-    }
-}
+ }
 
 void GLRenderer::occlusion_cull(Scene* scene,
         std::vector<SceneObject*>& scene_objects, ShaderManager *shader_manager,

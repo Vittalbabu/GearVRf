@@ -15,10 +15,6 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 19
-
-        ndk {
-            moduleName "gvrf"
-        }
     }
 
     task copyOculusFiles(type: Copy) {
@@ -43,7 +39,22 @@ android {
         }
     }
 
-    task buildNative(type: Exec) {
+    task buildInfo(type:Exec){
+        commandLine 'git log -n 1 --format=%H'.split()
+        def source = new File(projectDir.absolutePath + '/src/main/jni', 'buildinfo.cpp')
+        standardOutput = new ByteArrayOutputStream()
+
+        doLast {
+            source.text = '#include "util/gvr_log.h"\n'
+            source.text += '#include <jni.h>\n\n'
+            source.text += 'jint JNI_OnLoad(JavaVM *vm, void *reserved) {\n'
+            source.text += '    LOGI("BACKEND_OCULUS HEAD: '+ standardOutput.toString().trim() + '");\n'
+            source.text += '    return JNI_VERSION_1_6;\n'
+            source.text += '}'
+        }
+    }
+
+    task buildNative(type: Exec, dependsOn: buildInfo) {
         if (rootProject.hasProperty("OVR_MOBILE_SDK")) {
             environment 'OVR_MOBILE_SDK', rootProject.property("OVR_MOBILE_SDK")
         } else {
@@ -65,6 +76,7 @@ android {
             environment 'OVR_MOBILE_SDK', rootProject.property("OVR_MOBILE_SDK")
         }
 
+        environment 'PROJECT_ROOT', rootProject.projectDir
         commandLine ndkbuild, '-C', file('src/main').absolutePath, '-j', Runtime.runtime.availableProcessors()//, 'NDK_DEBUG=1'
     }
 
@@ -74,8 +86,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
-        }
-        releaseToGitHub {
         }
     }
 
@@ -103,6 +113,7 @@ android {
         if (rootProject.hasProperty("OVR_MOBILE_SDK")) {
             environment 'OVR_MOBILE_SDK', rootProject.property("OVR_MOBILE_SDK")
         }
+        environment 'PROJECT_ROOT', rootProject.projectDir
         commandLine ndkbuild, '-C', file('src/main').absolutePath, '-j', Runtime.runtime.availableProcessors(), 'clean'
     }
 
@@ -112,25 +123,12 @@ android {
         compileTask -> compileTask.dependsOn buildNative, copyOculusFiles
     }
 
-    task deleteAllFromGitHub(type: Exec) {
-        onlyIf {
-            System.env['RELEASE_ID'] != null
-        }
-        onlyIf {
-            System.env['ACCESS_TOKEN'] != null
-        }
-
-        commandLine '../../tools/delete_all_from_github'
-    }
     task uploadToGitHub(type: Exec) {
         onlyIf {
-            System.env['RELEASE_ID'] != null
-        }
-        onlyIf {
             System.env['ACCESS_TOKEN'] != null
         }
 
-        commandLine '../../tools/upload_to_github', file('build/outputs/aar/backend_oculus-releaseToGitHub.aar').absolutePath
+        commandLine '../../tools/upload_to_github', file('build/outputs/aar/backend_oculus-debug.aar').absolutePath
     }
     uploadToGitHub.doFirst {
         println('uploading to github')
@@ -140,8 +138,6 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile fileTree(include: ['*.jar'], dir: 'src/main/libs')
-    compile(name: 'google-vr-base', ext: 'aar')
-    compile(name: 'google-vr-common', ext: 'aar')
     compile project(':framework')
 }
 
@@ -155,28 +151,49 @@ assembleDebug {}.doLast {
             if (libsDir.exists()) {
                 from 'build/outputs/aar'
                 into libsDir
-                include 'backend_oculus-debug.aar'
-                rename('backend_oculus-debug.aar', 'backend-debug.aar')
+                include '*-debug.aar'
             } else {
                 println "Cannot copy aar files, libs directory does not exist!"
             }
         }
     }
     tasks.copyAARFiles.execute()
+
+    def testsLibs = "../../../../GearVRf-Tests/gearvrf-libs/"
+    if (file(testsLibs).exists()) {
+        copy {
+            from 'build/outputs/aar'
+            into testsLibs
+            include 'backend_oculus-debug.aar'
+        }
+    }
+
+    def gearvrfLibs = project.rootDir.absolutePath + "/../gearvrf-libs"
+    if (!file(gearvrfLibs).exists()) {
+        file(gearvrfLibs).mkdir();
+    }
+    copy {
+        from 'build/outputs/aar'
+        into gearvrfLibs
+        include 'backend_oculus-debug.aar'
+    }
 }
 
-assembleReleaseToGitHub {}.doLast {
-    println 'removing oculus binaries'
-    exec {
-        commandLine = ['zip', '-d', 'build/outputs/aar/backend_oculus-releaseToGitHub.aar', 'libs/VrApi.jar']
-    }
-    exec {
-        commandLine = ['zip', '-d', 'build/outputs/aar/backend_oculus-releaseToGitHub.aar', 'libs/SystemUtils.jar']
-    }
-    exec {
-        commandLine = ['zip', '-d', 'build/outputs/aar/backend_oculus-releaseToGitHub.aar', 'jni/armeabi-v7a/libvrapi.so']
+assembleDebug {}.doLast {
+    if (System.env['ACCESS_TOKEN'] == null) {
+        return
     }
 
-    deleteAllFromGitHub.execute();
+    println 'removing oculus binaries'
+    exec {
+        commandLine = ['zip', '-d', 'build/outputs/aar/backend_oculus-debug.aar', 'libs/VrApi.jar']
+    }
+    exec {
+        commandLine = ['zip', '-d', 'build/outputs/aar/backend_oculus-debug.aar', 'libs/SystemUtils.jar']
+    }
+    exec {
+        commandLine = ['zip', '-d', 'build/outputs/aar/backend_oculus-debug.aar', 'jni/armeabi-v7a/libvrapi.so']
+    }
+
     uploadToGitHub.execute();
 }

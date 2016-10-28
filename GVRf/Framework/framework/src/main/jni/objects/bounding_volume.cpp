@@ -24,6 +24,7 @@ namespace gvr {
 
 BoundingVolume::BoundingVolume() {
     reset();
+    scratch_abs_matrix = glm::mat4();
 }
 
 void BoundingVolume::reset() {
@@ -61,11 +62,16 @@ void BoundingVolume::expand(const glm::vec3 point) {
         max_corner_[2] = point[2];
     }
 
+    updateCenterAndRadius();
+}
+
+void BoundingVolume::updateCenterAndRadius() {
     center_ = (min_corner_ + max_corner_) * 0.5f;
-    if (min_corner_ == max_corner_)
-    	radius_ = 0;
-    else
-    	radius_ = glm::length(max_corner_ - min_corner_) * 0.5f;
+    if (min_corner_ == max_corner_) {
+        radius_ = 0;
+    } else {
+        radius_ = glm::length(max_corner_ - min_corner_) * 0.5f;
+    }
 }
 
 /*
@@ -130,24 +136,31 @@ void BoundingVolume::expand(const BoundingVolume &volume) {
     expand(volume.max_corner());
 }
 
-void BoundingVolume::transform(const BoundingVolume &in_volume,
-        glm::mat4 matrix) {
+/*
+ * Uses the technique described here:
+ * http://zeuxcg.org/2010/10/17/aabb-from-obb-with-component-wise-abs/
+ */
+void BoundingVolume::transform(const BoundingVolume &in_volume, glm::mat4 matrix) {
     // Make sure the bounding volume itself is cleared before transformation
     reset();
 
-    glm::vec4 min_corner(in_volume.min_corner(), 1.0f);
-    glm::vec4 max_corner(in_volume.max_corner(), 1.0f);
-    glm::vec4 transformed_min_corner = matrix * min_corner;
-    glm::vec4 transformed_max_corner = matrix * max_corner;
+    glm::vec3 center = (in_volume.min_corner() + in_volume.max_corner()) / 2.0f;
+    glm::vec3 extent = (in_volume.max_corner() - in_volume.min_corner()) / 2.0f;
 
-    glm::vec3 transformed_min(transformed_min_corner.x, transformed_min_corner.y,
-            transformed_min_corner.z);
-    glm::vec3 transformed_max(transformed_max_corner.x, transformed_max_corner.y,
-            transformed_max_corner.z);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            scratch_abs_matrix[i, j] = abs(matrix[i, j]);
+        }
+    }
 
-    // expand with the new corners
-    expand(transformed_min);
-    expand(transformed_max);
+    glm::vec4 new_center = matrix * glm::vec4(center, 1.0f);
+    glm::vec4 new_extent = scratch_abs_matrix * glm::vec4(extent, 0.0f);
+
+    glm::vec4 bb_min = new_center - new_extent;
+    glm::vec4 bb_max = new_center + new_extent;
+
+    expand(glm::vec3(bb_min.x, bb_min.y, bb_min.z));
+    expand(glm::vec3(bb_max.x, bb_max.y, bb_max.z));
 }
 
 bool BoundingVolume::intersect(glm::vec3& hitPoint, const glm::vec3& rayStart, const glm::vec3& rayDir)  const

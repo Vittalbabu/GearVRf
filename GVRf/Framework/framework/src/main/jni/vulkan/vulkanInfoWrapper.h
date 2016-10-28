@@ -27,8 +27,11 @@ struct GVR_VK_Vertices {
     VkBuffer buf;
     VkDeviceMemory mem;
     VkPipelineVertexInputStateCreateInfo vi;
-    VkVertexInputBindingDescription*      vi_bindings;
-    VkVertexInputAttributeDescription*    vi_attrs;
+       VkVertexInputBindingDescription      vi_bindings[6];
+        VkVertexInputAttributeDescription    vi_attrs[6];
+
+ //   VkVertexInputBindingDescription*      vi_bindings;
+ //   VkVertexInputAttributeDescription*    vi_attrs;
 };
 
 struct GVR_Uniform {

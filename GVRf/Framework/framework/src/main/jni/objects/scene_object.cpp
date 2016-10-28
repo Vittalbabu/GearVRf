@@ -27,10 +27,12 @@
 #include "mesh.h"
 
 namespace gvr {
+bool SceneObject::using_lod_ = false;
+
 SceneObject::SceneObject() :
         HybridObject(), name_(""), children_(), visible_(true), transform_dirty_(false), in_frustum_(
                 false),  enabled_(true),query_currently_issued_(false), vis_count_(0), lod_min_range_(
-                0), lod_max_range_(MAXFLOAT), cull_status_(false), using_lod_(false), bounding_volume_dirty_(
+                0), lod_max_range_(MAXFLOAT), cull_status_(false), bounding_volume_dirty_(
                 true) {
 
     // Occlusion query setup
@@ -295,6 +297,27 @@ bool SceneObject::intersectsBoundingVolume(float rox, float roy, float roz,
     }
 
     return true;
+}
+
+/**
+ * Test this scene object's HBV against the HBV of the provided scene object.
+ */
+bool SceneObject::intersectsBoundingVolume(SceneObject *scene_object) {
+    BoundingVolume this_bounding_volume_ = getBoundingVolume();
+    BoundingVolume that_bounding_volume = scene_object->getBoundingVolume();
+
+    glm::vec3 this_min_corner = this_bounding_volume_.min_corner();
+    glm::vec3 this_max_corner = this_bounding_volume_.max_corner();
+
+    glm::vec3 that_min_corner = that_bounding_volume.min_corner();
+    glm::vec3 that_max_corner = that_bounding_volume.max_corner();
+
+    return  (this_max_corner.x >= that_min_corner.x) &&
+            (this_max_corner.y >= that_min_corner.y) &&
+            (this_max_corner.z >= that_min_corner.z) &&
+            (this_min_corner.x <= that_max_corner.x) &&
+            (this_min_corner.y <= that_max_corner.y) &&
+            (this_min_corner.z <= that_max_corner.z);
 }
 
 void SceneObject::dirtyHierarchicalBoundingVolume() {

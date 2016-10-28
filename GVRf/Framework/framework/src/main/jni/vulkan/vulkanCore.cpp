@@ -635,7 +635,10 @@ void VulkanCore::InitVertexBuffersFromRenderData(const std::vector<glm::vec3>& v
 
     VkResult   err;
     bool   pass;
-
+//   VkVertexInputBindingDescription*      vi_bindings;
+//    VkVertexInputAttributeDescription*    vi_attrs;
+//    m_vertices.vi_bindings = new VkVertexInputBindingDescription[2];
+ //   m_vertices.vi_attrs = new VkVertexInputAttributeDescription[2];
     // Our m_vertices member contains the types required for storing
     // and defining our vertex buffer within the graphics pipeline.
     memset(&m_vertices, 0, sizeof(m_vertices));

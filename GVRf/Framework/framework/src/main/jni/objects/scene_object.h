@@ -141,6 +141,7 @@ public:
     bool isColliding(SceneObject* scene_object);
     bool intersectsBoundingVolume(float rox, float roy, float roz, float rdx,
             float rdy, float rdz);
+    bool intersectsBoundingVolume(SceneObject *scene_object);
 
     void setLODRange(float minRange, float maxRange) {
         lod_min_range_ = minRange * minRange;
@@ -179,7 +180,7 @@ private:
     std::vector<SceneObject*> children_;
     float lod_min_range_;
     float lod_max_range_;
-    bool using_lod_;
+    static bool using_lod_;
     bool cull_status_;
     bool transform_dirty_;
     BoundingVolume transformed_bounding_volume_;

@@ -21,7 +21,22 @@ android {
         }
     }
 
-    task buildNative(type: Exec) {
+    task buildInfo(type:Exec){
+        commandLine 'git log -n 1 --format=%H'.split()
+        def source = new File(projectDir.absolutePath + '/src/main/jni', 'buildinfo.cpp')
+        standardOutput = new ByteArrayOutputStream()
+
+        doLast {
+            source.text = '#include "util/gvr_log.h"\n'
+            source.text += '#include <jni.h>\n\n'
+            source.text += 'jint JNI_OnLoad(JavaVM *vm, void *reserved) {\n'
+            source.text += '    LOGI("FRAMEWORK HEAD: '+ standardOutput.toString().trim() + '");\n'
+            source.text += '    return JNI_VERSION_1_6;\n'
+            source.text += '}'
+        }
+    }
+
+    task buildNative(type: Exec, dependsOn: buildInfo)  {
         def ndkbuild = ""
         if (rootProject.hasProperty("ANDROID_NDK_HOME")) {
             ndkbuild = rootProject.property("ANDROID_NDK_HOME")
@@ -33,6 +48,9 @@ android {
             ndkbuild += 'ndk-build'
         }
 
+        if (rootProject.hasProperty("ARM64")) {
+            environment 'ARM64', "true"
+        }
         commandLine ndkbuild, '-C', file('src/main').absolutePath, '-j', Runtime.runtime.availableProcessors()//, 'NDK_DEBUG=1'
     }
 
@@ -42,8 +60,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-project.txt'
-        }
-        releaseToGitHub {
         }
     }
 
@@ -68,6 +84,9 @@ android {
             ndkbuild += 'ndk-build'
         }
 
+        if (rootProject.hasProperty("ARM64")) {
+            environment 'ARM64', "true"
+        }
         commandLine ndkbuild, '-C', file('src/main').absolutePath, '-j', Runtime.runtime.availableProcessors(), 'clean'
     }
 
@@ -79,13 +98,10 @@ android {
 
     task uploadToGitHub(type: Exec) {
         onlyIf {
-            System.env['RELEASE_ID'] != null
-        }
-        onlyIf {
             System.env['ACCESS_TOKEN'] != null
         }
 
-        commandLine '../../tools/upload_to_github', file('build/outputs/aar/framework-releaseToGitHub.aar').absolutePath
+        commandLine '../../tools/upload_to_github', file('build/outputs/aar/framework-debug.aar').absolutePath
     }
     uploadToGitHub.doFirst {
         println('uploading to github')
@@ -107,15 +123,33 @@ assembleDebug {}.doLast {
             if (libsDir.exists()) {
                 from 'build/outputs/aar'
                 into libsDir
-                include '**/*.aar'
+                include '*-debug.aar'
             } else {
                 println "Cannot copy aar files, libs directory does not exist!"
             }
         }
     }
     tasks.copyAARFiles.execute()
-}
 
-assembleReleaseToGitHub {}.doLast {
-    uploadToGitHub.execute();
+    def testsLibs = "../../../../GearVRf-Tests/gearvrf-libs/"
+    if (file(testsLibs).exists()) {
+        copy {
+            from 'build/outputs/aar'
+            into testsLibs
+            include '*-debug.aar'
+        }
+    }
+    def gearvrfLibs = project.rootDir.absolutePath + "/../gearvrf-libs"
+    if (!file(gearvrfLibs).exists()) {
+        file(gearvrfLibs).mkdir();
+    }
+    copy {
+        from 'build/outputs/aar'
+        into gearvrfLibs
+        include '*-debug.aar'
+    }
+
+    if (System.env['ACCESS_TOKEN'] != null) {
+        uploadToGitHub.execute();
+    }
 }
