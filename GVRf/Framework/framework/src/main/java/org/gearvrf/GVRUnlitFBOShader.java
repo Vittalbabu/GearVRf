@@ -46,7 +46,7 @@ public class GVRUnlitFBOShader extends GVRShader
         "varying vec2 diffuse_coord;\n" +
         "void main()\n" +
         "{\n" +
-        "  vec4 color = texture2D(u_texture, diffuse_coord);" +
+        "  vec4 color = texture2D(u_texture, diffuse_coord);\n" +
         "  gl_FragColor = vec4(color.r * u_color.r * u_opacity, color.g * u_color.g * u_opacity, color.b * u_color.b * u_opacity, color.a * u_opacity);\n" +
         "}\n";
 
@@ -55,5 +55,11 @@ public class GVRUnlitFBOShader extends GVRShader
         super("float3 u_color float u_opacity", "sampler2D u_texture", "float3 a_position float2 a_texcoord");
         setSegment("FragmentTemplate", fragmentShader);
         setSegment("VertexTemplate", vertexShader);
+    }
+
+    protected void setMaterialDefaults(GVRShaderData material)
+    {
+        material.setVec3("u_color", 0.5f, 0.5f, 0.5f);
+        material.setFloat("u_opacity", 1.0f);
     }
 }
