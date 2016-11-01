@@ -40,10 +40,17 @@ import static org.gearvrf.utility.Assert.checkStringNotNullOrEmpty;
  */
 public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
     private static final String TAG = Log.tag(GVRPostEffect.class);
-    protected final Map<String, GVRTexture> textures = new HashMap<String, GVRTexture>();
+
     protected GVRShaderId mShaderId;
     protected String mUniformDescriptor = null;
     protected String mTextureDescriptor = null;
+    private static class TextureInfo
+    {
+        public GVRTexture Texture;
+        public String     TexCoordAttr;
+        public String     ShaderVar;
+    };
+    final private Map<String, TextureInfo> textures = new HashMap();
 
     /** Selectors for pre-built post effect shaders. */
     public abstract static class GVRPostEffectShaderType {
@@ -58,7 +65,6 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
             public static final String B = "b";
             public static final String FACTOR = "factor";
         }
-
         /** Selects a post-effect shader that flips the scene horizontally. */
         public abstract static class HorizontalFlip {
             public static final GVRShaderId ID = new GVRShaderId(GVRHorizontalFlipShader.class);
@@ -128,18 +134,30 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
     }
 
     public GVRTexture getTexture(String key) {
-        return textures.get(key);
+        TextureInfo tinfo = textures.get(key);
+        if (tinfo != null)
+        {
+            return tinfo.Texture;
+        }
+        return null;
     }
 
+
     public void setTexture(String key, GVRTexture texture) {
-        checkKeyIsTexture(key);
-        textures.put(key, texture);
-        if (texture != null) {
+        checkStringNotNullOrEmpty("key", key);
+        TextureInfo tinfo = textures.get(key);
+        if (tinfo == null)
+        {
+            tinfo = new TextureInfo();
+            tinfo.Texture = texture;
+            textures.put(key, tinfo);
+        }
+        else
+        {
+            tinfo.Texture = texture;
+        }
+        if (texture != null)
             NativeShaderData.setTexture(getNative(), key, texture.getNative());
-        }
-        else {
-            NativeShaderData.setTexture(getNative(), key, 0);
-        }
     }
 
     public void setTexture(final String key, final Future<GVRTexture> texture) {
@@ -157,13 +175,15 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
                     public void loaded(GVRTexture texture,
                                        GVRAndroidResource ignored) {
                         setTexture(key, texture);
-                        Log.d(TAG, "Finish loading and setting texture %s", texture);
+                        Log.d(TAG, "Finish loading and setting texture %s",
+                                texture);
                     }
 
                     @Override
                     public void failed(Throwable t,
                                        GVRAndroidResource androidResource) {
-                        Log.e(TAG, "Error loading texture %s; exception: %s", texture, t.getMessage());
+                        Log.e(TAG, "Error loading texture %s; exception: %s",
+                                texture, t.getMessage());
                     }
 
                     @Override
@@ -172,8 +192,8 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
                     }
                 };
 
-                getGVRContext().loadTexture(callback,
-                        ((GVRAsynchronousResourceLoader.FutureResource<GVRTexture>) texture).getResource());
+                getGVRContext().getAssetLoader().loadTexture(
+                        ((GVRAsynchronousResourceLoader.FutureResource<GVRTexture>) texture).getResource(), callback);
             } else {
                 Threads.spawn(new Runnable() {
                     @Override
@@ -261,6 +281,58 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
         if (!mUniformDescriptor.contains(key)) {
             throw Exceptions.IllegalArgument("key " + key + " not in material");
         }
+    }
+
+    /**
+     *  Designate the vertex attribute and shader variable for the texture coordinates
+     *  associated with the named texture.
+     * @param texName name of texture
+     * @param texCoordAttr name of vertex attribute with texture coordinates.
+     * @param shaderVarName name of shader variable to get texture coordinates.
+     */
+    public void setTexCoord(String texName, String texCoordAttr, String shaderVarName)
+    {
+        GVRPostEffect.TextureInfo tinfo = textures.get(texName);
+        if (tinfo == null)
+        {
+            tinfo = new GVRPostEffect.TextureInfo();
+            textures.put(texName, tinfo);
+        }
+        tinfo.TexCoordAttr = texCoordAttr;
+        tinfo.ShaderVar = shaderVarName;
+    }
+
+    /**
+     * Gets the name of the vertex attribute containing the texture
+     * coordinates for the named texture.
+     * @param texName name of texture
+     * @return name of texture coordinate vertex attribute
+     */
+    public String getTexCoordAttr(String texName)
+    {
+        GVRPostEffect.TextureInfo tinfo = textures.get(texName);
+        if (tinfo != null)
+        {
+            return tinfo.TexCoordAttr;
+        }
+        return null;
+    }
+
+
+    /**
+     * Gets the name of the shader variable to get the texture
+     * coordinates for the named texture.
+     * @param texName name of texture
+     * @return name of shader variable
+     */
+    public String getTexCoordShaderVar(String texName)
+    {
+        GVRPostEffect.TextureInfo tinfo = textures.get(texName);
+        if (tinfo != null)
+        {
+            return tinfo.ShaderVar;
+        }
+        return null;
     }
 }
 

@@ -52,26 +52,26 @@ android {
         }
     }
 
-//    task cleanNative(type: Exec) {
-//        def ndkbuild = ""
-//        if (rootProject.hasProperty("ANDROID_NDK_HOME")) {
-//            ndkbuild = rootProject.property("ANDROID_NDK_HOME")
-//            ndkbuild += '/'
-//        }
-//        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-//            ndkbuild += 'ndk-build.cmd'
-//        } else {
-//            ndkbuild += 'ndk-build'
-//        }
-//
-//        commandLine ndkbuild, '-C', file('src/main').absolutePath, '-j', Runtime.runtime.availableProcessors(), 'clean'
-//    }
-//
-//    clean.dependsOn 'cleanNative'
-//
-//    tasks.withType(JavaCompile) {
-//        compileTask -> compileTask.dependsOn buildNative
-//    }
+    task uploadToGitHub(type: Exec) {
+        onlyIf {
+            System.env['ACCESS_TOKEN'] != null
+        }
+
+        commandLine '../../tools/upload_to_github', file('build/outputs/aar/backend_daydream-debug.aar').absolutePath
+    }
+    uploadToGitHub.doFirst {
+        println('uploading to github')
+    }
+    task deleteAllFromGitHub(type: Exec) {
+        onlyIf {
+            System.env['ACCESS_TOKEN'] != null
+        }
+
+        commandLine '../../tools/delete_all_from_github'
+    }
+    deleteAllFromGitHub.doFirst {
+        println('deleting all assets from github release')
+    }    
 }
 
 dependencies {
@@ -99,4 +99,28 @@ assembleDebug {}.doLast {
         }
     }
     tasks.copyAARFiles.execute()
+
+    def testsLibs = "../../../../GearVRf-Tests/gearvrf-libs/"
+    if (file(testsLibs).exists()) {
+        copy {
+            from 'build/outputs/aar'
+            into testsLibs
+            include '*-debug.aar'
+        }
+    }
+
+    def gearvrfLibs = project.rootDir.absolutePath + "/../gearvrf-libs"
+    if (!file(gearvrfLibs).exists()) {
+        file(gearvrfLibs).mkdir();
+    }   
+    copy {
+        from 'build/outputs/aar'
+        into gearvrfLibs
+        include '*-debug.aar'
+    }
+
+    if (System.env['ACCESS_TOKEN'] != null) {
+        deleteAllFromGitHub.execute();
+        uploadToGitHub.execute();
+    }
 }

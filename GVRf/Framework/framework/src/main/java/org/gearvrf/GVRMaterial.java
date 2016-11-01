@@ -68,9 +68,11 @@ import android.graphics.Color;
  * material.setMainTexture(texture);
  * </pre>
  */
-public class GVRMaterial extends GVRPostEffect
+public class GVRMaterial extends  GVRPostEffect
 {
+
     private static final String TAG = Log.tag(GVRMaterial.class);
+
     private int mShaderFeatureSet;
     static final String MAIN_TEXTURE = "u_texture";
 
@@ -556,6 +558,7 @@ public class GVRMaterial extends GVRPostEffect
     }
 
 
+
     public void setTexture(final String key, final Future<GVRTexture> texture) {
         if (texture.isDone()) {
             try {
@@ -588,8 +591,8 @@ public class GVRMaterial extends GVRPostEffect
                 }
             };
 
-                getGVRContext().loadTexture(callback,
-                        ((FutureResource<GVRTexture>) texture).getResource());
+                getGVRContext().getAssetLoader().loadTexture(
+                        ((FutureResource<GVRTexture>) texture).getResource(), callback);
             } else {
                 Threads.spawn(new Runnable() {
                     @Override
@@ -604,6 +607,7 @@ public class GVRMaterial extends GVRPostEffect
             }
         }
     }
+
 
     /**
      * Gets the line width for line drawing.

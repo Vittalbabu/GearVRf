@@ -36,6 +36,7 @@ import org.gearvrf.R;
        private static String vtxShader = null;
        private static String normalShader = null;
        private static String skinShader = null;
+       private boolean useMultitex = true;
 
        public GVRPhongShader(GVRContext gvrcontext)
        {
@@ -43,12 +44,23 @@ import org.gearvrf.R;
                    "sampler2D ambientTexture; sampler2D diffuseTexture; sampler2D specularTexture; sampler2D opacityTexture; sampler2D lightmapTexture; sampler2D emissiveTexture",
                    "float3 a_position float3 a_normal float2 a_texcoord float4 a_bone_weights int4 a_bone_indices float4 a_tangent float4 a_bitangent",
                    300);
-           if (fragTemplate == null) {
+           if (fragTemplate == null)
+           {
                Context context = gvrcontext.getContext();
-               fragTemplate = TextFile.readTextFile(context, R.raw.fragment_template);
-               vtxTemplate = TextFile.readTextFile(context, R.raw.vertex_template);
-               surfaceShader = TextFile.readTextFile(context, R.raw.phong_surface);
-               vtxShader = TextFile.readTextFile(context, R.raw.pos_norm_tex);
+               if (useMultitex)
+               {
+                   fragTemplate = TextFile.readTextFile(context, R.raw.fragment_template_multitex);
+                   vtxTemplate = TextFile.readTextFile(context, R.raw.vertex_template_multitex);
+                   surfaceShader = TextFile.readTextFile(context, R.raw.phong_surface_multitex);
+                   vtxShader = TextFile.readTextFile(context, R.raw.pos_norm_multitex);
+               }
+               else
+               {
+                   fragTemplate = TextFile.readTextFile(context, R.raw.fragment_template);
+                   vtxTemplate = TextFile.readTextFile(context, R.raw.vertex_template);
+                   surfaceShader = TextFile.readTextFile(context, R.raw.phong_surface);
+                   vtxShader = TextFile.readTextFile(context, R.raw.pos_norm_tex);
+               }
                normalShader = TextFile.readTextFile(context, R.raw.normalmap);
                skinShader = TextFile.readTextFile(context, R.raw.vertexskinning);
                addLight = TextFile.readTextFile(context, R.raw.addlight);
@@ -65,9 +77,10 @@ import org.gearvrf.R;
            mUsesLights = true;
        }
        
-       public HashMap<String, Integer> getRenderDefines(GVRRenderData rdata, GVRLightBase[] lights) {
-           HashMap<String, Integer> defines = super.getRenderDefines(rdata, lights);
-           
+       public HashMap<String, Integer> getRenderDefines(GVRRenderData rdata, GVRScene scene)
+       {
+           GVRLightBase[] lights = (scene != null) ? scene.getLightList() : null;
+           HashMap<String, Integer> defines = super.getRenderDefines(rdata, scene);
            if (!rdata.isLightMapEnabled())
                defines.put("lightMapTexture", 0);
            return defines;

@@ -189,4 +189,21 @@ public interface GVRShaderData {
     public void setMat4(String key, float x1, float y1, float z1, float w1,
             float x2, float y2, float z2, float w2, float x3, float y3,
             float z3, float w3, float x4, float y4, float z4, float w4);
+
+    /**
+     * Gets the name of the vertex attribute containing the texture
+     * coordinates for the named texture.
+     * @param texName name of texture
+     * @return name of texture coordinate vertex attribute
+     */
+     public String getTexCoordAttr(String texName);
+
+    /**
+     * Gets the name of the shader variable to get the texture
+     * coordinates for the named texture.
+     * @param texName name of texture
+     * @return name of shader variable
+     */
+    public String getTexCoordShaderVar(String texName);
+
 }

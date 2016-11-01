@@ -154,11 +154,9 @@ public class GVRAndroidResource {
      *            can be in a sub-directory of the {@code assets} directory:
      *            {@code "foo/bar.png"} will open the file
      *            {@code assets/foo/bar.png}
-     * @throws IOException
-     *             File does not exist or cannot be read
      */
     public GVRAndroidResource(GVRContext gvrContext,
-            String assetRelativeFilename) throws IOException {
+            String assetRelativeFilename)  throws IOException  {
         this(gvrContext.getContext(), assetRelativeFilename);
     }
 
@@ -172,11 +170,8 @@ public class GVRAndroidResource {
      *            can be in a sub-directory of the {@code assets} directory:
      *            {@code "foo/bar.png"} will open the file
      *            {@code assets/foo/bar.png}
-     * @throws IOException
-     *             File does not exist or cannot be read
      */
-    public GVRAndroidResource(Context context, String assetRelativeFilename)
-            throws IOException {
+    public GVRAndroidResource(Context context, String assetRelativeFilename) {
         this.context = context;    
         streamState = StreamStates.NEW;
 
@@ -193,9 +188,8 @@ public class GVRAndroidResource {
      *
      * @param url
      *            A Java {@link URL} object
-     * @throws IOException
      */
-    public GVRAndroidResource(GVRContext context, URL url) throws IOException {
+    public GVRAndroidResource(GVRContext context, URL url) {
         this(context, url, false);
     }
 
@@ -269,10 +263,9 @@ public class GVRAndroidResource {
      *            An Android Context
      * @param url
      *            A Java {@link URL} object
-     * @throws IOException
      */
     public GVRAndroidResource(GVRContext context, URL url,
-            boolean enableUrlLocalCache) throws IOException {
+            boolean enableUrlLocalCache) {
         this.enableUrlLocalCache = enableUrlLocalCache;
 
         streamState = StreamStates.NEW;
@@ -293,7 +286,7 @@ public class GVRAndroidResource {
      * @return An open {@link InputStream}.
      * @throws IOException 
      */
-    public synchronized final InputStream getStream() {
+    public synchronized final InputStream getStream() throws IOException{
         if (streamState != StreamStates.OPEN) {
             openStream();
         }
@@ -331,49 +324,45 @@ public class GVRAndroidResource {
      * 
      * 
      */
-    public synchronized void openStream() {
-        try {
-            switch (resourceType) {
-            case ANDROID_ASSETS:
-                stream = context.getResources().getAssets().open(assetPath);
-                streamState = StreamStates.OPEN;
-                break;
+    public synchronized void openStream() throws IOException {
+        switch (resourceType) {
+        case ANDROID_ASSETS:
+            stream = context.getResources().getAssets().open(assetPath);
+            streamState = StreamStates.OPEN;
+            break;
 
-            case ANDROID_RESOURCE:
-                stream = context.getResources().openRawResource(resourceId);
-                streamState = StreamStates.OPEN;
-                break;
+        case ANDROID_RESOURCE:
+            stream = context.getResources().openRawResource(resourceId);
+            streamState = StreamStates.OPEN;
+            break;
 
-            case LINUX_FILESYSTEM:
-                stream = new MarkingFileInputStream(filePath);
-                streamState = StreamStates.OPEN;
-                break;
+        case LINUX_FILESYSTEM:
+            stream = new MarkingFileInputStream(filePath);
+            streamState = StreamStates.OPEN;
+            break;
 
-            case NETWORK:
-                if (!enableUrlLocalCache) {
-                    Log.d(TAG,
-                            "Do not allow local caching, use streaming to get the resource");
-                    stream = new URLBufferedInputStream(url);
-                    streamState = StreamStates.OPEN;
-                } else {
-                    Log.d(TAG,
-                            "Allow local caching, download the resource to local cache");
-                    File file = GVRAssetLoader.downloadFile(context,
-                            url.toString());
-                    stream = new MarkingFileInputStream(file);
-                    streamState = StreamStates.OPEN;
-                }
-                break;
-
-            case INPUT_STREAM:
-                //input stream is already open
+        case NETWORK:
+            if (!enableUrlLocalCache) {
+                Log.d(TAG,
+                        "Do not allow local caching, use streaming to get the resource");
+                stream = new URLBufferedInputStream(url);
                 streamState = StreamStates.OPEN;
-                break;
-            default:
-                stream = null;
+            } else {
+                Log.d(TAG,
+                        "Allow local caching, download the resource to local cache");
+                File file = GVRAssetLoader.downloadFile(context,
+                        url.toString());
+                stream = new MarkingFileInputStream(file);
+                streamState = StreamStates.OPEN;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+            break;
+
+        case INPUT_STREAM:
+            //input stream is already open
+            streamState = StreamStates.OPEN;
+            break;
+        default:
+            stream = null;
         }
     }
 
@@ -615,13 +604,10 @@ public class GVRAndroidResource {
      * throttling and don't support
      * {@link BitmapTextureCallback#stillWanted(GVRAndroidResource)}
      */
-    public interface CompressedTextureCallback extends Callback<GVRTexture> {
-    }
+    public interface CompressedTextureCallback extends TextureCallback { }
 
     /** Callback for asynchronous bitmap-texture loads. */
-    public interface BitmapTextureCallback extends
-            CancelableCallback<GVRTexture> {
-    }
+    public interface BitmapTextureCallback extends TextureCallback { }
 
     /**
      * Callback for asynchronous texture loads.

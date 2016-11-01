@@ -51,10 +51,11 @@ abstract class GVRViewManager extends GVRContext {
         resetOnRestart();
 
         GVRAsynchronousResourceLoader.setup(this);
-
+        VrAppSettings appSettings = activity.getAppSettings();
         mScriptManager = new GVRScriptManager(this);
-        mInputManager = new GVRInputManagerImpl(this, activity.getAppSettings().useGazeCursorController());
         mEventManager = new GVREventManager(this);
+        mInputManager = new GVRInputManagerImpl(this, appSettings.useGazeCursorController(),
+                appSettings.useAndroidWearTouchpad());
     }
 
     void onPause() {}
@@ -95,11 +96,6 @@ abstract class GVRViewManager extends GVRContext {
     @Override
     public synchronized void setMainScene(GVRScene scene) {
         mMainScene = scene;
-        GVRShader errorShader = new GVRErrorShader();
-        errorShader.bindShader(this, (GVRShaderData) null);
-        GVRShader bboxShader = new GVRBoundingBoxShader();
-        bboxShader.bindShader(this, (GVRShaderData) null);
-
         NativeScene.setMainScene(mMainScene.getNative());
 
         if (mNextMainScene == scene) {
@@ -147,12 +143,16 @@ abstract class GVRViewManager extends GVRContext {
 
     @Override
     public void registerDrawFrameListener(GVRDrawFrameListener frameListener) {
-        mFrameListeners.add(frameListener);
+        if (!mFrameListeners.contains(frameListener)) {
+            mFrameListeners.add(frameListener);
+        }
     }
 
     @Override
     public void unregisterDrawFrameListener(GVRDrawFrameListener frameListener) {
-        mFrameListeners.remove(frameListener);
+        if (mFrameListeners.contains(frameListener)) {
+            mFrameListeners.remove(frameListener);
+        }
     }
 
     /**

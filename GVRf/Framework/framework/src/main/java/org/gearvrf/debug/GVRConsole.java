@@ -34,7 +34,6 @@ import org.gearvrf.GVRScript;
 import org.gearvrf.GVRShader;
 import org.gearvrf.GVRShaderId;
 import org.gearvrf.GVRShaderTemplate;
-import org.gearvrf.R;
 import org.gearvrf.utility.TextFile;
 
 import android.graphics.Bitmap;
@@ -42,6 +41,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import org.gearvrf.R;
 
 /**
  * A debugging console for VR apps.
@@ -167,7 +167,8 @@ public class GVRConsole extends GVRPostEffect {
         setMainTexture();
 
         setTextColor(DEFAULT_COLOR);
-        setTextSize(1);
+        setTextSize(3);
+        paint.setAntiAlias(true);
     }
 
     /**
