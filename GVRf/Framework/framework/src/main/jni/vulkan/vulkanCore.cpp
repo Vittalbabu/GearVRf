@@ -1747,7 +1747,7 @@ namespace gvr {
         VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {};
         descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         descriptorSetAllocateInfo.pNext = nullptr;
-        descriptorSetAllocxxateInfo.descriptorPool = descriptorPool;
+        descriptorSetAllocateInfo.descriptorPool = descriptorPool;
         descriptorSetAllocateInfo.descriptorSetCount = 1;
         descriptorSetAllocateInfo.pSetLayouts = &descriptorLayout;
 
