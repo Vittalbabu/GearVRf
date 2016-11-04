@@ -568,7 +568,7 @@ namespace gvr {
         }
 
         // Allocating memory for output image
-        //oculusTexData = (uint8_t *) malloc(m_width * m_height * 4 * sizeof(uint8_t));
+        oculusTexData = (uint8_t *) malloc(m_width * m_height * 4 * sizeof(uint8_t));
     }
 
     bool VulkanCore::GetMemoryTypeFromProperties(uint32_t typeBits, VkFlags requirements_mask,
@@ -1282,7 +1282,7 @@ namespace gvr {
 
         VkPipelineCache pipelineCache = VK_NULL_HANDLE;
         LOGI("Vulkan graphics call before");
-        err = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr,
+        err = vkCreateGraphicsPipelines(m_device, m_pipelineCache, 1, &pipelineCreateInfo, nullptr,
                                         &(rdata->getVkData().m_pipeline));
         GVR_VK_CHECK(!err);
         LOGI("Vulkan graphics call after");
@@ -1424,37 +1424,6 @@ namespace gvr {
         cmd_buf_info.flags = 0;
         cmd_buf_info.pInheritanceInfo = &cmd_buf_hinfo;
 
-        // By calling vkBeginCommandBuffer, cmdBuffer is put into the recording state.
-        err = vkBeginCommandBuffer(cmdBuffer, &cmd_buf_info);
-        GVR_VK_CHECK(!err);
-
-        // Before we can use the back buffer from the swapchain, we must change the
-        // image layout from the PRESENT mode to the COLOR_ATTACHMENT mode.
-        // PRESENT mode is optimal for sending to the screen for users to see, so the
-        // image will be set back to that mode after we have completed rendering.
-        VkImageMemoryBarrier preRenderBarrier = {};
-        preRenderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        preRenderBarrier.pNext = nullptr;
-        preRenderBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        preRenderBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        preRenderBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        preRenderBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        preRenderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        preRenderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        preRenderBarrier.image = m_swapchainBuffers[i].image;
-        preRenderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        preRenderBarrier.subresourceRange.baseArrayLayer = 0;
-        preRenderBarrier.subresourceRange.baseMipLevel = 1;
-        preRenderBarrier.subresourceRange.layerCount = 0;
-        preRenderBarrier.subresourceRange.levelCount = 1;
-
-        // The PipelineBarrier function can operate on memoryBarriers,
-        // bufferMemory and imageMemory buffers. We only provide a single
-        // imageMemoryBarrier.
-        vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                             0, 0, nullptr, 0, nullptr, 1, &preRenderBarrier);
-
         // When starting the render pass, we can set clear values.
         VkClearValue clear_values[2] = {};
         clear_values[0].color.float32[0] = 0.3f;
@@ -1475,6 +1444,39 @@ namespace gvr {
         rp_begin.renderArea.extent.height = m_height;
         rp_begin.clearValueCount = 2;
         rp_begin.pClearValues = clear_values;
+
+        // By calling vkBeginCommandBuffer, cmdBuffer is put into the recording state.
+        err = vkBeginCommandBuffer(cmdBuffer, &cmd_buf_info);
+        GVR_VK_CHECK(!err);
+
+        // Before we can use the back buffer from the swapchain, we must change the
+        // image layout from the PRESENT mode to the COLOR_ATTACHMENT mode.
+        // PRESENT mode is optimal for sending to the screen for users to see, so the
+        // image will be set back to that mode after we have completed rendering.
+        /*VkImageMemoryBarrier preRenderBarrier = {};
+        preRenderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        preRenderBarrier.pNext = nullptr;
+        preRenderBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        preRenderBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        preRenderBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        preRenderBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        preRenderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        preRenderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        preRenderBarrier.image = m_swapchainBuffers[i].image;
+        preRenderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        preRenderBarrier.subresourceRange.baseArrayLayer = 0;
+        preRenderBarrier.subresourceRange.baseMipLevel = 1;
+        preRenderBarrier.subresourceRange.layerCount = 0;
+        preRenderBarrier.subresourceRange.levelCount = 1;
+
+        // The PipelineBarrier function can operate on memoryBarriers,
+        // bufferMemory and imageMemory buffers. We only provide a single
+        // imageMemoryBarrier.
+        vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             0, 0, nullptr, 0, nullptr, 1, &preRenderBarrier);*/
+
+
 
         vkCmdBeginRenderPass(cmdBuffer, &rp_begin, VK_SUBPASS_CONTENTS_INLINE);
 /*
@@ -1576,7 +1578,7 @@ namespace gvr {
         vkCmdEndRenderPass(cmdBuffer);
 
         // As stated earlier, now transition the swapchain image to the PRESENT mode.
-        VkImageMemoryBarrier prePresentBarrier = {};
+        /*VkImageMemoryBarrier prePresentBarrier = {};
         prePresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         prePresentBarrier.pNext = nullptr;
         prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -1593,7 +1595,7 @@ namespace gvr {
 
         vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                              VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                             0, 0, nullptr, 0, nullptr, 1, &prePresentBarrier);
+                             0, 0, nullptr, 0, nullptr, 1, &prePresentBarrier);*/
 
         // By ending the command buffer, it is put out of record mode.
         err = vkEndCommandBuffer(cmdBuffer);
@@ -1611,7 +1613,7 @@ namespace gvr {
         // Get the next image to render to, then queue a wait until the image is ready
         int m_swapchainCurrentIdx = swapChainIndex;
         //  LOGI("Vulkna Swapchain Image number of %d", m_swapchainCurrentIdx);
-        VkFence nullFence = waitFences[m_swapchainCurrentIdx];
+        //VkFence nullFence = waitFences[m_swapchainCurrentIdx];
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1664,8 +1666,10 @@ namespace gvr {
         vkQueueSubmit(m_queue, 1, &ssubmitInfo, waitSCBFences[m_swapchainCurrentIdx]);
         err = vkWaitForFences(m_device, 1, &waitSCBFences[m_swapchainCurrentIdx], VK_TRUE,
                               4294967295U);
-        //vkQueueWaitIdle(m_queue);
+ //       vkQueueWaitIdle(m_queue);
 
+        GVR_VK_CHECK(!err);
+        vkFreeCommandBuffers(m_device, m_commandPoolTrans, 1, &trnCmdBuf);
 
         uint8_t *data;
         err = vkMapMemory(m_device, outputImage[m_swapchainCurrentIdx].mem, 0,
@@ -1686,9 +1690,9 @@ namespace gvr {
         //   LOGI("Vulkan data reading done");
         vkUnmapMemory(m_device, outputImage[m_swapchainCurrentIdx].mem);
         // Makes Fence Un-signalled
-        //err = vkResetFences(m_device, 1, &waitFences[m_swapchainCurrentIdx]);
+        err = vkResetFences(m_device, 1, &waitSCBFences[m_swapchainCurrentIdx]);
+        err = vkResetFences(m_device, 1, &waitFences[m_swapchainCurrentIdx]);
         //GVR_VK_CHECK(!err);
-        vkFreeCommandBuffers(m_device, m_commandPoolTrans, 1, &trnCmdBuf);
     }
 
     void VulkanCore::updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data) {
@@ -1770,6 +1774,13 @@ namespace gvr {
         LOGI("Vulkan after update sdectiptor");
     }
 
+    void VulkanCore::createPipelineCache()
+    {
+        VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+        pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+        GVR_VK_CHECK(vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+    }
+
     void VulkanCore::initVulkanCore(ANativeWindow *newNativeWindow) {
         m_Vulkan_Initialised = true;
         m_androidWindow = newNativeWindow;
@@ -1813,7 +1824,7 @@ namespace gvr {
         //InitDescriptorSet();
         InitFrameBuffers();
         InitSync();
-
+        createPipelineCache();
         // Initialize our command buffers
         //BuildCmdBuffer();
         //DrawFrame();

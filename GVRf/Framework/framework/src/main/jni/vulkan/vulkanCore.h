@@ -97,7 +97,7 @@ namespace gvr {
         void InitFrameBuffers();
         void InitSync();
         void BuildCmdBuffer();
-
+        void createPipelineCache();
         void InitUniformBuffers();
 
 
@@ -146,6 +146,7 @@ namespace gvr {
         VkDescriptorSet m_descriptorSet;
         GVR_VK_Indices m_indices;
 
+        VkPipelineCache m_pipelineCache;
         //uint m_threadCount;
         //ThreadPool m_threadPool;
     };
