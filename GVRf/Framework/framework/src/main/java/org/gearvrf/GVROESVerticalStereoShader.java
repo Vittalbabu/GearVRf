@@ -14,6 +14,10 @@
  */
 package org.gearvrf;
 
+import android.content.Context;
+
+import org.gearvrf.utility.TextFile;
+
 /**
  * Shader which samples from either the top or bottom half of an external texture.
  * This shader does not use light sources.
@@ -55,12 +59,13 @@ public class GVROESVerticalStereoShader extends GVRShader
             "  gl_FragColor = vec4(color.r * u_color.r * u_opacity, color.g * u_color.g * u_opacity, color.b * u_color.b * u_opacity, color.a * u_opacity);\n" +
             "}\n";
 
-    public GVROESVerticalStereoShader()
+    public GVROESVerticalStereoShader(GVRContext gvrContext)
     {
         super("float3 u_color float u_opacity int u_right",
               "samplerExternalOES u_texture",
               "float3 a_position float3 a_normal float2 a_texcoord");
-        setSegment("FragmentTemplate", fragmentShader);
-        setSegment("VertexTemplate", vertexShader);
+        Context context = gvrContext.getContext();
+        setSegment("FragmentTemplate", TextFile.readTextFile(context, R.raw.oes_vertical_frag));
+        setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.oes_vertical_vert));
     }
 }

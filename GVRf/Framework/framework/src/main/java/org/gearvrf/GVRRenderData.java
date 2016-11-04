@@ -467,7 +467,7 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
         GVRShader shader = getMaterial().getShaderType().getTemplate(getGVRContext());
         if (shader != null)
         {
-            shader.bindShader(getGVRContext(), this, lightList);
+            shader.bindShader(getGVRContext(), this, scene);
         }
         for (int i = 1; i < mRenderPassList.size(); ++i)
         {
@@ -506,7 +506,7 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
             GVRShader shader = getMaterial().getShaderType().getTemplate(getGVRContext());
             if ((shader != null) && shader.usesLights())
             {
-                shader.bindShader(getGVRContext(), this, getGVRContext().getMainScene().getLightList());
+                shader.bindShader(getGVRContext(), this, getGVRContext().getMainScene());
             }
         }
     }

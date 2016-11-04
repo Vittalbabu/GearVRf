@@ -37,11 +37,14 @@ uniform sampler2D lightMapTexture1;
 uniform int lightMapTexture1_blendop;
 #endif
 
+
+/*
 uniform vec4 ambient_color;
 uniform vec4 diffuse_color;
 uniform vec4 specular_color;
 uniform vec4 emissive_color;
 uniform float specular_exponent;
+*/
 uniform vec2 u_lightmap_offset;
 uniform vec2 u_lightmap_scale;
 

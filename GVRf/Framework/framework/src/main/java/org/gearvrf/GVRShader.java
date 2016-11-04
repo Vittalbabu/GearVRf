@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.gearvrf.GVRLightBase;
+import org.gearvrf.debug.GVRStatsLine;
 import org.mozilla.javascript.NativeGenerator.GeneratorClosedException;
 
 import android.util.Log;
@@ -243,7 +244,7 @@ public class GVRShader
      * @param lightlist
      *            list of light sources
      */
-    public void bindShader(GVRContext context, GVRRenderData rdata, GVRLightBase[] lightlist) {
+    public void bindShader(GVRContext context, GVRRenderData rdata, GVRScene scene) {
         GVRMesh mesh = rdata.getMesh();
         GVRShaderData material = rdata.getMaterial();
         String signature = getClass().getSimpleName();

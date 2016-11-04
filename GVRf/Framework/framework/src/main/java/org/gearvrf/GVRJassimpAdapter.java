@@ -122,6 +122,11 @@ class GVRJassimpAdapter {
         for(int texIndex=0; texIndex< MAX_TEX_COORDS; texIndex++) {
             FloatBuffer fbuf = aiMesh.getTexCoordBuffer(texIndex);
             if (fbuf != null) {
+                vertexDescriptor += "float2 a_texcoord";
+                if (texIndex > 0)
+                {
+                    vertexDescriptor += texIndex;
+                }
                 coords = FloatBuffer.allocate(aiMesh.getNumVertices() * 2);
                 if (aiMesh.getNumUVComponents(texIndex) == 2) {
                     FloatBuffer coordsSource = aiMesh.getTexCoordBuffer(texIndex);
@@ -520,6 +525,7 @@ class GVRJassimpAdapter {
         /* Specular Exponent */
         float specularExponent = material.getShininess();
         meshMaterial.setSpecularExponent(specularExponent);
+
 
         /* Diffuse Texture */
         loadTextures(assetRequest, material, meshMaterial);

@@ -37,12 +37,11 @@ class Color;
 
 class Material: public ShaderData {
 public:
-    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),mat_ubo_(nullptr),material_dirty_(true),
-    uniform_desc_("float4 u_opacity; float4 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float4 specular_exponent") {
+    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),mat_ubo_(nullptr),material_dirty_(true),uniform_desc_(" "){
     }
 
     ~Material() {
-        //delete gl_ubo_;
+        delete mat_ubo_;
     }
 
 
@@ -128,7 +127,67 @@ public:
     void notify_listener(bool dirty){
         listener_->notify_listeners(dirty);
     }
+    std::string getType(std::string type){
+        std::string float_type = "float4";
+        std::string int_type = "int4";
+        if(type.compare("float") == 0)
+            return float_type;
+        if(type.compare("float2") == 0)
+            return float_type;
+        if(type.compare("float3")== 0)
+            return float_type;
+        if(type.compare("int") == 0)
+            return int_type;
+        if(type.compare("int2") == 0)
+            return int_type;
+        if(type.compare("int3") == 0)
+            return int_type;
+
+    }
+    void convertDescriptor(std::string& uniform_desc){
+            const char* p = uniform_desc.c_str();
+            const char* type_start;
+            int type_size;
+            const char* name_start;
+            int name_size;
+            while (*p)
+            {
+                while (std::isspace(*p) || *p == ';')
+                    ++p;
+                type_start = p;
+                if (*p == 0)
+                    break;
+                while (std::isalnum(*p))
+                    ++p;
+                type_size = p - type_start;
+                if (type_size == 0)
+                {
+                    LOGE("UniformBlock: SYNTAX ERROR: expecting data type\n");
+                    break;
+                }
+                std::string type(type_start, type_size);
+                std::string modified_type;
+                if(type.compare("float4") == 0 || type.compare("int4") == 0)
+                    modified_type = type;
+                else
+                    modified_type = getType(type);
+
+                uniform_desc_ = uniform_desc_ + modified_type + " ";
+                while (std::isspace(*p))
+                    ++p;
+                name_start = p;
+                while (std::isalnum(*p) || (*p == '_') || (*p == '[') || (*p == ']'))
+                    ++p;
+
+                name_size = p - name_start;
+                std::string name(name_start, name_size);
+
+                uniform_desc_ = uniform_desc_ + name + "; ";
+            }
+
+    }
    void setUniformDesc(std::string uniform_desc){
+        convertDescriptor(uniform_desc);
        // uniform_desc_ = uniform_desc;
     }
     bool isMaterialDirty(){

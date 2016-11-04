@@ -96,7 +96,7 @@ namespace gvr {
             if (fv != NULL) {
                 switch (size) {
                     case 1:
-
+                    LOGE("unifrom is %s and value is %f", key.c_str(),*fv);
                     glUniform1fv(loc, 1, fv);
                     break;
 
@@ -106,18 +106,18 @@ namespace gvr {
                     break;
 
                     case 3:
-
-                   glUniform3fv(loc, 1, fv);
+                        LOGE("unifrom is %s and value is %f %f %f ", key.c_str(),fv[0],fv[1],fv[2]);
+                    glUniform3fv(loc, 1, fv);
                     break;
 
                     case 4:
-
+                        LOGE("unifrom is %s and value is %f %f %f %f ", key.c_str(),fv[0],fv[1],fv[2],fv[3]);
                     glUniform4fv(loc, 1, fv);
                     break;
 
                     case 16:
 
-                   glUniformMatrix4fv(loc, 1, 0, fv);
+                    glUniformMatrix4fv(loc, 1, 0, fv);
                     break;
                 }
             }
@@ -173,12 +173,14 @@ namespace gvr {
                 switch (size) {
                     case 1:
                     data.x = *fv;
+                      //  LOGE("uniform is %s and value is %f", key.c_str(),*fv);
                     ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
                     case 2:
                     data.x = *fv;
                     data.y = fv[1];
+                      //  LOGE("uniform is %s and value is %f %f", key.c_str(),data[0],data[1]);
                     ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
@@ -186,11 +188,14 @@ namespace gvr {
                      data.x = fv[0];
                      data.y=  fv[1];
                      data.z = fv[2];
+                       // LOGE("uniform is %s and value is %f %f %f", key.c_str(),data[0],data[1], data[2]);
                      ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
                     case 4:
-                     ubo->setVec(key,fv, 4);
+                     //   LOGE("uniform is %s and value is %f %f %f %f", key.c_str(),fv[0],fv[1], fv[2],fv[3]);
+                        ubo->setVec(key,fv, 4);
+                 //       ubo->setVec(key,glm::value_ptr(data), 4);
                     break;
 
                     case 16:
@@ -322,7 +327,38 @@ Shader::Shader(int id,
 
 void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
     if (nullptr == program_) {
-        program_ = new GLProgram(vertexShader_.c_str(), fragmentShader_.c_str());
+        std::string modified_frag_shader;
+        if(fragmentShader_.find("samplerExternalOES")!= std::string::npos){
+            LOGE("inside enabled");
+            std::istringstream iss(fragmentShader_.c_str());
+            const char* extensions = (const char*) glGetString(GL_EXTENSIONS);
+            std::string extension_string;
+            if(strstr(extensions, "GL_OES_EGL_image_external_essl3")){
+                extension_string = "#extension GL_OES_EGL_image_external_essl3 : require \n";
+                LOGE("enabling essl3");
+            }
+            else {
+                extension_string = "#extension GL_OES_EGL_image_external : require\n";
+                LOGE("enabling non essl3");
+            }
+            std::string line;
+            while (std::getline(iss, line)){
+                if(line.find("GL_OES_EGL_image_external") != std::string::npos){
+                    LOGE("found");
+                    modified_frag_shader = modified_frag_shader + extension_string + "\n";
+                }
+                else{
+                    LOGE("not found");
+                    modified_frag_shader = modified_frag_shader + line + "\n";
+                 }
+            }
+
+        }
+        else {
+            modified_frag_shader = fragmentShader_;
+        }
+
+        program_ = new GLProgram(vertexShader_.c_str(), modified_frag_shader.c_str());
       //  if (LOG_SHADER) LOGD("SHADER: creating GLProgram %d", program_->id());
         if (use_multiview && !(strstr(vertexShader_.c_str(), "gl_ViewID_OVR")
                                && strstr(vertexShader_.c_str(), "GL_OVR_multiview2")
@@ -331,7 +367,8 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
             LOGE("Your shaders are not multiview");
             throw error;
         }
-        LOGE("vertex shader is %s", vertexShader_.c_str());
+        const char* temp =  vertexShader_.c_str();
+
 
         if (use_multiview) {
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp_[0]");
@@ -520,8 +557,6 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
      * Update material uniforms
      */
 
-     //Material* mat = render_data->material(0);
-  //  LOGE("material in render %p and descriptor is %s ", material, uniformDescriptor_.c_str());
 
      Material* mat = static_cast<Material*>(material);
      if(!uniformDescriptor_.empty())
@@ -537,6 +572,7 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         mat->setMaterialDirty(false);
     }
 
+   LOGE("calling mat render");
     if(mat_ubo){
         mat_ubo->render(program_->id());
     }

@@ -14,6 +14,10 @@
  */
 package org.gearvrf;
 
+import android.content.Context;
+
+import org.gearvrf.utility.TextFile;
+
 /**
  * Shader which renders in a solid color.
  * This shader ignores light sources.
@@ -33,16 +37,18 @@ public class GVRColorShader extends GVRShader
 
     private String fragmentShader = "precision mediump float;\n" +
         "uniform vec3 u_color;\n" +
+
         "void main()\n" +
         "{\n" +
         "  gl_FragColor = vec4(u_color, 1);" +
         "}\n";
 
-    public GVRColorShader()
+    public GVRColorShader(GVRContext gvrContext)
     {
         super("float3 u_color", "", "float3 a_position");
-        setSegment("FragmentTemplate", fragmentShader);
-        setSegment("VertexTemplate", vertexShader);
+        Context context = gvrContext.getContext();
+        setSegment("FragmentTemplate", TextFile.readTextFile(context, R.raw.color_shader_frag));
+        setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.color_shader_vert));
     }
 
     protected void setMaterialDefaults(GVRShaderData material)

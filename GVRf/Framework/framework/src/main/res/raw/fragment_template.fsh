@@ -35,7 +35,8 @@ layout (std140) uniform Transform_ubo{
      mat4 u_mv_it;
  #endif
      mat4 u_model;
-
+     mat4 u_view_i;
+     vec4 u_right;
 };
 
 //uniform mat4 u_model;
@@ -86,7 +87,7 @@ void main()
 {
 	Surface s = @ShaderName();
 #if defined(HAS_LIGHTSOURCES)
-	vec4 color = LightPixel(s);
+    vec4 color = LightPixel(s);
 	color = clamp(color, vec4(0), vec4(1));
 	fragColor = color;
 #else

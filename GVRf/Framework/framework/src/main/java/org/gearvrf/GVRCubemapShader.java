@@ -49,6 +49,10 @@ package org.gearvrf;
 // (http://www.nvidia.com/object/cube_map_ogl_tutorial.html)
 // (http://stackoverflow.com/questions/11685608/convention-of-faces-in-opengl-cubemapping)
 
+import android.content.Context;
+
+import org.gearvrf.utility.TextFile;
+
 /**
  * Shader which renders a cubemap texture modulated by a color.
  * This shader ignores light sources.
@@ -87,11 +91,12 @@ public class GVRCubemapShader extends GVRShader
             "  gl_FragColor = vec4(color.r * u_color.r * u_opacity, color.g * u_color.g * u_opacity, color.b * u_color.b * u_opacity, color.a * u_opacity);\n" +
             "}\n";
 
-    public GVRCubemapShader()
+    public GVRCubemapShader(GVRContext gvrContext)
     {
         super("float3 u_color float u_opacity", "samplerCube u_texture", "float3 a_position float2 a_texcoord");
-        setSegment("FragmentTemplate", fragmentShader);
-        setSegment("VertexTemplate", vertexShader);
+        Context context = gvrContext.getContext();
+        setSegment("FragmentTemplate", TextFile.readTextFile(context, R.raw.cubemap_frag));
+        setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.cubemap_vert));
     }
 
     protected void setMaterialDefaults(GVRShaderData material)

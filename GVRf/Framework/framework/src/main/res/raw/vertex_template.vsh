@@ -33,7 +33,8 @@ layout (std140) uniform Transform_ubo{
      mat4 u_mv_it;
  #endif
      mat4 u_model;
-
+     mat4 u_view_i;
+     vec4 u_right;
 };
 
 layout (std140) uniform Bones_ubo{

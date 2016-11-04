@@ -138,7 +138,6 @@ bool UniformBlock::setMat4(std::string name, const float* val)
 {
     int bytesize = 16 * sizeof(float);
     char* data = getData(name, bytesize);
-    LOGE("size is %d ", bytesize);
     if (data != NULL)
     {
         memcpy(data, (val), bytesize);
@@ -457,7 +456,6 @@ void GLUniformBlock::render(GLuint programId)
         glBindBuffer(GL_UNIFORM_BUFFER, GLBuffer);
         glBindBufferBase(GL_UNIFORM_BUFFER, GLBindingPoint, GLBuffer);
         glBufferSubData(GL_UNIFORM_BUFFER, GLOffset, TotalSize, UniformData);
-
     }
 }
 

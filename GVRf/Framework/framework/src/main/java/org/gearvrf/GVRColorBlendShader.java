@@ -14,6 +14,10 @@
  */
 package org.gearvrf;
 
+import android.content.Context;
+
+import org.gearvrf.utility.TextFile;
+
 /**
  * Shader which blends between a color and a texture.
  * This shader ignores light sources.
@@ -52,8 +56,9 @@ public class GVRColorBlendShader extends GVRShader
     public GVRColorBlendShader(GVRContext ctx)
     {
         super("float3 u_color float u_factor", "sampler2D u_texture", "float3 a_position float2 a_texcoord");
-        setSegment("FragmentTemplate", fragmentShader);
-        setSegment("VertexTemplate", vertexShader);
+        Context context = ctx.getContext();
+        setSegment("FragmentTemplate", TextFile.readTextFile(context, R.raw.color_blend_frag));
+        setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.color_blend_vert));
     }
 
     protected void setMaterialDefaults(GVRShaderData material)
