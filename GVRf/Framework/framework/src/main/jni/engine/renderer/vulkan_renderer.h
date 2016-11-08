@@ -100,8 +100,6 @@ private:
     void occlusion_cull(RenderState& rstate,
                 std::vector<SceneObject*>& scene_objects){}
 
-   }
-
 
 };
 }

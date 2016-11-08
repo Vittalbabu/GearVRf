@@ -39,8 +39,8 @@ class Color;
 
 class Material: public ShaderData {
 public:
-    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),mat_ubo_(nullptr),material_dirty_(true),uniform_desc_(" "){
-                    0),listener_(new Listener()), vk_descriptor("float4 ambient_color, float4 diffuse_color, float4 specular_color, float4 emissive_color, float specular_exponent"){
+    explicit Material() : ShaderData(), shader_feature_set_(0), listener_(new Listener()),mat_ubo_(nullptr),material_dirty_(true),uniform_desc_(" ")
+                   , vk_descriptor("float4 ambient_color, float4 diffuse_color, float4 specular_color, float4 emissive_color, float specular_exponent"){
     }
 
     ~Material() {

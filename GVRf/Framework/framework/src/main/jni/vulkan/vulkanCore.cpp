@@ -1759,7 +1759,7 @@ void VulkanCore::UpdateUniforms(Scene* scene, Camera* camera, RenderData* render
 
     Descriptor& desc = render_data->getVkData().getDescriptor();
       VulkanUniformBlock& transform_ubo = desc.getUBO();
-    transform_ubo.setMat4("mvp",modelViewProjection);
+    transform_ubo.setMat4("mvp",glm::value_ptr(modelViewProjection));
     transform_ubo.updateBuffer(m_device,this);
 
 }

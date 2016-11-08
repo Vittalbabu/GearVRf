@@ -57,10 +57,6 @@ void Renderer::initializeStats() {
 ***/
 Renderer* Renderer::getInstance(std::string type){
     if(nullptr == instance){
-
-   //     LOGE("string compare %d ",std::strcmp(type.c_str(),"Vulkan"));
-
-     //   if(!std::strcmp(type.c_str(),"Vulkan")) {
      if(1){
             instance = new VulkanRenderer();
             isVulkan_ = true;
