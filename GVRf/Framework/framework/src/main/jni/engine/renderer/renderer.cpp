@@ -133,7 +133,7 @@ void Renderer::state_sort() {
                 LOGD(
                         "SORTING: pass_count = %d, rendering order = %d, shader_type = %d, camera_distance = %f\n",
                         renderData->pass_count(), renderData->rendering_order(),
-                        renderData->get_shader(),
+                        renderData->get_shader(0),
                         renderData->camera_distance());
             }
         }
@@ -152,7 +152,7 @@ bool isRenderPassEqual(RenderData* rdata1, RenderData* rdata2){
         return false;
 
     for(int i=0; i< pass_count1; i++){
-        if(!(rdata1->material(i) == rdata2->material(i) && rdata1->get_shader() == rdata2->get_shader() &&
+        if(!(rdata1->material(i) == rdata2->material(i) && rdata1->get_shader(0) == rdata2->get_shader(0) &&
                    rdata1->cull_face(i) == rdata2->cull_face(i)))
             return false;
     }

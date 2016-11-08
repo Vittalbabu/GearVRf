@@ -319,7 +319,7 @@ public:
         render_pass_list_[pass]->set_shader(shaderid);
     }
 
-    int get_shader() const { return render_pass_list_[0]->get_shader(); }
+    int get_shader(int pass =0) const { return render_pass_list_[pass]->get_shader(); }
 
     std::string getHashCode() {
         if (hash_code_dirty_) {

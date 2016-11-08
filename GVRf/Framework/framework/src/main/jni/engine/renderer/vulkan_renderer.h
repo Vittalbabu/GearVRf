@@ -91,7 +91,7 @@ public:
 
 private:
     void renderMesh(RenderState& rstate, RenderData* render_data){}
-    void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material){}
+    void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material, int){}
     void occlusion_cull(RenderState& rstate,
                 std::vector<SceneObject*>& scene_objects){}
 

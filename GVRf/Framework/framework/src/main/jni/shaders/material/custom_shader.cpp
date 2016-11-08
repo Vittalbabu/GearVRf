@@ -329,26 +329,21 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
     if (nullptr == program_) {
         std::string modified_frag_shader;
         if(fragmentShader_.find("samplerExternalOES")!= std::string::npos){
-            LOGE("inside enabled");
             std::istringstream iss(fragmentShader_.c_str());
             const char* extensions = (const char*) glGetString(GL_EXTENSIONS);
             std::string extension_string;
             if(strstr(extensions, "GL_OES_EGL_image_external_essl3")){
                 extension_string = "#extension GL_OES_EGL_image_external_essl3 : require \n";
-                LOGE("enabling essl3");
             }
             else {
                 extension_string = "#extension GL_OES_EGL_image_external : require\n";
-                LOGE("enabling non essl3");
             }
             std::string line;
             while (std::getline(iss, line)){
                 if(line.find("GL_OES_EGL_image_external") != std::string::npos){
-                    LOGE("found");
                     modified_frag_shader = modified_frag_shader + extension_string + "\n";
                 }
                 else{
-                    LOGE("not found");
                     modified_frag_shader = modified_frag_shader + line + "\n";
                  }
             }
@@ -469,7 +464,7 @@ Shader::~Shader() {
 
 
 void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* material) {
-    LOGE("in render %s", render_data->owner_object()->name().c_str());
+
     if (!material->areTexturesReady())
     {
         if (LOG_SHADER) LOGE("textures are not ready for %s", render_data->owner_object()->name().c_str());
@@ -509,7 +504,6 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     if ((a_bone_indices >= 0) ||
         (a_bone_weights >= 0) ||
         (u_bone_matrices >= 0)) {
-        LOGE("bones present");
         glm::mat4 finalTransform;
         mesh->setBoneLoc(a_bone_indices, a_bone_weights);
         mesh->generateBoneArrayBuffers(program_->id());
@@ -548,16 +542,12 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         transform_ubo->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
     }
     transform_ubo->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
-    if(program_ == nullptr || transform_ubo == nullptr)
-        LOGE("program or ubo is null");
 
     transform_ubo->render(program_->id());
 
     /*
      * Update material uniforms
      */
-
-
      Material* mat = static_cast<Material*>(material);
      if(!uniformDescriptor_.empty())
         mat->bindMaterialUbo(program_->id());
@@ -572,7 +562,6 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         mat->setMaterialDirty(false);
     }
 
-   LOGE("calling mat render");
     if(mat_ubo){
         mat_ubo->render(program_->id());
     }

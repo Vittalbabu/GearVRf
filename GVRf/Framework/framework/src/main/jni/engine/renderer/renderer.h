@@ -169,7 +169,7 @@ protected:
         delete batch_manager;
     }
     virtual void renderMesh(RenderState& rstate, RenderData* render_data) = 0;
-    virtual void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material) = 0;
+    virtual void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material, int) = 0;
     virtual void occlusion_cull(RenderState& rstate, std::vector<SceneObject*>& scene_objects) = 0;
     void addRenderData(RenderData *render_data);
     virtual bool occlusion_cull_init(Scene* scene, std::vector<SceneObject*>& scene_objects);

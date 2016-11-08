@@ -40,11 +40,7 @@ import org.gearvrf.R;
 
        public GVRPhongShader(GVRContext gvrcontext)
        {
-          /* super("float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float specular_exponent; float line_width; float u_opacity",
-                   "sampler2D ambientTexture; sampler2D diffuseTexture; sampler2D specularTexture; sampler2D opacityTexture; sampler2D lightmapTexture; sampler2D emissiveTexture",
-                   "float3 a_position float3 a_normal float2 a_texcoord float4 a_bone_weights int4 a_bone_indices float4 a_tangent float4 a_bitangent",
-                   300);*/
-           super("float u_opacity; float3 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float specular_exponent",
+            super("float u_opacity; float3 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float specular_exponent; float line_width",
                    "sampler2D ambientTexture; sampler2D diffuseTexture; sampler2D specularTexture; sampler2D opacityTexture; sampler2D lightmapTexture; sampler2D emissiveTexture",
                    "float3 a_position float3 a_normal float2 a_texcoord float4 a_bone_weights int4 a_bone_indices float4 a_tangent float4 a_bitangent",
                    300);
@@ -98,7 +94,7 @@ import org.gearvrf.R;
            material.setVec4("specular_color",0.0f, 0.0f, 0.0f, 1.0f);
            material.setVec4("emissive_color", 0.0f, 0.0f, 0.0f, 1.0f);
            material.setFloat("specular_exponent", 0.0f);
-//          / material.setFloat("line_width", 1.0f);
+           material.setFloat("line_width", 1.0f);
            material.setFloat("u_opacity", 0.0f);
        }
    }

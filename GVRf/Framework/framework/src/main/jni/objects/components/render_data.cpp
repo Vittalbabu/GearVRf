@@ -81,14 +81,14 @@ bool compareRenderDataByShader(RenderData* i, RenderData* j) {
         return false;
     }
 
-    return i->get_shader() < j->get_shader();
+    return i->get_shader(0) < j->get_shader(0);
 }
 bool compareRenderDataByOrderShaderDistance(RenderData* i,
             RenderData* j) {
     //1. rendering order needs to be sorted first to guarantee specified correct order
     if (i->rendering_order() == j->rendering_order()) {
 
-        if (i->get_shader() == j->get_shader()) {
+        if (i->get_shader(0) == j->get_shader(0)) {
 
                 int no_passes1 = i->pass_count();
                 int no_passes2 = j->pass_count();

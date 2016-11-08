@@ -237,7 +237,6 @@ void   UniformBlock::parseDescriptor()
     int name_size;
     int offset = 0;
     const int VEC4_BOUNDARY = (sizeof(float) * 4) - 1;
-    LOGE("in parse %s",Descriptor.c_str());
     TotalSize = 0;
     while (*p)
     {
@@ -447,7 +446,7 @@ void GLUniformBlock::render(GLuint programId)
     if (it != Dirty.end() && !it->second)
         return;
 
-    LOGE("it should not come hrere");
+  //  LOGE("it should not come hrere");
     Dirty[programId] = false;
     if (GLBuffer == 0 )
         bindBuffer(programId);

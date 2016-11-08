@@ -393,12 +393,12 @@ void GLRenderer::renderMesh(RenderState& rstate, RenderData* render_data) {
             curr_material = render_data->pass(curr_pass)->material();
         if (curr_material != nullptr)
         {
-            GL(renderMaterialShader(rstate, render_data, curr_material));
+            GL(renderMaterialShader(rstate, render_data, curr_material, curr_pass));
         }
     }
 }
 
-void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *curr_material) {
+void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *curr_material, int curr_pass) {
 
     //Skip the material whose texture is not ready with some exceptions
     SceneObject *owner = render_data->owner_object();
@@ -422,7 +422,7 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     rstate.uniforms.u_mv_it = glm::inverseTranspose(rstate.uniforms.u_mv);
     rstate.uniforms.u_mvp = rstate.uniforms.u_proj * rstate.uniforms.u_mv;
     rstate.uniforms.u_right = rstate.render_mask & RenderData::RenderMaskBit::Right;
-    LOGE("material in renderMaterialShader %p", rstate.material_override);
+
 
     if (use_multiview) {
         rstate.uniforms.u_view_[0] = rstate.scene->main_camera_rig()->left_camera()->getViewMatrix();
@@ -436,7 +436,7 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     }
     Mesh *mesh = render_data->mesh();
 
-    Shader* shader = shader_manager->getShader(render_data->get_shader());
+    Shader* shader = shader_manager->getShader(render_data->get_shader(curr_pass));
     if (shader != NULL) {
         try {
             if ((render_data->draw_mode() == GL_LINE_STRIP) ||
@@ -467,7 +467,6 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     }
     GLuint programId = shader->getProgramId();
     if (Shader::LOG_SHADER) LOGE("SHADER: binding vertex arrays to program %d", programId);
-
     glBindVertexArray(mesh->getVAOId(programId));
     if (mesh->indices().size() > 0)
     {
