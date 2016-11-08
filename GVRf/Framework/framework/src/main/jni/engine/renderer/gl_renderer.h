@@ -100,7 +100,7 @@ private:
 
     // Pure Virtual
     virtual void renderMesh(RenderState& rstate, RenderData* render_data);
-    virtual void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material) ;
+    virtual void renderMaterialShader(RenderState& rstate, RenderData* render_data, Material *material, int curr_pass) ;
     void occlusion_cull(RenderState& rstate,
                     std::vector<SceneObject*>& scene_objects);
 

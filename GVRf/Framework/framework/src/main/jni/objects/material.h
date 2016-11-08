@@ -168,7 +168,7 @@ public:
                 }
                 std::string type(type_start, type_size);
                 std::string modified_type;
-                if(type.compare("float4") == 0 || type.compare("int4") == 0)
+                if(type.compare("float4") == 0 || type.compare("int4") == 0 || type.compare("mat4") == 0)
                     modified_type = type;
                 else
                     modified_type = getType(type);

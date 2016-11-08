@@ -32,6 +32,7 @@ Surface @ShaderName()
 	diffuse *= texture(diffuseTexture, diffuse_coord.xy);
 #else
     diffuse *= texture(u_texture, diffuse_coord.xy);
+
 #endif
     float opacity = diffuse.w;
     diffuse = vec4(diffuse.r * opacity, diffuse.g * opacity, diffuse.b * opacity, opacity);
