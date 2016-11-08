@@ -14,6 +14,10 @@
  */
 package org.gearvrf;
 
+import android.content.Context;
+
+import org.gearvrf.utility.TextFile;
+
 /**
  * Shader which modulates a texture by a color.
  * This shader does not use light sources.
@@ -50,11 +54,13 @@ public class GVRUnlitFBOShader extends GVRShader
         "  gl_FragColor = vec4(color.r * u_color.r * u_opacity, color.g * u_color.g * u_opacity, color.b * u_color.b * u_opacity, color.a * u_opacity);\n" +
         "}\n";
 
-    public GVRUnlitFBOShader()
+    public GVRUnlitFBOShader(GVRContext gvrContext)
     {
+
         super("float3 u_color float u_opacity", "sampler2D u_texture", "float3 a_position float2 a_texcoord");
-        setSegment("FragmentTemplate", fragmentShader);
-        setSegment("VertexTemplate", vertexShader);
+        Context context = gvrContext.getContext();
+        setSegment("FragmentTemplate", TextFile.readTextFile(context,R.raw.unlit_fbo_frag));
+        setSegment("VertexTemplate",TextFile.readTextFile(context,R.raw.unlit_fbo_vert));
     }
 
     protected void setMaterialDefaults(GVRShaderData material)

@@ -35,5 +35,5 @@ Surface @ShaderName()
 #endif
     float opacity = diffuse.w;
     diffuse = vec4(diffuse.r * opacity, diffuse.g * opacity, diffuse.b * opacity, opacity);
-	return Surface(viewspace_normal, ambient_color, diffuse, specular_color, emissive_color);
+    return Surface(viewspace_normal, ambient_color, diffuse, specular_color, emissive_color);
 }

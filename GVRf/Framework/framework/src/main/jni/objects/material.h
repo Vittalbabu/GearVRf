@@ -146,13 +146,14 @@ public:
     }
     void convertDescriptor(std::string& uniform_desc){
             const char* p = uniform_desc.c_str();
+            LOGE("descriptor material %s", p);
             const char* type_start;
             int type_size;
             const char* name_start;
             int name_size;
             while (*p)
             {
-                while (std::isspace(*p) || *p == ';')
+                while (std::isspace(*p) || *p == ';' || *p == ',')
                     ++p;
                 type_start = p;
                 if (*p == 0)
@@ -162,7 +163,7 @@ public:
                 type_size = p - type_start;
                 if (type_size == 0)
                 {
-                    LOGE("UniformBlock: SYNTAX ERROR: expecting data type\n");
+                    LOGE("UniformBlock: SYNTAX ERROR: expecting data type material\n");
                     break;
                 }
                 std::string type(type_start, type_size);

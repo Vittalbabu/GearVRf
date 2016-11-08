@@ -71,11 +71,15 @@ public class GVRTextureShader extends GVRShaderTemplate
     }
 
 
-
     protected void setMaterialDefaults(GVRShaderData material)
     {
         material.setFloat("u_opacity", 1.0f);
         material.setVec3("u_color", 1.0f, 1.0f, 1.0f);
+        material.setVec4("ambient_color", 0.2f, 0.2f, 0.2f, 1.0f);
+        material.setVec4("diffuse_color", 0.8f, 0.8f, 0.8f, 1.0f);
+        material.setVec4("specular_color", 0.0f, 0.0f, 0.0f, 1.0f);
+        material.setVec4("emissive_color", 0.0f, 0.0f, 0.0f, 1.0f);
+        material.setFloat("specular_exponent", 0.0f);
     }
 }
 
