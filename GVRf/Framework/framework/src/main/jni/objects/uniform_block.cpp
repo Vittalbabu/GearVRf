@@ -237,11 +237,11 @@ void   UniformBlock::parseDescriptor()
     int name_size;
     int offset = 0;
     const int VEC4_BOUNDARY = (sizeof(float) * 4) - 1;
-    LOGE("in parseDescriptor %s",Descriptor.c_str());
+    LOGE("in parse %s",Descriptor.c_str());
     TotalSize = 0;
     while (*p)
     {
-        while (std::isspace(*p) || *p == ';' || *p == ',' )
+        while (std::isspace(*p) || *p == ';')
             ++p;
         type_start = p;
         if (*p == 0)
