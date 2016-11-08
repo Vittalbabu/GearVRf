@@ -192,8 +192,6 @@ public class X3Dobject
   // TRANSFORM and GROUP nodes
 
 
-  private X3DTandLShader mX3DTandLShaderTest = null;
-
   private GVRTextureParameters gvrTextureParameters = null;
   private Future<GVRTexture> gvrTexture = null;
 
@@ -1042,7 +1040,7 @@ public class X3Dobject
         gvrRenderData = new GVRRenderData(gvrContext);
         // gvrRenderData.setCullFace(GVRCullFaceEnum.None);
         gvrRenderData.setCullFace(GVRCullFaceEnum.Back);
-        shaderSettings.initializeTextureMaterial(new GVRMaterial(gvrContext, GVRMaterial.GVRShaderType.BeingGenerated.ID));
+        shaderSettings.initializeTextureMaterial(new GVRMaterial(gvrContext, GVRMaterial.GVRShaderType.Phong.ID));
         gvrRenderData.setShaderTemplate(GVRPhongShader.class);
 
         // Check if this is part of a Level-of-Detail
@@ -1100,9 +1098,6 @@ public class X3Dobject
       {
         /* This gives the X3D-only Shader */
         if (!UNIVERSAL_LIGHTS)
-
-          mX3DTandLShaderTest = new X3DTandLShader(gvrContext);
-
 
         attributeValue = attributes.getValue("USE");
         if (attributeValue != null)
@@ -1359,7 +1354,7 @@ public class X3Dobject
         }
         else
         {
-          gvrMesh = new GVRMesh(gvrContext);
+          gvrMesh = new GVRMesh(gvrContext, "float3 a_position float3 a_normal float2 a_texcoord");
           attributeValue = attributes.getValue("DEF");
           if (attributeValue != null)
           {
@@ -3384,48 +3379,7 @@ public class X3Dobject
           if (!UNIVERSAL_LIGHTS)
           {
             gvrMaterial = shaderSettings.material;
-            gvrMaterial.setVec2(mX3DTandLShaderTest.TEXTURECENTER_KEY,
-                    shaderSettings.textureCenter[0],
-                    shaderSettings.textureCenter[1]);
-            gvrMaterial.setVec2(mX3DTandLShaderTest.TEXTURESCALE_KEY,
-                    shaderSettings.textureScale[0],
-                    shaderSettings.textureScale[1]);
-            gvrMaterial.setFloat(mX3DTandLShaderTest.TEXTUREROTATION_KEY,
-                    shaderSettings.textureRotation);
-            gvrMaterial.setVec2(mX3DTandLShaderTest.TEXTURETRANSLATION_KEY,
-                    shaderSettings.textureTranslation[0],
-                    shaderSettings.textureTranslation[1]);
-
-            gvrMaterial.setVec3(mX3DTandLShaderTest.DIFFUSECOLOR_KEY,
-                    shaderSettings.diffuseColor[0],
-                    shaderSettings.diffuseColor[1],
-                    shaderSettings.diffuseColor[2]);
-            gvrMaterial.setVec3(mX3DTandLShaderTest.EMISSIVECOLOR_KEY,
-                    shaderSettings.emissiveColor[0],
-                    shaderSettings.emissiveColor[1],
-                    shaderSettings.emissiveColor[2]);
-            gvrMaterial.setVec3(mX3DTandLShaderTest.SPECULARCOLOR_KEY,
-                    shaderSettings.specularColor[0],
-                    shaderSettings.specularColor[1],
-                    shaderSettings.specularColor[2]);
-            gvrMaterial.setFloat(mX3DTandLShaderTest.SHININESS_KEY,
-                    shaderSettings.shininess);
-
-            gvrMaterial.setTexture(mX3DTandLShaderTest.TEXTURE_KEY, gvrTexture);
-
-
-            float[] modelMatrix = currentSceneObject.getTransform()
-                    .getModelMatrix();
-            gvrMaterial
-                    .setMat4(mX3DTandLShaderTest.MODELMATRIX_KEY, modelMatrix[0],
-                            modelMatrix[1], modelMatrix[2], 0, modelMatrix[4],
-                            modelMatrix[5], modelMatrix[6], 0, modelMatrix[8],
-                            modelMatrix[9], modelMatrix[10], 0, modelMatrix[12],
-                            modelMatrix[13], modelMatrix[14], 1);
-
-
             gvrRenderData.setMaterial(gvrMaterial);
-            gvrRenderData.setShaderTemplate(GVRPhongShader.class);
           } // end !UNIVERSAL_LIGHTS
           else
           {
@@ -3481,10 +3435,12 @@ public class X3Dobject
               // X3D doesn't have an ambient color so need to do color
               // calibration tests on how to set this.
               // gvrMaterial.setVec4("ambient_color", 1.0f, 1.0f, 1.0f, 1.0f);
+              float transparency = shaderSettings.getTransparency();
+
               gvrMaterial.setVec4("diffuse_color",
                       shaderSettings.diffuseColor[0],
                       shaderSettings.diffuseColor[1],
-                      shaderSettings.diffuseColor[2], 1.0f);
+                      shaderSettings.diffuseColor[2], transparency);
               gvrMaterial.setVec4("specular_color",
                       shaderSettings.specularColor[0],
                       shaderSettings.specularColor[1],
@@ -3524,8 +3480,6 @@ public class X3Dobject
                 // objects with USE
               }
 
-              float transparency = shaderSettings.getTransparency();
-              gvrMaterial.setOpacity(transparency);
               if ((transparency != 0) && (transparency != 1))
               {
                 gvrRenderData.setRenderingOrder(GVRRenderingOrder.TRANSPARENT);

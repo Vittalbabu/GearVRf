@@ -3,21 +3,51 @@ precision highp sampler2DArray;
 
 #ifdef HAS_MULTIVIEW
 	flat in int view_id;
+#endif
+/*
+#ifdef HAS_MULTIVIEW
 	uniform mat4 u_view_[2];
 #else
     uniform mat4 u_view; 
 #endif
+*/
 
-out vec4 fragColor;
+layout (std140) uniform Material_ubo{
+    vec4 u_opacity;
+    vec4 u_color;
+    vec4 ambient_color;
+    vec4 diffuse_color;
+    vec4 specular_color;
+    vec4 emissive_color;
+    vec4 specular_exponent;
+    vec4 line_width;
+};
 
-uniform mat4 u_model;
+layout (std140) uniform Transform_ubo{
+ #ifdef HAS_MULTIVIEW
+     mat4 u_view_[2];
+     mat4 u_mvp_[2];
+     mat4 u_mv_[2];
+     mat4 u_mv_it_[2];
+ #else
+     mat4 u_view;
+     mat4 u_mvp;
+     mat4 u_mv;
+     mat4 u_mv_it;
+ #endif
+     mat4 u_model;
+     mat4 u_view_i;
+     vec4 u_right;
+};
 
+//uniform mat4 u_model;
 in vec3 viewspace_position;
 in vec3 viewspace_normal;
 in vec4 local_position;
 in vec4 proj_position;
 in vec3 view_direction;
 in vec2 diffuse_coord;
+out vec4 fragColor;
 
 #ifdef HAS_ambientTexture
 out vec2 ambient_coord;
@@ -58,10 +88,11 @@ void main()
 {
 	Surface s = @ShaderName();
 #if defined(HAS_LIGHTSOURCES)
-	vec4 color = LightPixel(s);
+    vec4 color = LightPixel(s);
 	color = clamp(color, vec4(0), vec4(1));
 	fragColor = color;
 #else
 	fragColor = s.diffuse;
+	//fragColor = vec4(1,0,1,1);
 #endif
 }

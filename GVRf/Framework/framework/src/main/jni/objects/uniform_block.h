@@ -26,6 +26,7 @@
 #define TRANSFORM_UBO_INDEX 0
 #define MATERIAL_UBO_INDEX  1
 #define SAMPLER_UBO_INDEX   2
+#define BONES_UBO_INDEX     3
 namespace gvr {
 class SceneObject;
 //struct GVR_Uniform;
@@ -136,6 +137,7 @@ public:
             LOGE("UniformBlock: ERROR: descriptor cannot be changed once it is set\n");
             return;
         }
+
         Descriptor = descriptor;
         parseDescriptor();
     }
@@ -235,7 +237,7 @@ public:
      * @see setVec
      * @see getVec
      */
-    bool setMat4(std::string name, const glm::mat4& val);
+    bool setMat4(std::string name,  const float* val);
 
     /**
      * Get the value of a 2D vector uniform.
@@ -374,8 +376,9 @@ protected:
      * @param bytesize byte size of uniform.
      * @return pointer to Uniform structure describing the uniform or NULL on failure
      */
-    Uniform* getUniform(std::string name, int bytesize);
-    const Uniform* getUniform(std::string name, int bytesize) const;
+    Uniform* getUniform(std::string name, int& bytesize);
+    const Uniform* getUniform(std::string name, int& bytesize) const;
+
 
     /**
      * Get a pointer to the value for the named uniform.
@@ -383,14 +386,13 @@ protected:
      * @param bytesize number of bytes uniform occupies
      * @return pointer to start of uniform value or NULL if not found.
      */
-    char* getData(std::string name, int bytesize);
-    const char* getData(std::string name, int bytesize) const;
+    char* getData(std::string name, int& bytesize);
+    const char* getData(std::string name, int& bytesize) const;
 
     /*
      * Marks the uniform block as dirty for all shaders.
      */
     virtual void setDirty() { }
-
     bool        ownData;        // true if this uniform owns its data block
     std::string BlockName;      // uniform block name in shadere
     std::string Descriptor;     // descriptor with name, type and size of uniforms

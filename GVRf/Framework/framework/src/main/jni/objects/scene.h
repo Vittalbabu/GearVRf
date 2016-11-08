@@ -29,7 +29,7 @@
 #include "components/camera_rig.h"
 #include "engine/renderer/renderer.h"
 #include "objects/light.h"
-
+#include "objects/uniform_block.h"
 namespace gvr {
 class SceneObject;
 
@@ -162,6 +162,22 @@ public:
     }
 
     static void set_main_scene(Scene* scene);
+    GLUniformBlock* getTransformUbo(){
+        return transform_ubo_;
+    }
+    GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
+               GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
+               gl_ubo_->setGLBindingPoint(index);
+               gl_ubo_->setBlockName(name);
+               gl_ubo_->bindBuffer(program_id);
+               return gl_ubo_;
+     }
+     void bindTransformUbo(int program_id){
+         if(transform_ubo_ == nullptr)
+             transform_ubo_ = bindUbo(program_id,TRANSFORM_UBO_INDEX,"Transform_ubo",uniform_desc_.c_str());
+         else
+             transform_ubo_->bindBuffer(program_id);
+     }
 
 private:
     Scene(const Scene& scene);
@@ -172,6 +188,8 @@ private:
     void clearAllColliders();
 
 private:
+    GLUniformBlock *transform_ubo_;
+    std::string uniform_desc_;
     static Scene* main_scene_;
     SceneObject scene_root_;
     CameraRig* main_camera_rig_;

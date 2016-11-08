@@ -41,7 +41,7 @@ class Material;
 class Light;
 class Batch;
 class TextureCapturer;
-class RenderPass;
+
 template<typename T>
 std::string to_string(T value) {
     //create an output string stream
@@ -124,7 +124,7 @@ public:
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
                     1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0),uniform_dirty(true), renderdata_dirty_(true) {
+                    GL_TRIANGLES), texture_capturer(0),uniform_dirty(true),shaderID_(0), renderdata_dirty_(true) {
     }
 
     void copy(const RenderData& rdata) {
@@ -151,6 +151,7 @@ public:
         invert_coverage_mask_ = rdata.invert_coverage_mask_;
         draw_mode_ = rdata.draw_mode_;
         texture_capturer = rdata.texture_capturer;
+        shaderID_ = rdata.shaderID_;
     }
 
     RenderData(const RenderData& rdata) {
@@ -366,6 +367,12 @@ public:
         return texture_capturer;
     }
 
+    void set_shader(int shaderid, int pass) {
+        render_pass_list_[pass]->set_shader(shaderid);
+    }
+
+    int get_shader(int pass =0) const { return render_pass_list_[pass]->get_shader(); }
+
     std::string getHashCode() {
         if (hash_code_dirty_) {
             std::string render_data_string;
@@ -390,10 +397,28 @@ public:
         }
         return hash_code;
     }
+     
     bool uniform_dirty;
     VulkanData& getVkData(){
         return vkData;
     }
+
+        GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
+                   GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
+                   gl_ubo_->setGLBindingPoint(index);
+                   gl_ubo_->setBlockName(name);
+                   gl_ubo_->bindBuffer(program_id);
+                   return gl_ubo_;
+         }
+         void bindBonesUbo(int program_id){
+             if(bones_ubo_ == nullptr)
+                 bones_ubo_ = bindUbo(program_id,BONES_UBO_INDEX,"Bones_ubo","mat4 u_bone_matrix[60];" );
+             else
+                 bones_ubo_->bindBuffer(program_id);
+         }
+     GLUniformBlock* getBonesUbo(){
+        return bones_ubo_;
+     }
 private:
     //  RenderData(const RenderData& render_data);
     RenderData(RenderData&& render_data);
@@ -402,7 +427,7 @@ private:
 
 private:
     VulkanData vkData;
-
+ GLUniformBlock *bones_ubo_;
     static const int DEFAULT_RENDER_MASK = Left | Right;
     static const int DEFAULT_RENDERING_ORDER = Geometry;
     Mesh* mesh_;
@@ -427,6 +452,7 @@ private:
     GLboolean invert_coverage_mask_;
     GLenum draw_mode_;
     float camera_distance_;
+    int shaderID_;
     TextureCapturer *texture_capturer;
 };
 

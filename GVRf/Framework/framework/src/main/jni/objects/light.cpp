@@ -33,7 +33,7 @@ const int Light::SHADOW_MAP_SIZE = 1024;
 GLTexture* Light::depth_texture_ = NULL;
 GLTexture* Light::color_texture_ = NULL;
 
-static const bool LOG_LIGHT = false;
+static const bool LOG_LIGHT = true;
 
 class LightCamera : public Camera
 {
