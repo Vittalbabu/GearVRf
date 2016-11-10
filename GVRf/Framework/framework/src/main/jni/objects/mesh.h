@@ -61,6 +61,8 @@ public:
     }
 
     ~Mesh() {
+        delete m_vertices.vi_bindings;
+        delete m_vertices.vi_attrs;
         cleanUp();
     }
 
