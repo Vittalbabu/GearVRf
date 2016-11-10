@@ -140,27 +140,21 @@ public:
     Descriptor& getDescriptor(){
         return vk_descriptor;
     }
-
     std::string getType(std::string type){
-        std::string float_type = "float4";
-        std::string int_type = "int4";
-        if(type.compare("float") == 0)
-            return float_type;
-        if(type.compare("float2") == 0)
-            return float_type;
-        if(type.compare("float3")== 0)
-            return float_type;
-        if(type.compare("int") == 0)
-            return int_type;
-        if(type.compare("int2") == 0)
-            return int_type;
-        if(type.compare("int3") == 0)
-            return int_type;
+        if(type.empty()){
+            LOGE("ERROR: type cannot be empty");
+            return type;
+        }
+
+        if (type.find("int") != std::string::npos)
+            return "int4";
+        if (type.find("float") != std::string::npos)
+            return "float4";
 
     }
+
     void convertDescriptor(std::string& uniform_desc){
             const char* p = uniform_desc.c_str();
-            LOGE("descriptor material %s", p);
             const char* type_start;
             int type_size;
             const char* name_start;
@@ -202,7 +196,6 @@ public:
     }
    void setUniformDesc(std::string uniform_desc){
         convertDescriptor(uniform_desc);
-       // uniform_desc_ = uniform_desc;
     }
     bool isMaterialDirty(){
         return material_dirty_;

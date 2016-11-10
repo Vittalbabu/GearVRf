@@ -181,9 +181,13 @@ void Mesh::getTransformedBoundingBoxInfo(glm::mat4 *Mat,
 int calcSize(std::string type)
 {
     if (type == "float") return 1;
+    if (type == "vec3") return 3;
+    if (type == "vec4") return 4;
+    if (type == "vec2") return 2;
     if (type == "float3") return 3;
     if (type == "float4") return 4;
     if (type == "float2") return 2;
+
     if (type == "int") return 1;
     if (type == "int3") return 4;
     if (type == "int4") return 4;
@@ -228,14 +232,18 @@ void Mesh::getAttribData(std::string& descriptor,std::vector<GLAttributeMapping>
 
            std::string name(name_start, name_size);
            GLAttributeMapping binding;
-           binding.data_type = type;
-           binding.offset = total_size * sizeof(float);
-           total_size +=calcSize(type) ;
-           binding.index = attrib_index++;
 
            if(name.compare("a_position") == 0){
                 binding.data = vertices_.data();
                 vertices_len = vertices_.size();
+
+               binding.data_type = type;
+               binding.size = calcSize(type);
+               binding.offset = total_size * sizeof(float);
+               total_size +=calcSize(type) ;
+               binding.index = attrib_index++;
+               bindings.push_back(binding);
+
            }
         /*   else if(name.compare("a_texcoord")==0){
                 if(vertices_len && vertices_len != tex_coords_.size()){
@@ -243,7 +251,7 @@ void Mesh::getAttribData(std::string& descriptor,std::vector<GLAttributeMapping>
                 }
                 binding.data = tex_coords_.data();
            }
-          */ else if(name.compare("a_normal")==0){
+          *//* else if(name.compare("a_normal")==0){
                 if(vertices_len && vertices_len != normals_.size()){
                     LOGE("ERROR: length of tex cords is not same as of vertices");
                 }
@@ -277,8 +285,9 @@ void Mesh::getAttribData(std::string& descriptor,std::vector<GLAttributeMapping>
                 }
                 binding.data = curr.data();
            }
+           */
 
-          bindings.push_back(binding);
+
         }
 
 
@@ -287,20 +296,22 @@ VkFormat getDataType(std::string& type){
     if(type.compare("float")==0)
         return VK_FORMAT_R32_SFLOAT;
 
-    if(type.compare("float2")==0)
+    if(type.compare("vec2")==0 || type.compare("float2")==0)
         return VK_FORMAT_R32G32_SFLOAT;
 
-    if(type.compare("float3")==0)
+    if(type.compare("float3")==0 || type.compare("vec3")==0)
         return VK_FORMAT_R32G32B32_SFLOAT;
 
-    if(type.compare("float4")==0)
+    if(type.compare("float4")==0 || type.compare("vec4")==0)
         return VK_FORMAT_R32G32B32A32_SFLOAT;
 
 }
 
 // call this from renderCamera, get attribute descriptor from shader
 void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, VulkanCore* vulkanCore ){
-    int total_size = 0;
+        if (!vao_dirty_)
+            return;
+        int total_size = 0;
     getAttribData(descriptor, attrMapping, total_size);
     std::vector<GLfloat> buffer;
     createBuffer(buffer, vertices_.size());
@@ -408,6 +419,7 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
         m_vertices.vi.vertexAttributeDescriptionCount = attrMapping.size();
         m_vertices.vi.pVertexAttributeDescriptions = m_vertices.vi_attrs;
 
+
         for(int i=0; i< attrMapping.size(); i++){
            // check this
             m_vertices.vi_bindings[i].binding = attrMapping[i].index;
@@ -420,7 +432,7 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
         }
 
         m_indices.count = static_cast<uint32_t>(indices_.size());
-         //m_indices.count = static_cast<uint32_t>(indexBuffer.size());
+
          uint32_t indexBufferSize = m_indices.count *  sizeof(unsigned short);//sizeof(uint32_t);//*
 
              VkBufferCreateInfo indexbufferInfo = {};
@@ -487,7 +499,7 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
          vkQueueWaitIdle(vulkanCore->getVkQueue());
          vkFreeCommandBuffers(m_device, vulkanCore->getTransientCmdPool(), 1, &trnCmdBuf);
 
-
+        vao_dirty_ = false;
 
 }
 void Mesh::createAttributeMapping(int programId,
@@ -644,87 +656,6 @@ const GLuint Mesh::getVAOId(int programId) {
     LOGI("!! %p Error in creating VAO  for Prog Id -- %d", this, programId);
     return 0;
 }
-/*void Mesh::generateVAO(VkDevice &m_device, VulkanCore* vulkanCore_){
-    if (!vao_dirty_) {
-        return;
-    }
-    VkResult  err;
-
-    vkVertices_->vi_attrs = new VkVertexInputAttributeDescription[1];
-    memset(vkVertices_, 0, sizeof(GVR_VK_Vertices));
-    bool pass;
-        // Create our buffer object.
-    VkBufferCreateInfo bufferCreateInfo = {};
-    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-     bufferCreateInfo.pNext = nullptr;
-     bufferCreateInfo.size = sizeof(vertices_)*sizeof(glm::vec3);
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        bufferCreateInfo.flags = 0;
-        err = vkCreateBuffer(m_device, &bufferCreateInfo, nullptr, &(vkVertices_->buf));
-        GVR_VK_CHECK(!err);
-
-        // Obtain the memory requirements for this buffer.
-        VkMemoryRequirements mem_reqs;
-        vkGetBufferMemoryRequirements(m_device, vkVertices_->buf, &mem_reqs);
-        GVR_VK_CHECK(!err);
-
-        // And allocate memory according to those requirements.
-        VkMemoryAllocateInfo memoryAllocateInfo = {};
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.pNext = nullptr;
-        memoryAllocateInfo.allocationSize = 0;
-        memoryAllocateInfo.memoryTypeIndex = 0;
-        memoryAllocateInfo.allocationSize  = mem_reqs.size;
-        pass = vulkanCore_->GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &memoryAllocateInfo.memoryTypeIndex);
-        GVR_VK_CHECK(pass);
-
-        err = vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &(vkVertices_->mem));
-        GVR_VK_CHECK(!err);
-
-        // Now we need to map the memory of this new allocation so the CPU can edit it.
-        void *data;
-        err = vkMapMemory(m_device, vkVertices_->mem, 0, memoryAllocateInfo.allocationSize, 0, &data);
-        GVR_VK_CHECK(!err);
-
-        // Copy our triangle verticies and colors into the mapped memory area.
-        memcpy(data, &vertices_, sizeof(vertices_)*sizeof(glm::vec3));
-
-
-        // Unmap the memory back from the CPU.
-        vkUnmapMemory(m_device, vkVertices_->mem);
-
-        // Bind our buffer to the memory.
-        err = vkBindBufferMemory(m_device, vkVertices_->buf, vkVertices_->mem, 0);
-        GVR_VK_CHECK(!err);
-
-        // The vertices need to be defined so that the pipeline understands how the
-        // data is laid out. This is done by providing a VkPipelineVertexInputStateCreateInfo
-        // structure with the correct information.
-        vkVertices_->vi.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vkVertices_->vi.pNext = nullptr;
-        vkVertices_->vi.vertexBindingDescriptionCount = 1;
-        vkVertices_->vi.pVertexBindingDescriptions = vkVertices_->vi_bindings;
-        vkVertices_->vi.vertexAttributeDescriptionCount = 1;
-        vkVertices_->vi.pVertexAttributeDescriptions = vkVertices_->vi_attrs;
-
-        // We bind the buffer as a whole, using the correct buffer ID.
-        // This defines the stride for each element of the vertex array.
-        vkVertices_->vi_bindings[0].binding = GVR_VK_VERTEX_BUFFER_BIND_ID;
-        vkVertices_->vi_bindings[0].stride = 3*sizeof(glm::vec3);
-        vkVertices_->vi_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        // Within each element, we define the attributes. At location 0,
-        // the vertex positions, in float3 format, with offset 0 as they are
-        // first in the array structure.
-        vkVertices_->vi_attrs[0].binding = GVR_VK_VERTEX_BUFFER_BIND_ID;
-        vkVertices_->vi_attrs[0].location = 0;
-        vkVertices_->vi_attrs[0].format = VK_FORMAT_R32G32B32_SFLOAT; //float3
-        vkVertices_->vi_attrs[0].offset = 0;
-    vao_dirty_ = false;
-
-
-}
-*/
 // generate vertex array object
 void Mesh::generateVAO(int programId) {
     GLuint tmpID;

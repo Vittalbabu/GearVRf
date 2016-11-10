@@ -43,7 +43,6 @@
 #define MAX_INDICES 500
 #define BATCH_SIZE 60
 bool do_batching = false;
-
 namespace gvr {
 Renderer* gRenderer = nullptr;
 bool use_multiview= false;
@@ -248,7 +247,6 @@ void Renderer::addRenderData(RenderData *render_data) {
     if (render_data->render_mask() == 0) {
         return;
     }
-
     render_data_vector.push_back(render_data);
     return;
 }
@@ -257,6 +255,7 @@ bool Renderer::occlusion_cull_init(Scene* scene, std::vector<SceneObject*>& scen
 
     scene->lockColliders();
     scene->clearVisibleColliders();
+    LOGE("in occulusion cull init");
     bool do_culling = scene->get_occlusion_culling();
     if (!do_culling) {
         for (auto it = scene_objects.begin(); it != scene_objects.end(); ++it) {

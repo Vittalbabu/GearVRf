@@ -141,7 +141,12 @@ public:
         locations_[key] = loc;
     }
 
-
+    /*
+     *  returns the vertex attributes string
+     */
+    std::string& getVertexDescriptor(){
+        return vertexDescriptor_;
+    }
     /*
      * TODO: This is for batching. Roshan should implement it.
      */
