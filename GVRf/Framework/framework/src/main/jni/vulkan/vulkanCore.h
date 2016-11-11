@@ -24,6 +24,7 @@
 #include "vulkanInfoWrapper.h"
 #include <vector>
 #include "glm/glm.hpp"
+#include <shaderc/shaderc.hpp>
 //#include "vulkanThreadPool.h"
 
 #define GVR_VK_CHECK(X) if (!(X)) { LOGD("VK_CHECK Failure"); assert((X));}
@@ -109,6 +110,7 @@ private:
 
 
     bool m_Vulkan_Initialised;
+    std::vector<uint32_t> CompileShader(const std::string& shaderName, shaderc_shader_kind shaderType, const std::string& shaderContents);
     ANativeWindow * m_androidWindow;
 
     VkInstance m_instance;
@@ -154,6 +156,8 @@ private:
     GVR_VK_Indices m_indices;
 
     VkPipelineCache m_pipelineCache;
+    shaderc::Compiler compiler;
+    shaderc::CompileOptions options;
     //uint m_threadCount;
     //ThreadPool m_threadPool;
 };

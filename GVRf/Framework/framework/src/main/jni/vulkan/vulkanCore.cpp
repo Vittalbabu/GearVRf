@@ -29,8 +29,6 @@
 #include <math.h>
 #include "vulkan/vulkan_headers.h"
 #include <thread>
-//#include <shaderc/shaderc.hpp>
-#include <shaderc/shaderc.hpp>
 
 #define UINT64_MAX 99999
 namespace gvr {
@@ -1141,9 +1139,19 @@ namespace gvr {
         return module;
     }
 
-    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices,
-                                               RenderData *rdata) {
+    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, shaderc_shader_kind shaderType, const std::string& shaderContents) {
+        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderContents.c_str(), shaderContents.size(), shaderType, shaderName.c_str(), options);
 
+        if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
+            LOGI("Vulkan shader unable to compile : %s", module.GetErrorMessage().c_str());
+        }
+
+        std::vector<uint32_t> result(module.cbegin(), module.cend());
+        return result;
+    }
+
+
+    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata) {
         VkResult err;
 
         // The pipeline contains all major state for rendering.
@@ -1219,11 +1227,6 @@ namespace gvr {
         ms.pSampleMask = nullptr;
         ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-        shaderc::Compiler compiler;
-        shaderc::CompileOptions options;
-
-        options.AddMacroDefinition("MY_DEFINE", "1");
-
         std::string vertexShaderData = std::string("") +
                                        "#version 400 \n" +
                                        "#extension GL_ARB_separate_shader_objects : enable \n" +
@@ -1234,19 +1237,7 @@ namespace gvr {
                                        "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
                                        "}";
 
-        shaderc_shader_kind kind = shaderc_glsl_default_vertex_shader;
-        shaderc::SpvCompilationResult module_vert = compiler.CompileGlslToSpv(
-                vertexShaderData.c_str(), vertexShaderData.size(), kind, "VulkanShader", options);
-        if (module_vert.GetCompilationStatus() != shaderc_compilation_status_success) {
-            //std::cerr << module.GetErrorMessage();
-            LOGI("Vulkan shader unable to compile shader %s",
-                 module_vert.GetErrorMessage().c_str());
-        }
-        else
-            LOGE("Vulkan shader compiled shader");
-
-        std::vector <uint32_t> result_vert(module_vert.cbegin(), module_vert.cend());
-
+        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", shaderc_glsl_default_vertex_shader, vertexShaderData);
 
         std::string data_frag = std::string("") +
                                 "#version 400 \n" +
@@ -1265,21 +1256,8 @@ namespace gvr {
                                 "   uFragColor = lightEffectsObj.ambient_color;  \n" +
                                 "}";
 
-        shaderc_shader_kind kind_frag = shaderc_glsl_default_fragment_shader;
-        shaderc::SpvCompilationResult module_frag = compiler.CompileGlslToSpv(data_frag.c_str(),
-                                                                              data_frag.size(),
-                                                                              kind_frag,
-                                                                              "VulkanShaderFrag",
-                                                                              options);
-        if (module_frag.GetCompilationStatus() != shaderc_compilation_status_success) {
-            //std::cerr << module.GetErrorMessage();
-            LOGI("Vulkan shader unable to compile shader %s",
-                 module_frag.GetErrorMessage().c_str());
-        }
-        else
-            LOGE("Vulkan shader fragcompiled shader");
 
-        std::vector <uint32_t> result_frag(module_frag.cbegin(), module_frag.cend());
+        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", shaderc_glsl_default_fragment_shader, data_frag);
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
@@ -1287,15 +1265,13 @@ namespace gvr {
         shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
         shaderStages[0].module = CreateShaderModule(result_vert,
-                                                    result_vert.size());//CreateShaderModuleAscii( (const uint32_t*)&shader_tri_vert[0], shader_tri_vert_size);//
+                                                    result_vert.size());
         shaderStages[0].pName = "main";
         shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[1].module = CreateShaderModule(result_frag,
-                                                    result_frag.size());//CreateShaderModuleAscii( (const uint32_t*)&shader_tri_frag[0], shader_tri_frag_size);//
+                                                    result_frag.size());
         shaderStages[1].pName = "main";
-
-
 
         // Out graphics pipeline records all state information, including our renderpass
         // and pipeline layout. We do not have any dynamic state in this example.
