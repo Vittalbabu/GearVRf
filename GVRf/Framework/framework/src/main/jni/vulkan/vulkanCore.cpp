@@ -17,7 +17,6 @@
 
 #include "util/gvr_log.h"
 #include <assert.h>
-#include <cstring>
 #include <iostream>
 #include <vector>
 #include "objects/components/camera.h"
@@ -29,6 +28,7 @@
 #include <math.h>
 #include "vulkan/vulkan_headers.h"
 #include <thread>
+#include <shaderc/shaderc.hpp>
 
 #define UINT64_MAX 99999
 namespace gvr {
@@ -1139,7 +1139,26 @@ namespace gvr {
         return module;
     }
 
-    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, shaderc_shader_kind shaderType, const std::string& shaderContents) {
+    /*
+     * Compile Vulkan Shader
+     * shaderTypeID 1 : Vertex Shader
+     * shaderTypeID 2 : Fragment Shader
+     */
+    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, uint8_t shaderTypeID, const std::string& shaderContents) {
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
+
+        shaderc_shader_kind shaderType;
+
+        switch(shaderTypeID){
+            case 1:
+                shaderType = shaderc_glsl_default_vertex_shader;
+                break;
+            case 2:
+                shaderType = shaderc_glsl_default_fragment_shader;
+                break;
+        }
+
         shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderContents.c_str(), shaderContents.size(), shaderType, shaderName.c_str(), options);
 
         if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
@@ -1237,7 +1256,7 @@ namespace gvr {
                                        "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
                                        "}";
 
-        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", shaderc_glsl_default_vertex_shader, vertexShaderData);
+        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", 1 /*shaderTypeID 1 for VS*/, vertexShaderData);
 
         std::string data_frag = std::string("") +
                                 "#version 400 \n" +
@@ -1257,7 +1276,7 @@ namespace gvr {
                                 "}";
 
 
-        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", shaderc_glsl_default_fragment_shader, data_frag);
+        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", 2 /*shaderTypeID 2 for FS*/, data_frag);
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
