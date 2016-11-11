@@ -79,6 +79,7 @@ public:
 
 private:
     std::vector<VkFence> waitFences;
+    std::vector<VkFence> waitSCBFences;
     static VulkanCore* theInstance;
     VulkanCore(ANativeWindow * newNativeWindow) : m_pPhysicalDevices(NULL){
         m_Vulkan_Initialised = false;
@@ -104,6 +105,7 @@ private:
     void BuildCmdBuffer();
 
     void InitUniformBuffers();
+    void createPipelineCache();
 
 
     bool m_Vulkan_Initialised;
@@ -151,6 +153,7 @@ private:
     VkDescriptorSet m_descriptorSet;
     GVR_VK_Indices m_indices;
 
+    VkPipelineCache m_pipelineCache;
     //uint m_threadCount;
     //ThreadPool m_threadPool;
 };
