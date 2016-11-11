@@ -59,7 +59,6 @@ public:
     VulkanData():vk_descriptor("mat4 mvp"){}
     void createTransformDescriptor(VkDevice &device,VulkanCore* vk){
         vk_descriptor.createDescriptor(device, vk, TRANSFORM_UBO_INDEX, VK_SHADER_STAGE_VERTEX_BIT );
-
     }
 
     VkPipeline& getVKPipeline(){

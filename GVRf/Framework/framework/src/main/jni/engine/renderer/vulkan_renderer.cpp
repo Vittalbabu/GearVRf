@@ -40,46 +40,49 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "objects/uniform_block.h"
+
 namespace gvr {
-     void VulkanRenderer::renderCamera(Scene* scene, Camera* camera,
-             ShaderManager* shader_manager,
-             PostEffectShaderManager* post_effect_shader_manager,
-             RenderTexture* post_effect_render_texture_a,
-             RenderTexture* post_effect_render_texture_b) {
+    void VulkanRenderer::renderCamera(Scene *scene, Camera *camera,
+                                      ShaderManager *shader_manager,
+                                      PostEffectShaderManager *post_effect_shader_manager,
+                                      RenderTexture *post_effect_render_texture_a,
+                                      RenderTexture *post_effect_render_texture_b) {
 
 
-            std::vector <VkDescriptorSet> allDescriptors;
+        std::vector<VkDescriptorSet> allDescriptors;
 
-              int swapChainIndex = vulkanCore_->AcquireNextImage();
+        int swapChainIndex = vulkanCore_->AcquireNextImage();
 
-                for(auto &rdata : render_data_vector) {
+        for (auto &rdata : render_data_vector) {
 
-                // Creating and initializing Uniform Buffer for Each Render Data
-                if(rdata->uniform_dirty){
+            // Creating and initializing Uniform Buffer for Each Render Data
+            if (rdata->uniform_dirty) {
 
-               rdata->createVkTransformUbo(vulkanCore_->getDevice(),vulkanCore_);
-               rdata->material(0)->createVkMaterialDescriptor(vulkanCore_->getDevice(),vulkanCore_);
+                rdata->createVkTransformUbo(vulkanCore_->getDevice(), vulkanCore_);
+                rdata->material(0)->createVkMaterialDescriptor(vulkanCore_->getDevice(),
+                                                               vulkanCore_);
 
-               vulkanCore_->InitLayoutRenderData(rdata);
-                    Shader* shader = shader_manager->getShader(rdata->get_shader());
-                    rdata->mesh()->generateVKBuffers(shader->getVertexDescriptor(), vulkanCore_->getDevice(),vulkanCore_ );
-                    
-             //   vulkanCore_->InitVertexBuffersFromRenderData(vertices, vert, indices1, indices);
-                    GVR_VK_Vertices& vert = rdata->mesh()->getVkVertices();
+                vulkanCore_->InitLayoutRenderData(rdata);
+                Shader *shader = shader_manager->getShader(rdata->get_shader());
+                rdata->mesh()->generateVKBuffers(shader->getVertexDescriptor(),
+                                                 vulkanCore_->getDevice(), vulkanCore_);
 
-                vulkanCore_->InitDescriptorSetForRenderData( rdata);
+                GVR_VK_Vertices &vert = rdata->mesh()->getVkVertices();
+
+                vulkanCore_->InitDescriptorSetForRenderData(rdata);
                 vulkanCore_->InitPipelineForRenderData(vert, rdata);
-                vulkanCore_->updateMaterialUniform(scene,camera, rdata);
+                vulkanCore_->updateMaterialUniform(scene, camera, rdata);
                 rdata->uniform_dirty = false;
-                }
+            }
 
-                    allDescriptors.push_back(rdata->getVkData().m_descriptorSet);
-                    vulkanCore_->UpdateUniforms(scene,camera, rdata);
+            allDescriptors.push_back(rdata->getVkData().m_descriptorSet);
+            vulkanCore_->UpdateUniforms(scene, camera, rdata);
 
-                }
-                 vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex, render_data_vector);
-                vulkanCore_->DrawFrameForRenderData(swapChainIndex);
+        }
+        vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex,
+                                                 render_data_vector);
+        vulkanCore_->DrawFrameForRenderData(swapChainIndex);
 
-     }
+    }
 
 }
