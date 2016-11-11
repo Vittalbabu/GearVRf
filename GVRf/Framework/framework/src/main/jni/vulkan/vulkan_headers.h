@@ -16,6 +16,7 @@ class Descriptor{
 public:
     Descriptor(){}
     Descriptor(const std::string& ubo_descriptor): ubo(ubo_descriptor){}
+    void createDescriptor(VkDevice &,VulkanCore*, int, VkShaderStageFlagBits);
     void  createBuffer(VkDevice &device,VulkanCore* vk);
     void createLayoutBinding(int binding_index,int stageFlags, bool sampler=false);
     void createDescriptorWriteInfo(int binding_index,int stageFlags, VkDescriptorSet& descriptor, bool sampler=false);

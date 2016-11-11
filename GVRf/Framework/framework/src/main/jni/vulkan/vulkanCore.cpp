@@ -33,9 +33,18 @@
 #include <shaderc/shaderc.hpp>
 #define UINT64_MAX 99999
 namespace gvr {
+
+
 void Descriptor::createBuffer(VkDevice &device,VulkanCore* vk){
     ubo.createBuffer(device,vk);
 }
+    void Descriptor::createDescriptor(VkDevice &device,VulkanCore* vk, int index, VkShaderStageFlagBits shaderStageFlagBits){
+        createBuffer(device,vk);
+        createLayoutBinding(index,shaderStageFlagBits);
+        VkDescriptorSet desc;
+        createDescriptorWriteInfo(index,shaderStageFlagBits, desc);
+
+    }
 void Descriptor::createLayoutBinding(int binding_index,int stageFlags, bool sampler)
 {
         VkDescriptorType descriptorType = (sampler ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
@@ -635,12 +644,7 @@ void VulkanCore::InitVertexBuffersFromRenderData(const std::vector<glm::vec3>& v
 
     VkResult   err;
     bool   pass;
-//   VkVertexInputBindingDescription*      vi_bindings;
-//    VkVertexInputAttributeDescription*    vi_attrs;
-//    m_vertices.vi_bindings = new VkVertexInputBindingDescription[2];
- //   m_vertices.vi_attrs = new VkVertexInputAttributeDescription[2];
-    // Our m_vertices member contains the types required for storing
-    // and defining our vertex buffer within the graphics pipeline.
+
     memset(&m_vertices, 0, sizeof(m_vertices));
 
     // Create our buffer object.
@@ -1147,7 +1151,7 @@ VkShaderModule VulkanCore::CreateShaderModuleAscii(const uint32_t* code, uint32_
     return module;
 }
 
-void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData* rdata){   //VkPipeline &m_pipeline){
+    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData* rdata){   //VkPipeline &m_pipeline){
 
     VkResult   err;
 
@@ -1474,9 +1478,9 @@ void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allD
 
         // When starting the render pass, we can set clear values.
         VkClearValue clear_values[2] = {};
-            clear_values[0].color.float32[0] = 0.3f;
-            clear_values[0].color.float32[1] = 0.3f;
-            clear_values[0].color.float32[2] = 0.3f;
+            clear_values[0].color.float32[0] = 0.9f;
+            clear_values[0].color.float32[1] = 0.9f;
+            clear_values[0].color.float32[2] = 0.9f;
             clear_values[0].color.float32[3] = 1.0f;
             clear_values[1].depthStencil.depth = 1.0f;
             clear_values[1].depthStencil.stencil = 0;

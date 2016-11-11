@@ -1,6 +1,78 @@
 #include "vulkanInfoWrapper.h"
 
 namespace gvr {
+    PipelineInputAssemblyStateCreateInfo::PipelineInputAssemblyStateCreateInfo(VkStructureType type, VkPrimitiveTopology topology):mInfo()
+    {
+        mInfo.sType = type;
+        mInfo.topology = topology;
+    }
+
+
+    PipelineRasterizationStateCreateInfo::PipelineRasterizationStateCreateInfo(VkStructureType type, VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode,VkFrontFace frontFace,
+                                                                               VkBool32 depthBias, float depthBiasConstantFactor, float  depthBiasClamp, float depthBiasSlopeFactor, float lineWidth):mInfo()
+    {
+        mInfo.sType = type;
+        mInfo.cullMode = cullMode;
+        mInfo.depthBiasClamp = depthBiasClamp;
+        mInfo.depthBiasConstantFactor = depthBiasConstantFactor;
+        mInfo.depthBiasSlopeFactor = depthBiasSlopeFactor;
+        mInfo.depthBiasEnable = depthBias;
+        mInfo.depthClampEnable = depthClamp;
+        mInfo.lineWidth = lineWidth;
+        mInfo.frontFace = frontFace;
+    }
+
+
+
+    PipelineColorBlendAttachmentState::PipelineColorBlendAttachmentState(VkBool32 blendEnable,VkBlendOp alphablendOp, VkBlendOp colorBlendOp, VkColorComponentFlags colorwriteMask):mInfo()
+    {
+        mInfo.alphaBlendOp = alphablendOp;
+        mInfo.blendEnable  = blendEnable;
+        mInfo.colorBlendOp = colorBlendOp;
+        mInfo.colorWriteMask = colorwriteMask;
+
+    }
+
+
+    PipelineColorBlendStateCreateInfo::PipelineColorBlendStateCreateInfo(VkStructureType type,uint32_t attachmentCount, const VkPipelineColorBlendAttachmentState* pAttachments ):mInfo()
+    {
+        mInfo.sType = type;
+        mInfo.attachmentCount = attachmentCount;
+        mInfo.pAttachments = pAttachments;
+    }
+
+    Viewport::Viewport(int width, int height, int minDepth, int maxDepth):mInfo()
+    {
+
+        mInfo.width    = width;
+        mInfo.height   = height;
+        mInfo.minDepth = minDepth;
+        mInfo.maxDepth = maxDepth;
+    }
+
+
+    ScissorRectangle::ScissorRectangle(uint32_t width, uint32_t height, uint32_t xOffset, uint32_t yOffset):mInfo()
+    {
+        mInfo.extent.width = width;
+        mInfo.extent.height = height;
+        mInfo.offset.x = xOffset;
+        mInfo.offset.y = yOffset;
+    }
+
+
+    PipelineDepthStencilStateCreateInfo::PipelineDepthStencilStateCreateInfo(VkStructureType type, VkBool32 depthTestEnable ,VkBool32 depthWriteEnable,VkCompareOp depthCompareOp,VkBool32 depthBoundsTestEnable ,VkStencilOp failOp,VkStencilOp  passOp,VkCompareOp
+    compareOp,VkBool32 stencilTestEnable ):mInfo(){
+        mInfo.sType = type;
+        mInfo.depthTestEnable = depthTestEnable;
+        mInfo.depthWriteEnable = depthWriteEnable;
+        mInfo.depthCompareOp = depthCompareOp;
+        mInfo.depthBoundsTestEnable = depthBoundsTestEnable;
+        mInfo.back.failOp = failOp;
+        mInfo.back.passOp = passOp;
+        mInfo.back.compareOp = compareOp;
+        mInfo.stencilTestEnable = stencilTestEnable;
+        mInfo.front = mInfo.back;
+    };
 
 ImageCreateInfo::ImageCreateInfo(VkImageType aImageType, VkFormat aFormat,
     int32_t aWidth, int32_t aHeight, int32_t aDepth,

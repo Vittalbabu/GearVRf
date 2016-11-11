@@ -54,7 +54,78 @@ struct GVR_VK_Indices {
     VkBuffer buffer;
     uint32_t count;
 };
+    class PipelineInputAssemblyStateCreateInfo final
+    {
+        VkPipelineInputAssemblyStateCreateInfo mInfo;
+    public:
+        explicit PipelineInputAssemblyStateCreateInfo(VkStructureType type, VkPrimitiveTopology topology);
 
+        operator const VkPipelineInputAssemblyStateCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class PipelineRasterizationStateCreateInfo final
+    {
+        VkPipelineRasterizationStateCreateInfo mInfo;
+    public:
+        explicit PipelineRasterizationStateCreateInfo(VkStructureType type, VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode, VkFrontFace frontFace,
+                                                      VkBool32 depthBias, float depthBiasConstantFactor, float  depthBiasClamp, float depthBiasSlopeFactor, float lineWidth);
+
+        operator const VkPipelineRasterizationStateCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+    class PipelineColorBlendAttachmentState final
+    {
+        VkPipelineColorBlendAttachmentState mInfo;
+    public:
+        explicit PipelineColorBlendAttachmentState(VkBool32 blendEnable,VkBlendOp alphablendOp, VkBlendOp colorBlendOp, VkColorComponentFlags colorwriteMask );
+        operator const VkPipelineColorBlendAttachmentState*() const {
+            return &mInfo;
+        }
+
+    };
+    class PipelineColorBlendStateCreateInfo final
+    {
+        VkPipelineColorBlendStateCreateInfo mInfo;
+    public:
+        explicit PipelineColorBlendStateCreateInfo(VkStructureType type,uint32_t attachmentCount, const VkPipelineColorBlendAttachmentState* pAttachments );
+        operator const VkPipelineColorBlendStateCreateInfo*() const{
+            return &mInfo;
+        }
+    };
+    class Viewport final
+    {
+        VkViewport mInfo;
+    public:
+        explicit Viewport(int width, int height, int minDepth, int maxDepth);
+        operator const VkViewport*() const{
+            return &mInfo;
+        }
+
+    };
+    class ScissorRectangle final
+    {
+        VkRect2D mInfo;
+    public:
+        explicit ScissorRectangle(uint32_t width, uint32_t height, uint32_t xOffset, uint32_t yOffset);
+        operator const VkRect2D*() const{
+            return &mInfo;
+        }
+    };
+    class PipelineDepthStencilStateCreateInfo final
+    {
+        VkPipelineDepthStencilStateCreateInfo mInfo;
+    public:
+        explicit PipelineDepthStencilStateCreateInfo(VkStructureType type, VkBool32 depthTestEnable ,VkBool32 depthWriteEnable,VkCompareOp depthCompareOp,VkBool32 depthBoundsTestEnable ,VkStencilOp failOp,VkStencilOp  passOp,VkCompareOp
+        compareOp,VkBool32 stencilTestEnable );
+        operator const VkPipelineDepthStencilStateCreateInfo*() const{
+            return &mInfo;
+        }
+    };
 class ImageCreateInfo final
     {
     public:

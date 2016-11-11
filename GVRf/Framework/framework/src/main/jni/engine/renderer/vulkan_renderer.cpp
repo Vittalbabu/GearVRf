@@ -49,28 +49,23 @@ namespace gvr {
 
 
             std::vector <VkDescriptorSet> allDescriptors;
-              //  LOGI("VK calling draw %d", render_data_vector.size());
+
               int swapChainIndex = vulkanCore_->AcquireNextImage();
 
                 for(auto &rdata : render_data_vector) {
 
                 // Creating and initializing Uniform Buffer for Each Render Data
                 if(rdata->uniform_dirty){
-                const std::vector<glm::vec3>& vertices=  rdata->mesh()->vertices();
-                 const std::vector<unsigned short> & indices =  rdata->mesh()->triangles();
 
+               rdata->createVkTransformUbo(vulkanCore_->getDevice(),vulkanCore_);
+               rdata->material(0)->createVkMaterialDescriptor(vulkanCore_->getDevice(),vulkanCore_);
 
-               rdata->getVkData().createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
-
-                rdata->material(0)->createDescriptor(vulkanCore_->getDevice(),vulkanCore_);
-
-              vulkanCore_->InitLayoutRenderData(rdata);
+               vulkanCore_->InitLayoutRenderData(rdata);
                     Shader* shader = shader_manager->getShader(rdata->get_shader());
                     rdata->mesh()->generateVKBuffers(shader->getVertexDescriptor(), vulkanCore_->getDevice(),vulkanCore_ );
                     
              //   vulkanCore_->InitVertexBuffersFromRenderData(vertices, vert, indices1, indices);
                     GVR_VK_Vertices& vert = rdata->mesh()->getVkVertices();
-                    GVR_VK_Indices& indices1 = rdata->mesh()->getVkIndices();
 
                 vulkanCore_->InitDescriptorSetForRenderData( rdata);
                 vulkanCore_->InitPipelineForRenderData(vert, rdata);

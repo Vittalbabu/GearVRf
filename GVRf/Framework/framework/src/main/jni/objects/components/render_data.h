@@ -57,12 +57,9 @@ class VulkanData {
 
 public:
     VulkanData():vk_descriptor("mat4 mvp"){}
-    void createDescriptor(VkDevice &device,VulkanCore* vk){
+    void createTransformDescriptor(VkDevice &device,VulkanCore* vk){
+        vk_descriptor.createDescriptor(device, vk, TRANSFORM_UBO_INDEX, VK_SHADER_STAGE_VERTEX_BIT );
 
-        vk_descriptor.createBuffer(device,vk);
-        vk_descriptor.createLayoutBinding(TRANSFORM_UBO_INDEX,VK_SHADER_STAGE_VERTEX_BIT);
-        VkDescriptorSet desc;
-        vk_descriptor.createDescriptorWriteInfo(TRANSFORM_UBO_INDEX,VK_SHADER_STAGE_VERTEX_BIT, desc);
     }
 
     VkPipeline& getVKPipeline(){
@@ -402,7 +399,9 @@ public:
     VulkanData& getVkData(){
         return vkData;
     }
-
+    void createVkTransformUbo(VkDevice &device,VulkanCore* vk){
+        vkData.createTransformDescriptor(device,vk);
+    }
         GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
                    GLUniformBlock* gl_ubo_ = new GLUniformBlock(desc);
                    gl_ubo_->setGLBindingPoint(index);
