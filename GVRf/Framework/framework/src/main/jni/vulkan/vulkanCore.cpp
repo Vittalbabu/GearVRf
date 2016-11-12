@@ -838,71 +838,25 @@ namespace gvr {
         VkPipelineVertexInputStateCreateInfo vi = {};
         vi = m_vertices.vi;
 
-        // Our vertex buffer describes a triangle list.
-        VkPipelineInputAssemblyStateCreateInfo ia = {};
-        ia.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-        // State for rasterization, such as polygon fill mode is defined.
-        VkPipelineRasterizationStateCreateInfo rs = {};
-        rs.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rs.polygonMode = VK_POLYGON_MODE_FILL;
-        rs.cullMode = VK_CULL_MODE_BACK_BIT;
-        rs.frontFace = VK_FRONT_FACE_CLOCKWISE;
-        rs.depthClampEnable = VK_FALSE;
-        rs.rasterizerDiscardEnable = VK_FALSE;
-        rs.depthBiasEnable = VK_FALSE;
-
         // For this example we do not do blending, so it is disabled.
         VkPipelineColorBlendAttachmentState att_state[1] = {};
         att_state[0].colorWriteMask = 0xf;
         att_state[0].blendEnable = VK_FALSE;
 
-        VkPipelineColorBlendStateCreateInfo cb = {};
-        cb.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        cb.attachmentCount = 1;
-        cb.pAttachments = &att_state[0];
-
-
-        // We define a simple viewport and scissor. It does not change during rendering
-        // in this sample.
-        VkPipelineViewportStateCreateInfo vp = {};
-        vp.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        vp.viewportCount = 1;
-        vp.scissorCount = 1;
 
         VkViewport viewport = {};
         viewport.height = (float) m_height;
         viewport.width = (float) m_width;
         viewport.minDepth = (float) 0.0f;
         viewport.maxDepth = (float) 1.0f;
-        vp.pViewports = &viewport;
 
         VkRect2D scissor = {};
         scissor.extent.width = m_width;
         scissor.extent.height = m_height;
         scissor.offset.x = 0;
         scissor.offset.y = 0;
-        vp.pScissors = &scissor;
 
-        // Standard depth and stencil state is defined
-        VkPipelineDepthStencilStateCreateInfo ds = {};
-        ds.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        ds.depthTestEnable = VK_TRUE;
-        ds.depthWriteEnable = VK_TRUE;
-        ds.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-        ds.depthBoundsTestEnable = VK_FALSE;
-        ds.back.failOp = VK_STENCIL_OP_KEEP;
-        ds.back.passOp = VK_STENCIL_OP_KEEP;
-        ds.back.compareOp = VK_COMPARE_OP_ALWAYS;
-        ds.stencilTestEnable = VK_FALSE;
-        ds.front = ds.back;
 
-        // We do not use multisample
-        VkPipelineMultisampleStateCreateInfo ms = {};
-        ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        ms.pSampleMask = nullptr;
-        ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
         VkPipelineShaderStageCreateInfo shaderStages[2] = {};
         InitShaders(shaderStages,vertexShaderData,data_frag);
@@ -913,12 +867,12 @@ namespace gvr {
         pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineCreateInfo.layout = rdata->getVkData().m_pipelineLayout;
         pipelineCreateInfo.pVertexInputState = &vi;
-        pipelineCreateInfo.pInputAssemblyState = &ia;
-        pipelineCreateInfo.pRasterizationState = &rs;
-        pipelineCreateInfo.pColorBlendState = &cb;
-        pipelineCreateInfo.pMultisampleState = &ms;
-        pipelineCreateInfo.pViewportState = &vp;
-        pipelineCreateInfo.pDepthStencilState = &ds;
+        pipelineCreateInfo.pInputAssemblyState = gvr::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        pipelineCreateInfo.pRasterizationState = gvr::PipelineRasterizationStateCreateInfo(VK_FALSE, VK_FALSE, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_FALSE, 0, 0, 0, 0);
+        pipelineCreateInfo.pColorBlendState = gvr::PipelineColorBlendStateCreateInfo(1, &att_state[0]);
+        pipelineCreateInfo.pMultisampleState = gvr::PipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
+        pipelineCreateInfo.pViewportState = gvr::PipelineViewportStateCreateInfo(1, &viewport,1, &scissor);
+        pipelineCreateInfo.pDepthStencilState = gvr::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, VK_FALSE, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS, VK_FALSE);
         pipelineCreateInfo.pStages = &shaderStages[0];
         pipelineCreateInfo.renderPass = m_renderPass;
         pipelineCreateInfo.pDynamicState = nullptr;

@@ -68,7 +68,7 @@ struct GVR_VK_Indices {
     {
         VkPipelineInputAssemblyStateCreateInfo mInfo;
     public:
-        explicit PipelineInputAssemblyStateCreateInfo(VkStructureType type, VkPrimitiveTopology topology);
+        explicit PipelineInputAssemblyStateCreateInfo(VkPrimitiveTopology topology);
 
         operator const VkPipelineInputAssemblyStateCreateInfo*() const
         {
@@ -80,7 +80,7 @@ struct GVR_VK_Indices {
     {
         VkPipelineRasterizationStateCreateInfo mInfo;
     public:
-        explicit PipelineRasterizationStateCreateInfo(VkStructureType type, VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode, VkFrontFace frontFace,
+        explicit PipelineRasterizationStateCreateInfo(VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode, VkFrontFace frontFace,
                                                       VkBool32 depthBias, float depthBiasConstantFactor, float  depthBiasClamp, float depthBiasSlopeFactor, float lineWidth);
 
         operator const VkPipelineRasterizationStateCreateInfo*() const
@@ -88,6 +88,7 @@ struct GVR_VK_Indices {
             return &mInfo;
         }
     };
+
     class PipelineColorBlendAttachmentState final
     {
         VkPipelineColorBlendAttachmentState mInfo;
@@ -98,16 +99,40 @@ struct GVR_VK_Indices {
         }
 
     };
+
     class PipelineColorBlendStateCreateInfo final
     {
         VkPipelineColorBlendStateCreateInfo mInfo;
     public:
-        explicit PipelineColorBlendStateCreateInfo(VkStructureType type,uint32_t attachmentCount, const VkPipelineColorBlendAttachmentState* pAttachments );
+        explicit PipelineColorBlendStateCreateInfo(uint32_t attachmentCount, const VkPipelineColorBlendAttachmentState* pAttachments );
         operator const VkPipelineColorBlendStateCreateInfo*() const{
             return &mInfo;
         }
     };
-    class Viewport final
+
+    class PipelineMultisampleStateCreateInfo final
+    {
+        VkPipelineMultisampleStateCreateInfo mInfo;
+    public:
+        explicit PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples, VkBool32 sampleShadingEnable,
+                                                    float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable);
+        operator const VkPipelineMultisampleStateCreateInfo*() const{
+            return &mInfo;
+        }
+    };
+
+    class PipelineViewportStateCreateInfo final
+    {
+        VkPipelineViewportStateCreateInfo mInfo;
+    public:
+        explicit PipelineViewportStateCreateInfo(uint32_t viewportCount, const VkViewport* pViewports, uint32_t scissorCount, const VkRect2D* pScissors);
+        operator const VkPipelineViewportStateCreateInfo*() const{
+            return &mInfo;
+        }
+    };
+
+
+    /*class Viewport final
     {
         VkViewport mInfo;
     public:
@@ -125,12 +150,12 @@ struct GVR_VK_Indices {
         operator const VkRect2D*() const{
             return &mInfo;
         }
-    };
+    };*/
     class PipelineDepthStencilStateCreateInfo final
     {
         VkPipelineDepthStencilStateCreateInfo mInfo;
     public:
-        explicit PipelineDepthStencilStateCreateInfo(VkStructureType type, VkBool32 depthTestEnable ,VkBool32 depthWriteEnable,VkCompareOp depthCompareOp,VkBool32 depthBoundsTestEnable ,VkStencilOp failOp,VkStencilOp  passOp,VkCompareOp
+        explicit PipelineDepthStencilStateCreateInfo(VkBool32 depthTestEnable ,VkBool32 depthWriteEnable,VkCompareOp depthCompareOp,VkBool32 depthBoundsTestEnable ,VkStencilOp failOp,VkStencilOp  passOp,VkCompareOp
         compareOp,VkBool32 stencilTestEnable );
         operator const VkPipelineDepthStencilStateCreateInfo*() const{
             return &mInfo;
