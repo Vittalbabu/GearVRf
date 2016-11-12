@@ -1,17 +1,17 @@
 #include "vulkanInfoWrapper.h"
 
 namespace gvr {
-    PipelineInputAssemblyStateCreateInfo::PipelineInputAssemblyStateCreateInfo(VkStructureType type, VkPrimitiveTopology topology):mInfo()
+    PipelineInputAssemblyStateCreateInfo::PipelineInputAssemblyStateCreateInfo(VkPrimitiveTopology topology):mInfo()
     {
-        mInfo.sType = type;
+        mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         mInfo.topology = topology;
     }
 
 
-    PipelineRasterizationStateCreateInfo::PipelineRasterizationStateCreateInfo(VkStructureType type, VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode,VkFrontFace frontFace,
+    PipelineRasterizationStateCreateInfo::PipelineRasterizationStateCreateInfo(VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode,VkFrontFace frontFace,
                                                                                VkBool32 depthBias, float depthBiasConstantFactor, float  depthBiasClamp, float depthBiasSlopeFactor, float lineWidth):mInfo()
     {
-        mInfo.sType = type;
+        mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         mInfo.cullMode = cullMode;
         mInfo.depthBiasClamp = depthBiasClamp;
         mInfo.depthBiasConstantFactor = depthBiasConstantFactor;
@@ -34,14 +34,35 @@ namespace gvr {
     }
 
 
-    PipelineColorBlendStateCreateInfo::PipelineColorBlendStateCreateInfo(VkStructureType type,uint32_t attachmentCount, const VkPipelineColorBlendAttachmentState* pAttachments ):mInfo()
+    PipelineColorBlendStateCreateInfo::PipelineColorBlendStateCreateInfo(uint32_t attachmentCount, const VkPipelineColorBlendAttachmentState* pAttachments ):mInfo()
     {
-        mInfo.sType = type;
+        mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
         mInfo.attachmentCount = attachmentCount;
         mInfo.pAttachments = pAttachments;
     }
 
-    Viewport::Viewport(int width, int height, int minDepth, int maxDepth):mInfo()
+    PipelineViewportStateCreateInfo::PipelineViewportStateCreateInfo(uint32_t viewportCount, const VkViewport* pViewports, uint32_t scissorCount, const VkRect2D* pScissors):mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        mInfo.viewportCount = viewportCount;
+        mInfo.pViewports = pViewports;
+        mInfo.scissorCount = scissorCount;
+        mInfo.pScissors = pScissors;
+    }
+
+    PipelineMultisampleStateCreateInfo::PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples, VkBool32 sampleShadingEnable,
+    float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable):mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        mInfo.rasterizationSamples = rasterizationSamples;
+        mInfo.sampleShadingEnable = sampleShadingEnable;
+        mInfo.minSampleShading = minSampleShading;
+        mInfo.pSampleMask = pSampleMask;
+        mInfo.alphaToCoverageEnable = alphaToCoverageEnable;
+        mInfo.alphaToOneEnable = alphaToOneEnable;
+    }
+
+    /*Viewport::Viewport(int width, int height, int minDepth, int maxDepth):mInfo()
     {
 
         mInfo.width    = width;
@@ -57,12 +78,12 @@ namespace gvr {
         mInfo.extent.height = height;
         mInfo.offset.x = xOffset;
         mInfo.offset.y = yOffset;
-    }
+    }*/
 
 
-    PipelineDepthStencilStateCreateInfo::PipelineDepthStencilStateCreateInfo(VkStructureType type, VkBool32 depthTestEnable ,VkBool32 depthWriteEnable,VkCompareOp depthCompareOp,VkBool32 depthBoundsTestEnable ,VkStencilOp failOp,VkStencilOp  passOp,VkCompareOp
+    PipelineDepthStencilStateCreateInfo::PipelineDepthStencilStateCreateInfo(VkBool32 depthTestEnable ,VkBool32 depthWriteEnable,VkCompareOp depthCompareOp,VkBool32 depthBoundsTestEnable ,VkStencilOp failOp,VkStencilOp  passOp,VkCompareOp
     compareOp,VkBool32 stencilTestEnable ):mInfo(){
-        mInfo.sType = type;
+        mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         mInfo.depthTestEnable = depthTestEnable;
         mInfo.depthWriteEnable = depthWriteEnable;
         mInfo.depthCompareOp = depthCompareOp;
