@@ -57,16 +57,23 @@ namespace gvr {
         mInfo.pScissors = pScissors;
     }
 
-    PipelineMultisampleStateCreateInfo::PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples, VkBool32 sampleShadingEnable,
-    float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable):mInfo()
-    {
+    PipelineMultisampleStateCreateInfo::PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits& rasterizationSamples, VkBool32 sampleShadingEnable,
+    float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable): mInfo()
+    {/*
+        VkPipelineMultisampleStateCreateInfo ms = {};
+        ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        ms.pSampleMask = nullptr;
+        ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        mInfo = ms;
+        mInfo = ms;*/
         mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        mInfo.rasterizationSamples = rasterizationSamples;
+        mInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         mInfo.sampleShadingEnable = sampleShadingEnable;
         mInfo.minSampleShading = minSampleShading;
-        mInfo.pSampleMask = pSampleMask;
+        mInfo.pSampleMask = nullptr;
         mInfo.alphaToCoverageEnable = alphaToCoverageEnable;
         mInfo.alphaToOneEnable = alphaToOneEnable;
+
     }
 
     /*Viewport::Viewport(int width, int height, int minDepth, int maxDepth):mInfo()

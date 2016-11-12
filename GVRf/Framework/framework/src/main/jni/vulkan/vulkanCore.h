@@ -140,10 +140,7 @@ namespace gvr {
 
 
         bool m_Vulkan_Initialised;
-
-        std::vector <uint32_t> CompileShader(const std::string &shaderName,
-                                             uint8_t shaderTypeID,
-                                             const std::string &shaderContents);
+        std::vector<uint32_t> CompileShader(const std::string& shaderName, ShaderType shaderTypeID, const std::string& shaderContents);
 
         ANativeWindow *m_androidWindow;
 

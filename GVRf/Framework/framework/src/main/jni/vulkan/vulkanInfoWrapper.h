@@ -114,7 +114,7 @@ struct GVR_VK_Indices {
     {
         VkPipelineMultisampleStateCreateInfo mInfo;
     public:
-        explicit PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples, VkBool32 sampleShadingEnable,
+        explicit PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits& rasterizationSamples, VkBool32 sampleShadingEnable,
                                                     float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable);
         operator const VkPipelineMultisampleStateCreateInfo*() const{
             return &mInfo;
