@@ -34,6 +34,12 @@
 
 
 namespace gvr {
+    enum ShaderType{
+        VERTEX_SHADER,
+        FRAGMENT_SHADER,
+        GEOMETRY_SHADER
+    };
+
     class Scene;
 
     class RenderData;
@@ -54,14 +60,13 @@ namespace gvr {
                 return theInstance;
             return NULL;
         }
+        void InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader);
 
         void InitLayoutRenderData(RenderData *rdata);
 
         void updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data);
 
         void UpdateUniforms(Scene *scene, Camera *camera, RenderData *render_data);
-
-        void InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform);
 
         void InitDescriptorSetForRenderData(RenderData *rdata);
 
@@ -75,7 +80,6 @@ namespace gvr {
 
         void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *);
 
-        VkShaderModule CreateShaderModuleAscii(const uint32_t *code, uint32_t size);
 
         bool GetMemoryTypeFromProperties(uint32_t typeBits, VkFlags requirements_mask,
                                          uint32_t *typeIndex);
@@ -106,7 +110,7 @@ namespace gvr {
 
         bool CreateInstance();
 
-        VkShaderModule CreateShaderModule(std::vector <uint32_t> code, uint32_t size);
+        void CreateShaderModule(VkShaderModule& module,std::vector <uint32_t> code, uint32_t size);
 
         bool GetPhysicalDevices();
 
@@ -122,8 +126,6 @@ namespace gvr {
 
         void InitTransientCmdPool();
 
-        void InitVertexBuffers();
-
         void InitLayouts();
 
         void InitRenderPass();
@@ -133,8 +135,6 @@ namespace gvr {
         void InitSync();
 
         void BuildCmdBuffer();
-
-        void InitUniformBuffers();
 
         void createPipelineCache();
 

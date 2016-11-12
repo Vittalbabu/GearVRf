@@ -27,7 +27,7 @@ public:
 
 private:
 
-    VulkanUniformBlock ubo;
+     VulkanUniformBlock ubo;
      VkDescriptorSetLayoutBinding layout_binding;
      VkWriteDescriptorSet writeDescriptorSet;
 };

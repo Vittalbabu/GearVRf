@@ -54,6 +54,16 @@ struct GVR_VK_Indices {
     VkBuffer buffer;
     uint32_t count;
 };
+    class PipelineShaderStageCreateInfo final
+    {
+        VkPipelineShaderStageCreateInfo mInfo;
+    public:
+        explicit PipelineShaderStageCreateInfo(VkStructureType sType, VkShaderStageFlagBits stage,VkShaderModule&  module,const char* name);
+        operator const VkPipelineShaderStageCreateInfo*()const
+        {
+            return &mInfo;
+        }
+    };
     class PipelineInputAssemblyStateCreateInfo final
     {
         VkPipelineInputAssemblyStateCreateInfo mInfo;

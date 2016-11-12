@@ -420,7 +420,7 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
 
 
         for(int i=0; i< attrMapping.size(); i++){
-           // check this
+
             m_vertices.vi_bindings[i].binding = attrMapping[i].index;
             m_vertices.vi_bindings[i].stride = total_size * sizeof(float); //sizeof(vb[0]);//
             m_vertices.vi_bindings[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;

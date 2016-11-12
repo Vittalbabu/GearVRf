@@ -132,11 +132,6 @@ public:
     }
      
      void createVkMaterialDescriptor(VkDevice &device,VulkanCore* vk){
-/*        vk_descriptor.createBuffer(device,vk);
-        vk_descriptor.createLayoutBinding(MATERIAL_UBO_INDEX,VK_SHADER_STAGE_FRAGMENT_BIT);
-        VkDescriptorSet desc;
-        vk_descriptor.createDescriptorWriteInfo(MATERIAL_UBO_INDEX,VK_SHADER_STAGE_FRAGMENT_BIT, desc);
-   */
          vk_descriptor.createDescriptor(device,vk,MATERIAL_UBO_INDEX,VK_SHADER_STAGE_FRAGMENT_BIT);
     }
     Descriptor& getDescriptor(){

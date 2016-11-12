@@ -34,6 +34,33 @@
 
 #define QUEUE_INDEX_MAX 99999
 #define VERTEX_BUFFER_BIND_ID 0
+std::string vertexShaderData = std::string("") +
+                               "#version 400 \n" +
+                               "#extension GL_ARB_separate_shader_objects : enable \n" +
+                               "#extension GL_ARB_shading_language_420pack : enable \n" +
+                               "layout (std140, binding = 0) uniform matrix { mat4 mvp; };\n" +
+                               "in vec3 pos; \n" +
+                               "void main() { \n" +
+                               "  gl_Position = mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
+                               "}";
+
+std::string data_frag = std::string("") +
+                        "#version 400 \n" +
+                        "#extension GL_ARB_separate_shader_objects : enable \n" +
+                        "#extension GL_ARB_shading_language_420pack : enable \n" +
+                        "layout (std140, binding = 1) uniform lightEffects {\n" +
+                        "vec4 ambient_color;\n" +
+                        "vec4 diffuse_color;\n" +
+                        "vec4 specular_color;\n" +
+                        "vec4 emissive_color;\n" +
+                        "float specular_exponent;\n" +
+                        "};" +
+                        "out vec4 uFragColor;  \n" +
+                        "void main() {  \n" +
+                        " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
+                        "   uFragColor = ambient_color;  \n" +
+                        "}";
+
 
 namespace gvr {
     VulkanCore *VulkanCore::theInstance = NULL;
@@ -671,151 +698,6 @@ namespace gvr {
         GVR_VK_CHECK(!ret);
     }
 
-    void VulkanCore::InitUniformBuffers() {
-        // the uniform in this example is a matrix in the vertex stage
-        memset(&m_modelViewMatrixUniform, 0, sizeof(m_modelViewMatrixUniform));
-
-        VkResult err = VK_SUCCESS;
-
-        // Create our buffer object
-        VkBufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferCreateInfo.pNext = NULL;
-        bufferCreateInfo.size = sizeof(glm::mat4);
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-        bufferCreateInfo.flags = 0;
-
-        err = vkCreateBuffer(m_device, gvr::BufferCreateInfo(sizeof(glm::mat4),
-                                                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
-                             NULL, &m_modelViewMatrixUniform.buf);
-        assert(!err);
-
-        // Obtain the requirements on memory for this buffer
-        VkMemoryRequirements mem_reqs;
-        vkGetBufferMemoryRequirements(m_device, m_modelViewMatrixUniform.buf, &mem_reqs);
-        assert(!err);
-
-        // And allocate memory according to those requirements
-        VkMemoryAllocateInfo memoryAllocateInfo;
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.pNext = NULL;
-        memoryAllocateInfo.allocationSize = 0;
-        memoryAllocateInfo.memoryTypeIndex = 0;
-        memoryAllocateInfo.allocationSize = mem_reqs.size;
-        bool pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
-                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                &memoryAllocateInfo.memoryTypeIndex);
-        assert(pass);
-
-        // We keep the size of the allocation for remapping it later when we update contents
-        m_modelViewMatrixUniform.allocSize = memoryAllocateInfo.allocationSize;
-
-        err = vkAllocateMemory(m_device, &memoryAllocateInfo, NULL, &m_modelViewMatrixUniform.mem);
-        assert(!err);
-
-        // Create our initial MVP matrix
-        float aaa[16] = {1, 0, 0, 0,
-                         0, 1, 0, 0,
-                         0, 0, 1, 0,
-                         0, 0, 0, 1};
-        glm::mat4 mvp = glm::make_mat4(aaa);;
-
-        // Now we need to map the memory of this new allocation so the CPU can edit it.
-        void *data;
-        err = vkMapMemory(m_device, m_modelViewMatrixUniform.mem, 0,
-                          m_modelViewMatrixUniform.allocSize, 0, &data);
-        assert(!err);
-
-        float tempColor[4] = {0, 1, 0, 1};
-        // Copy our triangle vertices and colors into the mapped memory area
-        memcpy(data, &mvp, sizeof(mvp));
-
-        // Unmap the memory back from the CPU
-        vkUnmapMemory(m_device, m_modelViewMatrixUniform.mem);
-
-        // Bind our buffer to the memory
-        err = vkBindBufferMemory(m_device, m_modelViewMatrixUniform.buf,
-                                 m_modelViewMatrixUniform.mem, 0);
-        assert(!err);
-
-        m_modelViewMatrixUniform.bufferInfo.buffer = m_modelViewMatrixUniform.buf;
-        m_modelViewMatrixUniform.bufferInfo.offset = 0;
-        m_modelViewMatrixUniform.bufferInfo.range = sizeof(glm::mat4);
-    }
-
-
-    void VulkanCore::InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform) {
-        // the uniform in this example is a matrix in the vertex stage
-        memset(&m_modelViewMatrixUniform, 0, sizeof(m_modelViewMatrixUniform));
-
-        VkResult err = VK_SUCCESS;
-
-        // Create our buffer object
-        VkBufferCreateInfo bufferCreateInfo;
-        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferCreateInfo.pNext = NULL;
-        bufferCreateInfo.size = sizeof(glm::mat4);;//sizeof(float)*4;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-        bufferCreateInfo.flags = 0;
-
-        err = vkCreateBuffer(m_device, gvr::BufferCreateInfo(sizeof(glm::mat4),
-                                                             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
-                             NULL, &m_modelViewMatrixUniform.buf);
-        assert(!err);
-
-        // Obtain the requirements on memory for this buffer
-        VkMemoryRequirements mem_reqs;
-        vkGetBufferMemoryRequirements(m_device, m_modelViewMatrixUniform.buf, &mem_reqs);
-        assert(!err);
-
-        // And allocate memory according to those requirements
-        VkMemoryAllocateInfo memoryAllocateInfo;
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.pNext = NULL;
-        memoryAllocateInfo.allocationSize = 0;
-        memoryAllocateInfo.memoryTypeIndex = 0;
-        memoryAllocateInfo.allocationSize = mem_reqs.size;
-        bool pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
-                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                &memoryAllocateInfo.memoryTypeIndex);
-        assert(pass);
-
-        // We keep the size of the allocation for remapping it later when we update contents
-        m_modelViewMatrixUniform.allocSize = memoryAllocateInfo.allocationSize;
-
-        err = vkAllocateMemory(m_device, &memoryAllocateInfo, NULL, &m_modelViewMatrixUniform.mem);
-        assert(!err);
-
-        // Create our initial MVP matrix
-        float aaa[16] = {1, 0, 0, 0,
-                         0, 1, 0, 0,
-                         0, 0, 1, 0,
-                         0, 0, 0, 1};
-        glm::mat4 mvp = glm::make_mat4(aaa);;
-
-        // Now we need to map the memory of this new allocation so the CPU can edit it.
-        void *data;
-        err = vkMapMemory(m_device, m_modelViewMatrixUniform.mem, 0,
-                          m_modelViewMatrixUniform.allocSize, 0, &data);
-        assert(!err);
-
-        float tempColor[4] = {0, 1, 0, 1};
-        // Copy our triangle verticies and colors into the mapped memory area
-        memcpy(data, &mvp, sizeof(mvp));
-
-        // Unmap the memory back from the CPU
-        vkUnmapMemory(m_device, m_modelViewMatrixUniform.mem);
-
-        // Bind our buffer to the memory
-        err = vkBindBufferMemory(m_device, m_modelViewMatrixUniform.buf,
-                                 m_modelViewMatrixUniform.mem, 0);
-        assert(!err);
-
-        m_modelViewMatrixUniform.bufferInfo.buffer = m_modelViewMatrixUniform.buf;
-        m_modelViewMatrixUniform.bufferInfo.offset = 0;
-        m_modelViewMatrixUniform.bufferInfo.range = sizeof(glm::mat4);
-    }
-
     void VulkanCore::InitRenderPass() {
 // The renderpass defines the attachments to the framebuffer object that gets
         // used in the pipeline. We have two attachments, the colour buffer, and the
@@ -883,8 +765,7 @@ namespace gvr {
         GVR_VK_CHECK(!ret);
     }
 
-    VkShaderModule VulkanCore::CreateShaderModule(std::vector <uint32_t> code, uint32_t size) {
-        VkShaderModule module;
+    void VulkanCore::CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size) {
         VkResult err;
 
         // Creating a shader is very simple once it's in memory as compiled SPIR-V.
@@ -898,45 +779,19 @@ namespace gvr {
                                                                                       sizeof(unsigned int)),
                                    nullptr, &module);
         GVR_VK_CHECK(!err);
-
-        return module;
     }
 
-
-    VkShaderModule VulkanCore::CreateShaderModuleAscii(const uint32_t *code, uint32_t size) {
-        VkShaderModule module;
-        VkResult err;
-
-        // Creating a shader is very simple once it's in memory as compiled SPIR-V.
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        moduleCreateInfo.pNext = nullptr;
-        moduleCreateInfo.codeSize = size;
-        moduleCreateInfo.pCode = code;
-        moduleCreateInfo.flags = 0;
-        err = vkCreateShaderModule(m_device, gvr::ShaderModuleCreateInfo(code, size), nullptr,
-                                   &module);
-        GVR_VK_CHECK(!err);
-
-        return module;
-    }
-
-    /*
-     * Compile Vulkan Shader
-     * shaderTypeID 1 : Vertex Shader
-     * shaderTypeID 2 : Fragment Shader
-     */
-    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, uint8_t shaderTypeID, const std::string& shaderContents) {
+    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, ShaderType shaderTypeID, const std::string& shaderContents) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
         shaderc_shader_kind shaderType;
 
         switch(shaderTypeID){
-            case 1:
+            case VERTEX_SHADER:
                 shaderType = shaderc_glsl_default_vertex_shader;
                 break;
-            case 2:
+            case FRAGMENT_SHADER:
                 shaderType = shaderc_glsl_default_fragment_shader;
                 break;
         }
@@ -951,6 +806,27 @@ namespace gvr {
         return result;
     }
 
+
+    void VulkanCore::InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader) {
+
+        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER , vertexShader);
+        std::vector<uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER , fragmentShader);
+
+        // We define two shader stages: our vertex and fragment shader.
+        // they are embedded as SPIR-V into a header file for ease of deployment.
+        VkShaderModule module;
+        CreateShaderModule(module, result_vert,
+                           result_vert.size());
+        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_VERTEX_BIT, module, "main");
+        shaderStages[0] = *shaderStageInfo;
+
+
+        CreateShaderModule(module,result_frag,
+                           result_frag.size());
+        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_FRAGMENT_BIT, module, "main");
+        shaderStages[1] = *shaderStageInfo;
+
+    }
 
     void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata) {
         VkResult err;
@@ -1028,51 +904,8 @@ namespace gvr {
         ms.pSampleMask = nullptr;
         ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-        std::string vertexShaderData = std::string("") +
-                                       "#version 400 \n" +
-                                       "#extension GL_ARB_separate_shader_objects : enable \n" +
-                                       "#extension GL_ARB_shading_language_420pack : enable \n" +
-                                       "layout (std140, binding = 0) uniform matrix { mat4 mvp; } matrices;\n" +
-                                       "in vec3 pos; \n" +
-                                       "void main() { \n" +
-                                       "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
-                                       "}";
-
-        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", 1 /*shaderTypeID 1 for VS*/, vertexShaderData);
-
-        std::string data_frag = std::string("") +
-                                "#version 400 \n" +
-                                "#extension GL_ARB_separate_shader_objects : enable \n" +
-                                "#extension GL_ARB_shading_language_420pack : enable \n" +
-                                "layout (std140, binding = 1) uniform lightEffects {\n" +
-                                "vec4 ambient_color;\n" +
-                                "vec4 diffuse_color;\n" +
-                                "vec4 specular_color;\n" +
-                                "vec4 emissive_color;\n" +
-                                "float specular_exponent;\n" +
-                                "} lightEffectsObj;" +
-                                "layout (location = 0) out vec4 uFragColor;  \n" +
-                                "void main() {  \n" +
-                                " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
-                                "   uFragColor = lightEffectsObj.ambient_color;  \n" +
-                                "}";
-
-
-        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", 2 /*shaderTypeID 2 for FS*/, data_frag);
-
-        // We define two shader stages: our vertex and fragment shader.
-        // they are embedded as SPIR-V into a header file for ease of deployment.
         VkPipelineShaderStageCreateInfo shaderStages[2] = {};
-        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = CreateShaderModule(result_vert,
-                                                    result_vert.size());
-        shaderStages[0].pName = "main";
-        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = CreateShaderModule(result_frag,
-                                                    result_frag.size());
-        shaderStages[1].pName = "main";
+        InitShaders(shaderStages,vertexShaderData,data_frag);
 
         // Out graphics pipeline records all state information, including our renderpass
         // and pipeline layout. We do not have any dynamic state in this example.
