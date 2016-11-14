@@ -48,6 +48,9 @@ namespace gvr {
                                       RenderTexture *post_effect_render_texture_a,
                                       RenderTexture *post_effect_render_texture_b) {
 
+        if(!vulkanCore_->swapChainCreated())
+            vulkanCore_->initVulkanCore();
+
 
         std::vector<VkDescriptorSet> allDescriptors;
 
@@ -80,7 +83,7 @@ namespace gvr {
 
         }
         vulkanCore_->BuildCmdBufferForRenderData(allDescriptors, swapChainIndex,
-                                                 render_data_vector);
+                                                 render_data_vector,camera);
         vulkanCore_->DrawFrameForRenderData(swapChainIndex);
 
     }

@@ -1,6 +1,13 @@
 #include "vulkanInfoWrapper.h"
 
 namespace gvr {
+    PipelineShaderStageCreateInfo::PipelineShaderStageCreateInfo(VkStructureType sType, VkShaderStageFlagBits stage,VkShaderModule&  module,const char* name):mInfo(){
+        mInfo.sType = sType;
+        mInfo.stage = stage;
+        mInfo.module= module;
+        mInfo.pName = name;
+
+    }
     PipelineInputAssemblyStateCreateInfo::PipelineInputAssemblyStateCreateInfo(VkPrimitiveTopology topology):mInfo()
     {
         mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

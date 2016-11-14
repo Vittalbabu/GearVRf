@@ -24,6 +24,7 @@
 #include "vulkanInfoWrapper.h"
 #include <vector>
 #include <string>
+#include <objects/components/camera.h>
 #include "glm/glm.hpp"
 //#include "vulkanThreadPool.h"
 
@@ -34,6 +35,10 @@
 
 
 namespace gvr {
+    enum ShaderType{
+        VERTEX_SHADER,
+        FRAGMENT_SHADER
+    };
     class Scene;
 
     class RenderData;
@@ -67,7 +72,7 @@ namespace gvr {
 
         void BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors,
                                          int &swapChainIndex,
-                                         std::vector<RenderData *> &render_data_vector);
+                                         std::vector<RenderData *> &render_data_vector, Camera*);
 
         void DrawFrameForRenderData(int &swapChainIndex);
 
@@ -93,25 +98,28 @@ namespace gvr {
         VkCommandPool &getTransientCmdPool() {
             return m_commandPoolTrans;
         }
-
+        void initVulkanCore();
+        bool swapChainCreated(){
+            return swap_chain_init_;
+        }
     private:
         std::vector <VkFence> waitFences;
         std::vector <VkFence> waitSCBFences;
         static VulkanCore *theInstance;
-
-        VulkanCore(ANativeWindow *newNativeWindow) : m_pPhysicalDevices(NULL) {
+        bool swap_chain_init_;
+        VulkanCore(ANativeWindow *newNativeWindow) : m_pPhysicalDevices(NULL),swap_chain_init_(false) {
             m_Vulkan_Initialised = false;
-            initVulkanCore(newNativeWindow);
+            initVulkanDevice(newNativeWindow);
         }
 
         bool CreateInstance();
 
         VkShaderModule CreateShaderModule(std::vector <uint32_t> code, uint32_t size);
-
+     //   void CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size);
         bool GetPhysicalDevices();
 
-        void initVulkanCore(ANativeWindow *newNativeWindow);
 
+        void initVulkanDevice(ANativeWindow *newNativeWindow);
         bool InitDevice();
 
         void InitSurface();
@@ -142,9 +150,9 @@ namespace gvr {
         bool m_Vulkan_Initialised;
 
         std::vector <uint32_t> CompileShader(const std::string &shaderName,
-                                             uint8_t shaderTypeID,
+                                             ShaderType shaderTypeID,
                                              const std::string &shaderContents);
-
+        void InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader);
         ANativeWindow *m_androidWindow;
 
         VkInstance m_instance;

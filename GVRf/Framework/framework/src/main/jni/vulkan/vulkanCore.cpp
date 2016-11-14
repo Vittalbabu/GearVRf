@@ -34,7 +34,33 @@
 
 #define QUEUE_INDEX_MAX 99999
 #define VERTEX_BUFFER_BIND_ID 0
+std::string data_frag = std::string("") +
+                        "#version 400 \n" +
+                        "#extension GL_ARB_separate_shader_objects : enable \n" +
+                        "#extension GL_ARB_shading_language_420pack : enable \n" +
+                        "layout (std140, binding = 1) uniform lightEffects {\n" +
+                        "vec4 ambient_color;\n" +
+                        "vec4 diffuse_color;\n" +
+                        "vec4 specular_color;\n" +
+                        "vec4 emissive_color;\n" +
+                        "float specular_exponent;\n" +
+                        "} lightEffectsObj;" +
+                        "layout (location = 0) out vec4 uFragColor;  \n" +
+                        "void main() {  \n" +
+                        " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
+                        "   uFragColor = lightEffectsObj.ambient_color;  \n" +
+                        "}";
 
+
+std::string vertexShaderData = std::string("") +
+                               "#version 400 \n" +
+                               "#extension GL_ARB_separate_shader_objects : enable \n" +
+                               "#extension GL_ARB_shading_language_420pack : enable \n" +
+                               "layout (std140, binding = 0) uniform matrix { mat4 mvp; } matrices;\n" +
+                               "in vec3 pos; \n" +
+                               "void main() { \n" +
+                               "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
+                               "}";
 namespace gvr {
     VulkanCore *VulkanCore::theInstance = NULL;
     uint8_t *oculusTexData;
@@ -862,7 +888,7 @@ namespace gvr {
         subpassDescription.colorAttachmentCount = 1;
         subpassDescription.pColorAttachments = &colorReference;
         subpassDescription.pResolveAttachments = nullptr;
-        subpassDescription.pDepthStencilAttachment = nullptr;//&depthReference;
+        subpassDescription.pDepthStencilAttachment = &depthReference;
         subpassDescription.preserveAttachmentCount = 0;
         subpassDescription.pPreserveAttachments = nullptr;
 
@@ -882,8 +908,22 @@ namespace gvr {
         ret = vkCreateRenderPass(m_device, &renderPassCreateInfo, nullptr, &m_renderPass);
         GVR_VK_CHECK(!ret);
     }
+  /*  void VulkanCore::CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size) {
+        VkResult err;
 
-    VkShaderModule VulkanCore::CreateShaderModule(std::vector <uint32_t> code, uint32_t size) {
+        // Creating a shader is very simple once it's in memory as compiled SPIR-V.
+        VkShaderModuleCreateInfo moduleCreateInfo = {};
+        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        moduleCreateInfo.pNext = nullptr;
+        moduleCreateInfo.codeSize = size * sizeof(unsigned int);
+        moduleCreateInfo.pCode = code.data();
+        moduleCreateInfo.flags = 0;
+        err = vkCreateShaderModule(m_device, gvr::ShaderModuleCreateInfo(code.data(), size *
+                                                                                      sizeof(unsigned int)),
+                                   nullptr, &module);
+        GVR_VK_CHECK(!err);
+    }
+  */  VkShaderModule VulkanCore::CreateShaderModule(std::vector <uint32_t> code, uint32_t size) {
         VkShaderModule module;
         VkResult err;
 
@@ -926,17 +966,18 @@ namespace gvr {
      * shaderTypeID 1 : Vertex Shader
      * shaderTypeID 2 : Fragment Shader
      */
-    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, uint8_t shaderTypeID, const std::string& shaderContents) {
+
+    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, ShaderType shaderTypeID, const std::string& shaderContents) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
         shaderc_shader_kind shaderType;
 
         switch(shaderTypeID){
-            case 1:
+            case VERTEX_SHADER:
                 shaderType = shaderc_glsl_default_vertex_shader;
                 break;
-            case 2:
+            case FRAGMENT_SHADER:
                 shaderType = shaderc_glsl_default_fragment_shader;
                 break;
         }
@@ -949,6 +990,24 @@ namespace gvr {
 
         std::vector<uint32_t> result(module.cbegin(), module.cend());
         return result;
+    }
+    void VulkanCore::InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader) {
+
+        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER , vertexShader);
+        std::vector<uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER , fragmentShader);
+
+        // We define two shader stages: our vertex and fragment shader.
+        // they are embedded as SPIR-V into a header file for ease of deployment.
+        VkShaderModule module;
+        module =CreateShaderModule(result_vert, result_vert.size());
+        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_VERTEX_BIT, module, "main");
+        shaderStages[0] = *shaderStageInfo;
+
+
+        module= CreateShaderModule(result_frag, result_frag.size());
+        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_FRAGMENT_BIT, module, "main");
+        shaderStages[1] = *shaderStageInfo;
+
     }
 
 
@@ -980,53 +1039,20 @@ namespace gvr {
         scissor.offset.x = 0;
         scissor.offset.y = 0;
 
-
-
-        std::string vertexShaderData = std::string("") +
-                                       "#version 400 \n" +
-                                       "#extension GL_ARB_separate_shader_objects : enable \n" +
-                                       "#extension GL_ARB_shading_language_420pack : enable \n" +
-                                       "layout (std140, binding = 0) uniform matrix { mat4 mvp; } matrices;\n" +
-                                       "in vec3 pos; \n" +
-                                       "void main() { \n" +
-                                       "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
-                                       "}";
-
-        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", 1 /*shaderTypeID 1 for VS*/, vertexShaderData);
-
-        std::string data_frag = std::string("") +
-                                "#version 400 \n" +
-                                "#extension GL_ARB_separate_shader_objects : enable \n" +
-                                "#extension GL_ARB_shading_language_420pack : enable \n" +
-                                "layout (std140, binding = 1) uniform lightEffects {\n" +
-                                "vec4 ambient_color;\n" +
-                                "vec4 diffuse_color;\n" +
-                                "vec4 specular_color;\n" +
-                                "vec4 emissive_color;\n" +
-                                "float specular_exponent;\n" +
-                                "} lightEffectsObj;" +
-                                "layout (location = 0) out vec4 uFragColor;  \n" +
-                                "void main() {  \n" +
-                                " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
-                                "   uFragColor = lightEffectsObj.ambient_color;  \n" +
-                                "}";
-
-
-        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", 2 /*shaderTypeID 2 for FS*/, data_frag);
+        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER, vertexShaderData);
+        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER, data_frag);
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
         VkPipelineShaderStageCreateInfo shaderStages[2] = {};
-        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = CreateShaderModule(result_vert,
-                                                    result_vert.size());
-        shaderStages[0].pName = "main";
-        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = CreateShaderModule(result_frag,
-                                                    result_frag.size());
-        shaderStages[1].pName = "main";
+        VkShaderModule  module = CreateShaderModule(result_vert, result_vert.size());
+        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_VERTEX_BIT, module, "main");
+        shaderStages[0] = *shaderStageInfo;
+
+        module = CreateShaderModule(result_frag, result_frag.size());
+        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_FRAGMENT_BIT, module, "main");
+        shaderStages[1] = *shaderStageInfo;
+
 
         // Out graphics pipeline records all state information, including our renderpass
         // and pipeline layout. We do not have any dynamic state in this example.
@@ -1050,7 +1076,7 @@ namespace gvr {
         err = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr,
                                         &(rdata->getVkData().m_pipeline));
         GVR_VK_CHECK(!err);
-        LOGI("Vulkan graphics call aftere");
+        LOGI("Vulkan graphics call after");
 
     }
 
@@ -1130,7 +1156,7 @@ namespace gvr {
 
     void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors,
                                                  int &swapChainIndex,
-                                                 std::vector<RenderData *> &render_data_vector) {
+                                                 std::vector<RenderData *> &render_data_vector, Camera* camera) {
         // For the triangle sample, we pre-record our command buffer, as it is static.
         // We have a buffer per swap chain image, so loop over the creation process.
         int i = swapChainIndex;
@@ -1163,14 +1189,17 @@ namespace gvr {
         GVR_VK_CHECK(!err);
 
         // When starting the render pass, we can set clear values.
-        VkClearValue clear_values[2] = {};
-            clear_values[0].color.float32[0] = 0.9f;
-            clear_values[0].color.float32[1] = 0.9f;
-            clear_values[0].color.float32[2] = 0.9f;
-        clear_values[0].color.float32[3] = 1.0f;
+        VkClearValue clear_values[1] = {};
+        clear_values[0].color.float32[0] = camera->background_color_r();
+        clear_values[0].color.float32[1] = camera->background_color_g();
+        clear_values[0].color.float32[2] = camera->background_color_b();
+        clear_values[0].color.float32[3] = camera->background_color_a();
+
+//        clear_values[0].depthStencil.depth = 1.0f;
+//        clear_values[0].depthStencil.stencil = 0;
+
         clear_values[1].depthStencil.depth = 1.0f;
         clear_values[1].depthStencil.stencil = 0;
-
         VkRenderPassBeginInfo rp_begin = {};
         rp_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         rp_begin.pNext = nullptr;
@@ -1379,7 +1408,7 @@ namespace gvr {
         LOGE("Pipleline cace faile");
     }
 
-    void VulkanCore::initVulkanCore(ANativeWindow *newNativeWindow) {
+    void VulkanCore::initVulkanDevice(ANativeWindow *newNativeWindow) {
         m_Vulkan_Initialised = true;
         m_androidWindow = newNativeWindow;
         if (InitVulkan() == 0) {
@@ -1401,18 +1430,21 @@ namespace gvr {
             m_Vulkan_Initialised = false;
             return;
         }
-
-        InitSwapchain(1024, 1024);
+        //createPipelineCache();
+    }
+    void VulkanCore::initVulkanCore(){
+        GLint viewport[4];
+        GLint curFBO;
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &curFBO);
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        InitSwapchain(viewport[2], viewport[3]);
         InitTransientCmdPool();
         InitCommandbuffers();
-        LOGE("Vulkan after InitVertexBuffers methods");
-        LOGE("Vulkan after InitUniformBuffers methods");
-        LOGE("Vulkan after InitLayouts methods");
         InitRenderPass();
         LOGE("Vulkan after InitRenderPass methods");
-        LOGE("Vulkan after InitPipeline methods");
         InitFrameBuffers();
         InitSync();
-        //createPipelineCache();
+        swap_chain_init_ = true;
+
     }
 }
