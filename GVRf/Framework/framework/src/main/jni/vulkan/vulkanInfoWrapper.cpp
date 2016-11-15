@@ -259,4 +259,17 @@ FenceCreateInfo::FenceCreateInfo(VkFenceCreateFlags aFlags)
         mInfo.height = height;
         mInfo.layers = layers;
     }
+
+    RenderPassCreateInfo::RenderPassCreateInfo(VkRenderPassCreateFlags flags, uint32_t attachmentCount, const VkAttachmentDescription* pAttachments,
+    uint32_t subpassCount, const VkSubpassDescription* pSubpasses, uint32_t dependencyCount, const VkSubpassDependency* pDependencies) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.attachmentCount = attachmentCount;
+        mInfo.pAttachments = pAttachments;
+        mInfo.subpassCount = subpassCount;
+        mInfo.pSubpasses = pSubpasses;
+        mInfo.dependencyCount = dependencyCount;
+        mInfo.pDependencies = pDependencies;
+    }
 }

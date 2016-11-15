@@ -315,5 +315,18 @@ class FenceCreateInfo final
             return &mInfo;
         }
     };
+
+    class RenderPassCreateInfo final
+    {
+        VkRenderPassCreateInfo mInfo;
+    public:
+        explicit RenderPassCreateInfo(VkRenderPassCreateFlags flags, uint32_t attachmentCount, const VkAttachmentDescription* pAttachments,
+                                      uint32_t subpassCount, const VkSubpassDescription* pSubpasses, uint32_t dependencyCount, const VkSubpassDependency* pDependencies);
+
+        operator const VkRenderPassCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
 }
 #endif //FRAMEWORK_VULKANINFOWRAPPER_H

@@ -843,7 +843,7 @@ namespace gvr {
     }
 
     void VulkanCore::InitRenderPass() {
-// The renderpass defines the attachments to the framebuffer object that gets
+        // The renderpass defines the attachments to the framebuffer object that gets
         // used in the pipeline. We have two attachments, the colour buffer, and the
         // depth buffer. The operations and layouts are set to defaults for this type
         // of attachment.
@@ -892,20 +892,8 @@ namespace gvr {
         subpassDescription.preserveAttachmentCount = 0;
         subpassDescription.pPreserveAttachments = nullptr;
 
-        // The renderpass itself is created with the number of subpasses, and the
-        // list of attachments which those subpasses can reference.
-        VkRenderPassCreateInfo renderPassCreateInfo = {};
-        renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-        renderPassCreateInfo.pNext = nullptr;
-        renderPassCreateInfo.attachmentCount = 2;
-        renderPassCreateInfo.pAttachments = attachmentDescriptions;
-        renderPassCreateInfo.subpassCount = 1;
-        renderPassCreateInfo.pSubpasses = &subpassDescription;
-        renderPassCreateInfo.dependencyCount = 0;
-        renderPassCreateInfo.pDependencies = nullptr;
-
         VkResult ret;
-        ret = vkCreateRenderPass(m_device, &renderPassCreateInfo, nullptr, &m_renderPass);
+        ret = vkCreateRenderPass(m_device, gvr::RenderPassCreateInfo(0, (uint32_t)2, attachmentDescriptions, 1, &subpassDescription, (uint32_t)0, nullptr), nullptr, &m_renderPass);
         GVR_VK_CHECK(!ret);
     }
   /*  void VulkanCore::CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size) {
