@@ -247,4 +247,16 @@ FenceCreateInfo::FenceCreateInfo(VkFenceCreateFlags aFlags)
     mInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 }
 
+    FramebufferCreateInfo::FramebufferCreateInfo(VkFramebufferCreateFlags flags, VkRenderPass &renderPass, uint32_t attachmentCount,
+                                                 const VkImageView* pAttachments, uint32_t width, uint32_t height, uint32_t layers) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.renderPass = renderPass;
+        mInfo.attachmentCount = attachmentCount;
+        mInfo.pAttachments = pAttachments;
+        mInfo.width = width;
+        mInfo.height = height;
+        mInfo.layers = layers;
+    }
 }

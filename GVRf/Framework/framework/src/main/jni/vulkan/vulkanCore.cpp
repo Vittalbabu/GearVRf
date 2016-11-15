@@ -1086,16 +1086,6 @@ namespace gvr {
         // The views in this example are the colour view, which is our swapchain image,
         // and the depth buffer created manually earlier.
         VkImageView attachments[2] = {};
-        VkFramebufferCreateInfo framebufferCreateInfo = {};
-        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferCreateInfo.pNext = nullptr;
-        framebufferCreateInfo.renderPass = m_renderPass;
-        framebufferCreateInfo.attachmentCount = 2;
-        framebufferCreateInfo.pAttachments = attachments;
-        framebufferCreateInfo.width = m_width;
-        framebufferCreateInfo.height = m_height;
-        framebufferCreateInfo.layers = 1;
-
         VkResult ret;
 
         m_frameBuffers = new VkFramebuffer[m_swapchainImageCount];
@@ -1112,7 +1102,7 @@ namespace gvr {
             }
             else
                 LOGE("Vulkan image view not null");
-            ret = vkCreateFramebuffer(m_device, &framebufferCreateInfo, nullptr,
+            ret = vkCreateFramebuffer(m_device, gvr::FramebufferCreateInfo(0, m_renderPass, uint32_t(2), attachments, m_width, m_width, uint32_t(1)), nullptr,
                                       &m_frameBuffers[i]);
             GVR_VK_CHECK(!ret);
         }
