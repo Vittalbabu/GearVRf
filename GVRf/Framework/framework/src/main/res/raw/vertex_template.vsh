@@ -44,7 +44,7 @@ layout (std140) uniform Bones_ubo{
 in vec3 a_position;
 in vec2 a_texcoord;
 
-#ifdef HAS_a_normal && defined(HAS_LIGHTSOURCES)
+#if defined(HAS_a_normal) && defined(HAS_LIGHTSOURCES)
 in vec3 a_normal;
 #endif
 
