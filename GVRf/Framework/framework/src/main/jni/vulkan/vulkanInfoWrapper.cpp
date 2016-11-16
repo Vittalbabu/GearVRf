@@ -272,4 +272,29 @@ FenceCreateInfo::FenceCreateInfo(VkFenceCreateFlags aFlags)
         mInfo.dependencyCount = dependencyCount;
         mInfo.pDependencies = pDependencies;
     }
+
+    MemoryAllocateInfo::MemoryAllocateInfo(VkDeviceSize allocationSize, uint32_t memoryTypeIndex) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        mInfo.allocationSize = allocationSize;
+        mInfo.memoryTypeIndex = memoryTypeIndex;
+    }
+
+    DescriptorSetLayoutCreateInfo::DescriptorSetLayoutCreateInfo(VkDescriptorSetLayoutCreateFlags flags, uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.bindingCount = bindingCount;
+        mInfo.pBindings = pBindings;
+    }
+
+    PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(VkPipelineLayoutCreateFlags flags, uint32_t setLayoutCount, const VkDescriptorSetLayout* pSetLayouts, uint32_t pushConstantRangeCount, const VkPushConstantRange* pPushConstantRanges) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.setLayoutCount = setLayoutCount;
+        mInfo.pSetLayouts = pSetLayouts;
+        mInfo.pushConstantRangeCount = pushConstantRangeCount;
+        mInfo.pPushConstantRanges = pPushConstantRanges;
+    }
 }

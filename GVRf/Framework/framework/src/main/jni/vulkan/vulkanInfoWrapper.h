@@ -328,5 +328,41 @@ class FenceCreateInfo final
             return &mInfo;
         }
     };
+
+    class MemoryAllocateInfo final
+    {
+        VkMemoryAllocateInfo mInfo;
+    public:
+        explicit MemoryAllocateInfo(VkDeviceSize allocationSize, uint32_t memoryTypeIndex);
+
+        operator const VkMemoryAllocateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class DescriptorSetLayoutCreateInfo final
+    {
+        VkDescriptorSetLayoutCreateInfo mInfo;
+    public:
+        explicit DescriptorSetLayoutCreateInfo(VkDescriptorSetLayoutCreateFlags flags, uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings);
+
+        operator const VkDescriptorSetLayoutCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class PipelineLayoutCreateInfo final
+    {
+        VkPipelineLayoutCreateInfo mInfo;
+    public:
+        explicit PipelineLayoutCreateInfo(VkPipelineLayoutCreateFlags flags, uint32_t setLayoutCount, const VkDescriptorSetLayout* pSetLayouts, uint32_t pushConstantRangeCount, const VkPushConstantRange* pPushConstantRanges);
+
+        operator const VkPipelineLayoutCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
 }
 #endif //FRAMEWORK_VULKANINFOWRAPPER_H

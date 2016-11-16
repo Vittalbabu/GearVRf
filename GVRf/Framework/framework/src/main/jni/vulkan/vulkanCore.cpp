@@ -147,9 +147,7 @@ namespace gvr {
             GVR_VK_CHECK(enabledExtensionCount < 16);
         }
         if (!surfaceExtFound) {
-            LOGE("vkEnumerateInstanceExtensionProperties failed to find the "
-            VK_KHR_SURFACE_EXTENSION_NAME
-            " extension.");
+            LOGE("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_SURFACE_EXTENSION_NAME " extension.");
             return false;
         }
         if (!platformSurfaceExtFound) {
@@ -287,9 +285,7 @@ namespace gvr {
             GVR_VK_CHECK(enabledExtensionCount < 16);
         }
         if (!swapchainExtFound) {
-            LOGE("vkEnumerateDeviceExtensionProperties failed to find the "
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-            " extension: vkCreateInstance Failure");
+            LOGE("vkEnumerateDeviceExtensionProperties failed to find the " VK_KHR_SWAPCHAIN_EXTENSION_NAME " extension: vkCreateInstance Failure");
 
             // Always attempt to enable the swapchain
             extensionNames[enabledExtensionCount++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
@@ -313,8 +309,7 @@ namespace gvr {
         // this surface, so it is important to test for this.
         VkBool32 *supportsPresent = new VkBool32[queueFamilyCount];
         for (uint32_t i = 0; i < queueFamilyCount; i++) {
-            vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, i, m_surface,
-                                                 &supportsPresent[i]);
+            vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, i, m_surface, &supportsPresent[i]);
         }
 
 
@@ -379,7 +374,7 @@ namespace gvr {
         VkResult err;
         bool pass;
         VkMemoryRequirements mem_reqs;
-        VkMemoryAllocateInfo memoryAllocateInfo = {};
+        uint32_t memoryTypeIndex;
 
         VkResult ret = VK_SUCCESS;
         m_width = width;
@@ -419,19 +414,12 @@ namespace gvr {
             vkGetImageMemoryRequirements(m_device, m_swapchainBuffers[i].image, &mem_reqs);
             m_swapchainBuffers[i].size = mem_reqs.size;
 
-            // Allocate memory according to requirements
-
-            memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            memoryAllocateInfo.pNext = nullptr;
-            memoryAllocateInfo.allocationSize = 0;
-            memoryAllocateInfo.memoryTypeIndex = 0;
-            memoryAllocateInfo.allocationSize = mem_reqs.size;
             pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
                                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                               &memoryAllocateInfo.memoryTypeIndex);
+                                               &memoryTypeIndex);
             GVR_VK_CHECK(pass);
 
-            err = vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &m_swapchainBuffers[i].mem);
+            err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr, &m_swapchainBuffers[i].mem);
             GVR_VK_CHECK(!err);
 
             // Bind memory to the image
@@ -461,20 +449,13 @@ namespace gvr {
             vkGetBufferMemoryRequirements(m_device, outputImage[i].buf, &mem_reqs);
             GVR_VK_CHECK(!err);
 
-            // And allocate memory according to those requirements.
-            memoryAllocateInfo = {};
-            memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            memoryAllocateInfo.pNext = nullptr;
-            memoryAllocateInfo.allocationSize = 0;
-            memoryAllocateInfo.memoryTypeIndex = 0;
-            memoryAllocateInfo.allocationSize = mem_reqs.size;
             pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                               &memoryAllocateInfo.memoryTypeIndex);
+                                               &memoryTypeIndex);
             GVR_VK_CHECK(pass);
 
             outputImage[i].size = mem_reqs.size;
-            err = vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &outputImage[i].mem);
+            err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr, &outputImage[i].mem);
             GVR_VK_CHECK(!err);
 
             err = vkBindBufferMemory(m_device, outputImage[i].buf, outputImage[i].mem, 0);
@@ -503,18 +484,11 @@ namespace gvr {
             // discover what memory requirements are for this image.
             vkGetImageMemoryRequirements(m_device, m_depthBuffers[i].image, &mem_reqs);
 
-            // Allocate memory according to requirements
-            VkMemoryAllocateInfo memoryAllocateInfo = {};
-            memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-            memoryAllocateInfo.pNext = nullptr;
-            memoryAllocateInfo.allocationSize = 0;
-            memoryAllocateInfo.memoryTypeIndex = 0;
-            memoryAllocateInfo.allocationSize = mem_reqs.size;
             pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits, 0,
-                                               &memoryAllocateInfo.memoryTypeIndex);
+                                               &memoryTypeIndex);
             GVR_VK_CHECK(pass);
 
-            err = vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &m_depthBuffers[i].mem);
+            err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr, &m_depthBuffers[i].mem);
             GVR_VK_CHECK(!err);
 
             // Bind memory to the image
@@ -578,12 +552,6 @@ namespace gvr {
 
     void VulkanCore::InitCommandbuffers() {
         VkResult ret = VK_SUCCESS;
-        // Command buffers are allocated from a pool; we define that pool here and create it.
-        VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.pNext = nullptr;
-        commandPoolCreateInfo.queueFamilyIndex = m_queueFamilyIndex;
-        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         ret = vkCreateCommandPool(
                 m_device,
@@ -593,14 +561,6 @@ namespace gvr {
         );
 
         GVR_VK_CHECK(!ret);
-
-
-        VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        commandBufferAllocateInfo.pNext = nullptr;
-        commandBufferAllocateInfo.commandPool = m_commandPool;
-        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        commandBufferAllocateInfo.commandBufferCount = 1;
 
         // Create render command buffers, one per swapchain image
         for (int i = 0; i < m_swapchainImageCount; i++) {
@@ -633,71 +593,19 @@ namespace gvr {
         VkDescriptorSetLayoutBinding &material_uniformBinding = material_descriptor.getLayoutBinding();
         uniformAndSamplerBinding[1] = material_uniformBinding;
 
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-        descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCreateInfo.pNext = nullptr;
-        descriptorSetLayoutCreateInfo.bindingCount = 2;//2;
-        descriptorSetLayoutCreateInfo.pBindings = &uniformAndSamplerBinding[0];
-
         VkDescriptorSetLayout &descriptorLayout = rdata->getVkData().getDescriptorLayout();
 
-        ret = vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr,
+        ret = vkCreateDescriptorSetLayout(m_device, gvr::DescriptorSetLayoutCreateInfo(0, 2, &uniformAndSamplerBinding[0]), nullptr,
                                           &descriptorLayout);
         GVR_VK_CHECK(!ret);
 
         VkPipelineLayout &pipelineLayout = rdata->getVkData().getPipelineLayout();
-
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.pNext = nullptr;
-        pipelineLayoutCreateInfo.setLayoutCount = 1;
-        pipelineLayoutCreateInfo.pSetLayouts = &descriptorLayout;
-        ret = vkCreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-        GVR_VK_CHECK(!ret);
-
-
-    }
-
-    void VulkanCore::InitLayouts() {
-        VkResult ret = VK_SUCCESS;
-        // This sample has two  bindings, a sampler in the fragment shader and a uniform in the
-        // vertex shader for MVP matrix.
-        VkDescriptorSetLayoutBinding uniformAndSamplerBinding[2] = {};
-        // Our MVP matrix
-        uniformAndSamplerBinding[0].binding = 0;
-        uniformAndSamplerBinding[0].descriptorCount = 1;
-        uniformAndSamplerBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        uniformAndSamplerBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uniformAndSamplerBinding[0].pImmutableSamplers = nullptr;
-        // Our Lights
-        uniformAndSamplerBinding[1].binding = 1;
-        uniformAndSamplerBinding[1].descriptorCount = 1;
-        uniformAndSamplerBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        uniformAndSamplerBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        uniformAndSamplerBinding[1].pImmutableSamplers = nullptr;
-
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-        descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        descriptorSetLayoutCreateInfo.pNext = nullptr;
-        descriptorSetLayoutCreateInfo.bindingCount = 2;
-        descriptorSetLayoutCreateInfo.pBindings = &uniformAndSamplerBinding[0];
-
-        ret = vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr,
-                                          &m_descriptorLayout);
-        GVR_VK_CHECK(!ret);
-
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-        pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutCreateInfo.pNext = nullptr;
-        pipelineLayoutCreateInfo.setLayoutCount = 1;
-        pipelineLayoutCreateInfo.pSetLayouts = &m_descriptorLayout;
-        ret = vkCreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, nullptr,
-                                     &m_pipelineLayout);
+        ret = vkCreatePipelineLayout(m_device, gvr::PipelineLayoutCreateInfo(0, 1, &descriptorLayout, 0, 0), nullptr, &pipelineLayout);
         GVR_VK_CHECK(!ret);
     }
 
     void VulkanCore::InitUniformBuffers() {
+        uint32_t memoryTypeIndex;
         // the uniform in this example is a matrix in the vertex stage
         memset(&m_modelViewMatrixUniform, 0, sizeof(m_modelViewMatrixUniform));
 
@@ -721,22 +629,15 @@ namespace gvr {
         vkGetBufferMemoryRequirements(m_device, m_modelViewMatrixUniform.buf, &mem_reqs);
         assert(!err);
 
-        // And allocate memory according to those requirements
-        VkMemoryAllocateInfo memoryAllocateInfo;
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.pNext = NULL;
-        memoryAllocateInfo.allocationSize = 0;
-        memoryAllocateInfo.memoryTypeIndex = 0;
-        memoryAllocateInfo.allocationSize = mem_reqs.size;
         bool pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                &memoryAllocateInfo.memoryTypeIndex);
+                                                &memoryTypeIndex);
         assert(pass);
 
         // We keep the size of the allocation for remapping it later when we update contents
-        m_modelViewMatrixUniform.allocSize = memoryAllocateInfo.allocationSize;
+        m_modelViewMatrixUniform.allocSize = mem_reqs.size;
 
-        err = vkAllocateMemory(m_device, &memoryAllocateInfo, NULL, &m_modelViewMatrixUniform.mem);
+        err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), NULL, &m_modelViewMatrixUniform.mem);
         assert(!err);
 
         // Create our initial MVP matrix
@@ -772,6 +673,7 @@ namespace gvr {
 
     void VulkanCore::InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform) {
         // the uniform in this example is a matrix in the vertex stage
+        uint32_t memoryTypeIndex;
         memset(&m_modelViewMatrixUniform, 0, sizeof(m_modelViewMatrixUniform));
 
         VkResult err = VK_SUCCESS;
@@ -794,22 +696,15 @@ namespace gvr {
         vkGetBufferMemoryRequirements(m_device, m_modelViewMatrixUniform.buf, &mem_reqs);
         assert(!err);
 
-        // And allocate memory according to those requirements
-        VkMemoryAllocateInfo memoryAllocateInfo;
-        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocateInfo.pNext = NULL;
-        memoryAllocateInfo.allocationSize = 0;
-        memoryAllocateInfo.memoryTypeIndex = 0;
-        memoryAllocateInfo.allocationSize = mem_reqs.size;
         bool pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                &memoryAllocateInfo.memoryTypeIndex);
+                                                &memoryTypeIndex);
         assert(pass);
 
         // We keep the size of the allocation for remapping it later when we update contents
-        m_modelViewMatrixUniform.allocSize = memoryAllocateInfo.allocationSize;
+        m_modelViewMatrixUniform.allocSize = mem_reqs.size;
 
-        err = vkAllocateMemory(m_device, &memoryAllocateInfo, NULL, &m_modelViewMatrixUniform.mem);
+        err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(memoryTypeIndex, mem_reqs.size), NULL, &m_modelViewMatrixUniform.mem);
         assert(!err);
 
         // Create our initial MVP matrix
@@ -915,13 +810,6 @@ namespace gvr {
         VkShaderModule module;
         VkResult err;
 
-        // Creating a shader is very simple once it's in memory as compiled SPIR-V.
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        moduleCreateInfo.pNext = nullptr;
-        moduleCreateInfo.codeSize = size * sizeof(unsigned int);
-        moduleCreateInfo.pCode = code.data();
-        moduleCreateInfo.flags = 0;
         err = vkCreateShaderModule(m_device, gvr::ShaderModuleCreateInfo(code.data(), size *
                                                                                       sizeof(unsigned int)),
                                    nullptr, &module);
@@ -935,13 +823,6 @@ namespace gvr {
         VkShaderModule module;
         VkResult err;
 
-        // Creating a shader is very simple once it's in memory as compiled SPIR-V.
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        moduleCreateInfo.pNext = nullptr;
-        moduleCreateInfo.codeSize = size;
-        moduleCreateInfo.pCode = code;
-        moduleCreateInfo.flags = 0;
         err = vkCreateShaderModule(m_device, gvr::ShaderModuleCreateInfo(code, size), nullptr,
                                    &module);
         GVR_VK_CHECK(!err);
@@ -1099,11 +980,7 @@ namespace gvr {
     void VulkanCore::InitSync() {
         LOGI("Vulkan initsync start");
         VkResult ret = VK_SUCCESS;
-        // For synchronization, we have semaphores for rendering and backbuffer signalling.
-        VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        semaphoreCreateInfo.pNext = nullptr;
-        semaphoreCreateInfo.flags = 0;
+
         ret = vkCreateSemaphore(m_device, gvr::SemaphoreCreateInfo(), nullptr,
                                 &m_backBufferSemaphore);
         GVR_VK_CHECK(!ret);
@@ -1172,9 +1049,6 @@ namespace gvr {
         clear_values[0].color.float32[1] = camera->background_color_g();
         clear_values[0].color.float32[2] = camera->background_color_b();
         clear_values[0].color.float32[3] = camera->background_color_a();
-
-//        clear_values[0].depthStencil.depth = 1.0f;
-//        clear_values[0].depthStencil.stencil = 0;
 
         clear_values[1].depthStencil.depth = 1.0f;
         clear_values[1].depthStencil.stencil = 0;
