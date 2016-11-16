@@ -455,25 +455,15 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      * @param scene scene being rendered
      * @see GVRShaderTemplate GVRMaterialShader.getShaderType
      */
-    public void bindShader(GVRScene scene)
-    {
-        GVRRenderPass pass = mRenderPassList.get(0);
-        GVRLightBase[] lightList = null;
-
-        if (isLightEnabled())
-        {
-            lightList = scene.getLightList();
-        }
-        GVRShader shader = getMaterial().getShaderType().getTemplate(getGVRContext());
-        if (shader != null)
-        {
-            shader.bindShader(getGVRContext(), this, scene);
-        }
-        for (int i = 1; i < mRenderPassList.size(); ++i)
-        {
-            mRenderPassList.get(i).bindShader(null);
-        }
-    }
+     public void bindShader(GVRScene scene) {
+         for (int i = 0; i < mRenderPassList.size(); ++i) {
+             GVRShaderData material = mRenderPassList.get(i).getMaterial();
+             GVRShader shader = material.getShaderType().getTemplate(getGVRContext());
+             if (shader != null) {
+                 shader.bindShader(getGVRContext(), this, scene, material);
+             }
+         }
+     }
 
     /**
      * @return The {@link GVRLight light} the {@link GVRMesh mesh} is being lit by.
@@ -503,13 +493,10 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
         if (!isLightEnabled) {
             NativeRenderData.enableLight(getNative());
             isLightEnabled = true;
-            GVRShader shader = getMaterial().getShaderType().getTemplate(getGVRContext());
-            if ((shader != null) && shader.usesLights())
-            {
-                shader.bindShader(getGVRContext(), this, getGVRContext().getMainScene());
-            }
+            bindShader(getGVRContext().getMainScene());
         }
     }
+
 
     /**
      * Disable lighting effect for the render_data.
@@ -521,11 +508,7 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
         if (isLightEnabled) {
             NativeRenderData.disableLight(getNative());
             isLightEnabled = false;
-            GVRShader shader = getMaterial().getShaderType().getTemplate(getGVRContext());
-            if ((shader != null) && shader.usesLights())
-            {
-                shader.bindShader(getGVRContext(), this, null);
-            }
+            bindShader(null);
         }
     }
 
@@ -914,6 +897,8 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
 
 class NativeRenderData {
     static native long ctor();
+
+    static native long setJava(long renderData, GVRRenderData javaRenderData);
 
     static native long getComponentType();
 

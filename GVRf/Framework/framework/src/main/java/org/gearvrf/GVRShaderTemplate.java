@@ -166,23 +166,20 @@ public class GVRShaderTemplate extends GVRShader
      * The signature will include the names of the vertex attributes,
      * texture samplers, material uniforms and light sources actually used by this
      * shader variant.
+     * Create a unique signature for the lights used by this shader variant.
+     * The signature will include the names of the light source classes and
+     * how many times each is used in the shader.
      *
-     * @param defined
-     *            names to be defined for this shader
      * @param lightlist
      *            list of lights used with this shader
      * @return string signature for shader
+     * @return light string signature for shader
      */
-    public String generateSignature(HashMap<String, Integer> defined, GVRLightBase[] lightlist)
+    protected String generateLightSignature(GVRLightBase[] lightlist)
     {
-        String sig = getClass().getSimpleName();
+        String sig = "";
         HashMap<Class<? extends GVRLightBase>, Integer> lightCount = new HashMap<Class<? extends GVRLightBase>, Integer>();
 
-        for (HashMap.Entry<String, Integer> entry : defined.entrySet())
-        {
-            if (entry.getValue() != 0)
-                sig += "$" + entry.getKey();
-        }
         if (lightlist != null)
         {
             for (GVRLightBase light : lightlist)
@@ -213,19 +210,37 @@ public class GVRShaderTemplate extends GVRShader
      *            GVRMesh or null if vertex attributes should be ignored
      * @param material
      *            material used with this shader (may not be null)
-     * @return shader variable names actually defined by the material and mesh
+     * @return shader signature string with names actually defined by the material and mesh
      */
-    protected void generateVariantDefines(HashMap<String, Integer> definedNames, GVRMesh mesh, GVRShaderData material)
+    protected String generateVariantDefines(HashMap<String, Integer> definedNames, GVRMesh mesh, GVRShaderData material)
     {
-        for (String name : mShaderDefines)
-        {
-            if (definedNames.containsKey(name))
+        String signature = getClass().getSimpleName();
+        for (String name : mShaderDefines) {
+            if (definedNames.containsKey(name)) {
+                signature += "$" + name;
                 continue;
-            if (material.hasUniform(name) || (material.getTexture(name) != null))
+            }
+            if (material.hasUniform(name))
+            {
                 definedNames.put(name, 1);
-            else if ((mesh != null) && mesh.hasAttribute(name))
+                signature += "$" + name;
+            }
+            else if ((mesh != null) && mesh.hasAttribute(name)) {
                 definedNames.put(name, 1);
+                signature += "$" + name;
+            }
+            else if (material.getTexture(name) != null)
+            {
+                definedNames.put(name, 1);
+                signature += "$" + name;
+                String attrname = material.getTexCoordAttr(name);
+                if (attrname != null)
+                {
+                    signature += "-" + attrname;
+                }
+            }
         }
+        return signature;
     }
 
     protected void updateDescriptors(GVRMesh mesh, GVRShaderData material,
@@ -405,22 +420,21 @@ public class GVRShaderTemplate extends GVRShader
      *            scene being rendered
      * @return ID of vertex/fragment shader set
      */
-    public void bindShader(GVRContext context, GVRRenderData rdata, GVRScene scene)
+    public void bindShader(GVRContext context, GVRRenderData rdata, GVRScene scene, GVRShaderData material)
     {
         GVRMesh mesh = rdata.getMesh();
-        GVRShaderData material = rdata.getMaterial();
         GVRLightBase[] lightlist = (scene != null) ? scene.getLightList() : null;
             scene = null;
         HashMap<String, Integer> variantDefines = getRenderDefines(rdata, scene);
-        generateVariantDefines(variantDefines, mesh, material);
-        String signature = generateSignature(variantDefines, lightlist);
+        String signature = generateVariantDefines(variantDefines, mesh, material);
+        signature += generateLightSignature(lightlist);
         GVRMaterialShaderManager shaderManager = context.getMaterialShaderManager();
         int nativeShader = shaderManager.getShader(signature);
         if (nativeShader == 0)
         {
             Map<String, LightClass> lightClasses = scanLights(lightlist);
 
-             String vertexShaderSource = generateShaderVariant("Vertex", variantDefines, lightlist, lightClasses, material);
+            String vertexShaderSource = generateShaderVariant("Vertex", variantDefines, lightlist, lightClasses, material);
             String fragmentShaderSource = generateShaderVariant("Fragment", variantDefines, lightlist, lightClasses, material);
             StringBuilder uniformDescriptor = new StringBuilder();
             StringBuilder textureDescriptor = new StringBuilder();
@@ -437,11 +451,6 @@ public class GVRShaderTemplate extends GVRShader
             Log.e(TAG, "SHADER: generated shader #%d %s", nativeShader, signature);
         }
         rdata.setShader(nativeShader);
-    }
-
-    public void bindShader(GVRContext context, GVRRenderPass rpass, GVRMesh mesh)
-    {
-        rpass.setShader(bindShader(context, rpass.getMaterial()));
     }
 
     private void writeShader(GVRContext context, String fileName, String sourceCode)
@@ -477,8 +486,7 @@ public class GVRShaderTemplate extends GVRShader
     public int bindShader(GVRContext context, GVRShaderData material)
     {
         HashMap<String, Integer> variantDefines = new HashMap<String, Integer>();
-        generateVariantDefines(variantDefines, null, material);
-        String signature = generateSignature(variantDefines, null);
+        String signature = generateVariantDefines(variantDefines, null, material);
         GVRMaterialShaderManager shaderManager = context.getMaterialShaderManager();
         int nativeShader = shaderManager.getShader(signature);
 
