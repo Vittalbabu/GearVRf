@@ -29,7 +29,7 @@
 #include "vulkan/vulkan_headers.h"
 #include <thread>
 #include <shaderc/shaderc.hpp>
-
+#include "gvr_time.h"
 #define UINT64_MAX 99999
 
 #define QUEUE_INDEX_MAX 99999
@@ -64,7 +64,7 @@ std::string vertexShaderData = std::string("") +
 namespace gvr {
     VulkanCore *VulkanCore::theInstance = NULL;
     uint8_t *oculusTexData;
-
+    uint8_t *oculus_data[SWAP_CHAIN_COUNT];
     void Descriptor::createBuffer(VkDevice &device, VulkanCore *vk) {
         ubo.createBuffer(device, vk);
     }
@@ -386,7 +386,7 @@ namespace gvr {
         m_height = height;
 
         // Create the image with details as imageCreateInfo
-        m_swapchainImageCount = 3;
+        m_swapchainImageCount = SWAP_CHAIN_COUNT;
         m_swapchainBuffers = new GVR_VK_SwapchainBuffer[m_swapchainImageCount];
         outputImage = new GVR_VK_SwapchainBuffer[m_swapchainImageCount];
         GVR_VK_CHECK(m_swapchainBuffers);
@@ -1232,6 +1232,7 @@ namespace gvr {
         // Get the next image to render to, then queue a wait until the image is ready
         int m_swapchainCurrentIdx = swapChainIndex;
         VkFence nullFence = waitFences[m_swapchainCurrentIdx];
+        vkResetFences(m_device, 1, &waitFences[m_swapchainCurrentIdx]);
 
         VkSubmitInfo submitInfo = {};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1246,10 +1247,27 @@ namespace gvr {
 
         err = vkQueueSubmit(m_queue, 1, &submitInfo, waitFences[m_swapchainCurrentIdx]);
         GVR_VK_CHECK(!err);
-        err = vkWaitForFences(m_device, 1, &waitFences[m_swapchainCurrentIdx], VK_TRUE,
-                              4294967295U);
-        GVR_VK_CHECK(!err);
 
+        err= vkGetFenceStatus(m_device,waitFences[m_swapchainCurrentIdx]);
+        int swapChainIndx;
+        bool found = false;
+        VkResult status;
+        // check the status of current fence, if not ready take the previous one, we are incrementing with 2 for left and right frames.
+        if (err != VK_SUCCESS) {
+            swapChainIndx = (m_swapchainCurrentIdx + 2) % SWAP_CHAIN_COUNT;
+            while (swapChainIndx != m_swapchainCurrentIdx) {
+                status = vkGetFenceStatus(m_device, waitFences[swapChainIndx]);
+                if (VK_SUCCESS == status) {
+                    found = true;
+                    break;
+                }
+                swapChainIndx = (swapChainIndx + 2) % SWAP_CHAIN_COUNT;
+            }
+            if (!found) {
+                err = vkWaitForFences(m_device, 1, &waitFences[swapChainIndx], VK_TRUE,
+                                      4294967295U);
+            }
+        }
 
         VkCommandBuffer trnCmdBuf = GetTransientCmdBuffer();
         VkCommandBufferBeginInfo beginInfo = {};
@@ -1259,7 +1277,7 @@ namespace gvr {
         VkBufferCopy copyRegion = {};
         copyRegion.srcOffset = 0; // Optional
         copyRegion.dstOffset = 0; // Optional
-        copyRegion.size = outputImage[m_swapchainCurrentIdx].size;
+        copyRegion.size = outputImage[swapChainIndx].size;
         VkExtent3D extent3D = {};
         extent3D.width = m_width;
         extent3D.height = m_height;
@@ -1268,9 +1286,9 @@ namespace gvr {
         region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         region.imageSubresource.layerCount = 1;
         region.imageExtent = extent3D;
-        vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[m_swapchainCurrentIdx].image,
+        vkCmdCopyImageToBuffer(trnCmdBuf, m_swapchainBuffers[swapChainIndx].image,
                                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                               outputImage[m_swapchainCurrentIdx].buf, 1, &region);
+                               outputImage[swapChainIndx].buf, 1, &region);
         vkEndCommandBuffer(trnCmdBuf);
 
         VkSubmitInfo ssubmitInfo = {};
@@ -1278,20 +1296,21 @@ namespace gvr {
         ssubmitInfo.commandBufferCount = 1;
         ssubmitInfo.pCommandBuffers = &trnCmdBuf;
 
-        vkQueueSubmit(m_queue, 1, &ssubmitInfo, waitSCBFences[m_swapchainCurrentIdx]);
-        err = vkWaitForFences(m_device, 1, &waitSCBFences[m_swapchainCurrentIdx], VK_TRUE, 4294967295U);
+        vkQueueSubmit(m_queue, 1, &ssubmitInfo, waitSCBFences[swapChainIndx]);
 
+
+        err = vkWaitForFences(m_device, 1, &waitSCBFences[swapChainIndx], VK_TRUE, 4294967295U);
         vkFreeCommandBuffers(m_device, m_commandPoolTrans, 1, &trnCmdBuf);
 
         uint8_t *data;
-        err = vkMapMemory(m_device, outputImage[m_swapchainCurrentIdx].mem, 0,
-                          outputImage[m_swapchainCurrentIdx].size, 0, (void **) &data);
+        err = vkMapMemory(m_device, outputImage[swapChainIndx].mem, 0,
+                          outputImage[swapChainIndx].size, 0, (void **) &data);
         GVR_VK_CHECK(!err);
         oculusTexData = data;
 
-        vkUnmapMemory(m_device, outputImage[m_swapchainCurrentIdx].mem);
+        vkUnmapMemory(m_device, outputImage[swapChainIndx].mem);
         // Makes Fence Un-signalled
-        err = vkResetFences(m_device, 1, &waitFences[m_swapchainCurrentIdx]);
+        err = vkResetFences(m_device, 1, &waitSCBFences[swapChainIndx]);
         GVR_VK_CHECK(!err);
     }
 

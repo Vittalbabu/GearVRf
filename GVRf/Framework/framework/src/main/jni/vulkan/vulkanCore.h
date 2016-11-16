@@ -32,7 +32,7 @@
 #define GVR_VK_VERTEX_BUFFER_BIND_ID 0
 #define GVR_VK_SAMPLE_NAME "GVR Vulkan"
 #define VK_KHR_ANDROID_SURFACE_EXTENSION_NAME "VK_KHR_android_surface"
-
+#define SWAP_CHAIN_COUNT 6
 
 namespace gvr {
     enum ShaderType{
