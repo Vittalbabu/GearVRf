@@ -28,11 +28,8 @@ Surface @ShaderName()
 #ifdef HAS_LIGHTSOURCES
     diffuse *= diffuse_color;
 #endif
-#ifdef HAS_diffuseTexture
-	diffuse *= texture(diffuseTexture, diffuse_coord.xy);
-#else
-    diffuse *= texture(u_texture, diffuse_coord.xy);
-
+#ifdef HAS_u_texture
+	diffuse *= texture(u_texture, diffuse_coord.xy);
 #endif
     float opacity = diffuse.w;
     diffuse = vec4(diffuse.r * opacity, diffuse.g * opacity, diffuse.b * opacity, opacity);

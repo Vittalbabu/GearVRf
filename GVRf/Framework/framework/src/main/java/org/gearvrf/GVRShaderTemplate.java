@@ -217,7 +217,10 @@ public class GVRShaderTemplate extends GVRShader
         String signature = getClass().getSimpleName();
         for (String name : mShaderDefines) {
             if (definedNames.containsKey(name)) {
-                signature += "$" + name;
+                Integer value = definedNames.get(name);
+                if (value != 0) {
+                    signature += "$" + name;
+               }
                 continue;
             }
             if (material.hasUniform(name))
@@ -236,7 +239,7 @@ public class GVRShaderTemplate extends GVRShader
                 String attrname = material.getTexCoordAttr(name);
                 if (attrname != null)
                 {
-                    signature += "-" + attrname;
+                    signature += "-" +"#"+ attrname+ "#";
                 }
             }
         }

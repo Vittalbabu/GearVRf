@@ -84,6 +84,10 @@ import org.gearvrf.R;
            HashMap<String, Integer> defines = super.getRenderDefines(rdata, scene);
            if (!rdata.isLightMapEnabled())
                defines.put("lightMapTexture", 0);
+           if (!defines.containsKey("LIGHTSOURCES") || (defines.get("LIGHTSOURCES") != 1))
+           {
+               defines.put("a_normal", 0);
+           }
            return defines;
        }
 
