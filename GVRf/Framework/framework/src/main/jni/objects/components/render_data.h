@@ -119,7 +119,7 @@ public:
                     DEFAULT_RENDERING_ORDER), hash_code_dirty_(true), offset_(
                     false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
                     true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
-                    1.0f), invert_coverage_mask_(GL_FALSE), draw_mode_(
+                    1.0f), invert_coverage_mask_(GL_FALSE), bones_ubo_(nullptr), draw_mode_(
                     GL_TRIANGLES), texture_capturer(0),uniform_dirty(true),shaderID_(0), renderdata_dirty_(true) {
     }
 
@@ -410,9 +410,10 @@ public:
          }
          void bindBonesUbo(int program_id){
              if(bones_ubo_ == nullptr)
-                 bones_ubo_ = bindUbo(program_id,BONES_UBO_INDEX,"Bones_ubo","mat4 u_bone_matrix[60];" );
+                 bones_ubo_ = bindUbo(program_id, BONES_UBO_INDEX, "Bones_ubo", "mat4 u_bone_matrix[60];");
              else
                  bones_ubo_->bindBuffer(program_id);
+
          }
      GLUniformBlock* getBonesUbo(){
         return bones_ubo_;
