@@ -880,7 +880,7 @@ namespace gvr {
     }
 
 
-    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata) {
+    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata, std::vector<uint32_t> &vs, std::vector<uint32_t> &fs) {
         VkResult err;
 
         // The pipeline contains all major state for rendering.

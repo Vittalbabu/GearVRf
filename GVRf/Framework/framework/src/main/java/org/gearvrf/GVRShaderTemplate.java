@@ -228,19 +228,22 @@ public class GVRShaderTemplate extends GVRShader
                 definedNames.put(name, 1);
                 signature += "$" + name;
             }
-            else if ((mesh != null) && mesh.hasAttribute(name)) {
+            else if ((mesh != null) && mesh.hasAttribute(name))
+            {
                 definedNames.put(name, 1);
-                signature += "$" + name;
+                if (!signature.contains(name))
+                    signature += "$" + name;
             }
             else if (material.getTexture(name) != null)
             {
                 definedNames.put(name, 1);
                 signature += "$" + name;
                 String attrname = material.getTexCoordAttr(name);
-                if (attrname != null)
+                if (attrname == null)
                 {
-                    signature += "-" +"#"+ attrname+ "#";
+                    attrname = "a_texcoord";
                 }
+                signature += "-" +"#"+ attrname+ "#";
             }
         }
         return signature;
@@ -264,6 +267,11 @@ public class GVRShaderTemplate extends GVRShader
                 textureDesc.append(' ');
                 textureDesc.append(name);
                 textureDesc.append(' ');
+                String attrname = material.getTexCoordAttr(name);
+                if (attrname == null)
+                {
+                    attrname = "a_texcoord";
+                }
             }
         }
         matcher = pattern.matcher(mUniformDescriptor);
@@ -427,7 +435,6 @@ public class GVRShaderTemplate extends GVRShader
     {
         GVRMesh mesh = rdata.getMesh();
         GVRLightBase[] lightlist = (scene != null) ? scene.getLightList() : null;
-            scene = null;
         HashMap<String, Integer> variantDefines = getRenderDefines(rdata, scene);
         String signature = generateVariantDefines(variantDefines, mesh, material);
         signature += generateLightSignature(lightlist);
@@ -531,13 +538,12 @@ public class GVRShaderTemplate extends GVRShader
         {
             defines.put("MULTIVIEW", 1);
         }
-        if (!rdata.isLightEnabled())
+        if ((lights == null) || (!rdata.isLightEnabled()))
         {
             defines.put("LIGHTSOURCES", 0);
             return defines;
         }
-        if (lights == null)
-            return defines;
+        defines.put("LIGHTSOURCES", 1);
         for (GVRLightBase light : lights)
             if (light.getCastShadow())
                 castShadow = 1;

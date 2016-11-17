@@ -28,6 +28,8 @@
 #include "util/gvr_gl.h"
 
 #include <sys/time.h>
+#include <shaderc/shaderc.h>
+#include <shaderc/shaderc.hpp>
 
 
 namespace gvr {
@@ -587,4 +589,38 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     }
     checkGlError("Shader::render");
 }
+
+    std::vector<uint32_t> Shader::CompileVulkanShader(const std::string& shaderName, ShaderType shaderTypeID, std::string& shaderContents){
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
+
+        shaderc_shader_kind shaderType;
+
+        LOGI("Abhijit : %s", shaderContents.c_str());
+
+        switch(shaderTypeID){
+            case VERTEX_SHADER:
+                shaderType = shaderc_glsl_default_vertex_shader;
+                break;
+            case FRAGMENT_SHADER:
+                shaderType = shaderc_glsl_default_fragment_shader;
+                break;
+        }
+
+        // Modify GL Shader to VK Shader
+        std::string append = "400 \n #extension GL_ARB_separate_shader_objects : enable \n #extension GL_ARB_shading_language_420pack : enable \n";
+        std::size_t found = shaderContents.find("300 es");
+        if (found!=std::string::npos){
+            shaderContents.replace(found, 6, append);
+        }
+
+        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderContents.c_str(), shaderContents.size(), shaderType, shaderName.c_str(), options);
+
+        if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
+            LOGI("Vulkan shader unable to compile : %s", module.GetErrorMessage().c_str());
+        }
+
+        std::vector<uint32_t> result(module.cbegin(), module.cend());
+        return result;
+    }
 } /* namespace gvr */

@@ -73,7 +73,7 @@ namespace gvr {
                 GVR_VK_Vertices &vert = rdata->mesh()->getVkVertices();
 
                 vulkanCore_->InitDescriptorSetForRenderData(rdata);
-                vulkanCore_->InitPipelineForRenderData(vert, rdata);
+                vulkanCore_->InitPipelineForRenderData(vert, rdata, shader->getVkVertexShader(), shader->getVkFragmentShader());
                 vulkanCore_->updateMaterialUniform(scene, camera, rdata);
                 rdata->uniform_dirty = false;
             }

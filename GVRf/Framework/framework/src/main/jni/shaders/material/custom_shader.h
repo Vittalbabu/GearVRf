@@ -153,6 +153,22 @@ public:
     void programInit(RenderState* rstate, RenderData* render_data, ShaderData* material,
                      const std::vector<glm::mat4>& model_matrix, int drawcount, bool batching) { }
 
+    std::vector<uint32_t>& getVkVertexShader(){
+        if(!compiledVS.size()){
+            compiledVS = CompileVulkanShader("VertexShader", VERTEX_SHADER, vertexShader_);
+        }
+
+        return compiledVS;
+    }
+
+    std::vector<uint32_t>& getVkFragmentShader(){
+        if(!compiledFS.size()){
+            compiledFS = CompileVulkanShader("FragmentShader", FRAGMENT_SHADER, fragmentShader_);
+        }
+
+        return compiledFS;
+    }
+
 private:
     Shader(const Shader& shader);
     Shader(Shader&& shader);
@@ -165,6 +181,9 @@ private:
     bool hasUniform(const std::string& name) { return uniformDescriptor_.find(name) != std::string::npos; }
     bool hasTexture(const std::string& name) { return textureDescriptor_.find(name) != std::string::npos; }
     bool hasAttribute(const std::string& name) { return vertexDescriptor_.find(name) != std::string::npos; }
+
+    // Vulkan
+    std::vector<uint32_t> CompileVulkanShader(const std::string& shaderName, ShaderType shaderTypeID, std::string& shaderContents);
 
 private:
     GLProgram* program_;
@@ -185,6 +204,11 @@ private:
     std::string textureDescriptor_;
     std::string uniformDescriptor_;
     std::map<std::string, int> locations_;
+
+    // Vulkan
+    std::vector<uint32_t> compiledVS;
+    std::vector<uint32_t> compiledFS;
+
 };
 
 }

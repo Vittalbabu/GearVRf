@@ -520,7 +520,12 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
     {
         synchronized (mLightList)
         {
-            GVRLightBase[] list = new GVRLightBase[mLightList.size()];
+            int n = mLightList.size();
+            if (n == 0)
+            {
+                return null;
+            }
+            GVRLightBase[] list = new GVRLightBase[n];
             mLightList.toArray(list);
             return list;
         }

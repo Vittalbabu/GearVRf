@@ -78,7 +78,7 @@ namespace gvr {
 
         int AcquireNextImage();
 
-        void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *);
+        void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata, std::vector<uint32_t> &vs, std::vector<uint32_t> &fs);
 
         VkShaderModule CreateShaderModuleAscii(const uint32_t *code, uint32_t size);
 
