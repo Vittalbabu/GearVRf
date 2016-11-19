@@ -38,17 +38,14 @@ std::string data_frag = std::string("") +
                         "#version 400 \n" +
                         "#extension GL_ARB_separate_shader_objects : enable \n" +
                         "#extension GL_ARB_shading_language_420pack : enable \n" +
-                        "layout (std140, binding = 1) uniform lightEffects {\n" +
-                        "vec4 ambient_color;\n" +
-                        "vec4 diffuse_color;\n" +
-                        "vec4 specular_color;\n" +
-                        "vec4 emissive_color;\n" +
-                        "float specular_exponent;\n" +
-                        "} lightEffectsObj;" +
+
+                        "layout (std140, binding = 1) uniform Material_ubo{\n"
+                                "    vec4 u_color;\n"
+                                "};"
                         "layout (location = 0) out vec4 uFragColor;  \n" +
                         "void main() {  \n" +
                         " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
-                        "   uFragColor = lightEffectsObj.ambient_color;  \n" +
+                        "   uFragColor = u_color;  \n" +
                         "}";
 
 
@@ -56,17 +53,25 @@ std::string vertexShaderData = std::string("") +
                                "#version 400 \n" +
                                "#extension GL_ARB_separate_shader_objects : enable \n" +
                                "#extension GL_ARB_shading_language_420pack : enable \n" +
-                               "layout (std140, binding = 0) uniform matrix { mat4 mvp; } matrices;\n" +
+                               "layout (std140, binding = 0) uniform Transform_ubo { "
+                                       "mat4 u_view;\n"
+                                       "     mat4 u_mvp;\n"
+                                       "     mat4 u_mv;\n"
+                                        "     mat4 u_mv_it;"
+                                           " mat4 u_model;\n"
+                                       "     mat4 u_view_i;\n"
+                                       "     vec4 u_right;"
+                                       " };\n" +
                                "in vec3 pos; \n" +
                                "void main() { \n" +
-                               "  gl_Position = matrices.mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
+                               "  gl_Position = u_mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
                                "}";
 namespace gvr {
     VulkanCore *VulkanCore::theInstance = NULL;
     uint8_t *oculusTexData;
     uint8_t *oculus_data[SWAP_CHAIN_COUNT];
     void Descriptor::createBuffer(VkDevice &device, VulkanCore *vk) {
-        ubo.createBuffer(device, vk);
+        ubo->createBuffer(device, vk);
     }
     void Descriptor::createDescriptor(VkDevice &device,VulkanCore* vk, int index, VkShaderStageFlagBits shaderStageFlagBits){
         createBuffer(device,vk);
@@ -90,7 +95,7 @@ namespace gvr {
 
         VkDescriptorType descriptorType = (sampler ? VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
                                                    : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-        GVR_Uniform &uniform = ubo.getBuffer();
+        GVR_Uniform &uniform = ubo->getBuffer();
         gvr::DescriptorWrite writeInfo = gvr::DescriptorWrite(
                 VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, binding_index, descriptor, 1,
                 descriptorType, uniform.bufferInfo);
@@ -98,7 +103,7 @@ namespace gvr {
 
     }
 
-    VulkanUniformBlock &Descriptor::getUBO() {
+    VulkanUniformBlock* Descriptor::getUBO() {
         return ubo;
     }
 
@@ -589,8 +594,8 @@ namespace gvr {
         uniformAndSamplerBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uniformAndSamplerBinding[0].pImmutableSamplers = nullptr;
         uniformAndSamplerBinding[0] = transform_uniformBinding;
-        Descriptor &material_descriptor = rdata->material(0)->getDescriptor();
-        VkDescriptorSetLayoutBinding &material_uniformBinding = material_descriptor.getLayoutBinding();
+        Descriptor* material_descriptor = rdata->material(0)->getDescriptor();
+        VkDescriptorSetLayoutBinding &material_uniformBinding = material_descriptor->getLayoutBinding();
         uniformAndSamplerBinding[1] = material_uniformBinding;
 
         VkDescriptorSetLayout &descriptorLayout = rdata->getVkData().getDescriptorLayout();
@@ -908,8 +913,8 @@ namespace gvr {
         scissor.offset.x = 0;
         scissor.offset.y = 0;
 
-        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER, vertexShaderData);
-        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER, data_frag);
+        std::vector <uint32_t> result_vert = vs;//CompileShader("VulkanVS", VERTEX_SHADER, vertexShaderData);
+        std::vector <uint32_t> result_frag = fs;//CompileShader("VulkanFS", FRAGMENT_SHADER, data_frag);
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
@@ -1187,15 +1192,83 @@ namespace gvr {
         err = vkResetFences(m_device, 1, &waitSCBFences[swapChainIndx]);
         GVR_VK_CHECK(!err);
     }
+    void updateUniform(const std::string& key, uniformDefination uniformInfo, VulkanUniformBlock* material_ubo, Material* material)
+    {
+        const float* fv;
+        const int* iv;
+        glm::vec4 data(1.0,1.0,1.0,1.0);
+        std::string type= uniformInfo.type;
+        int size = uniformInfo.size;
+        switch (tolower(type[0]))
+        {
+            case 'f':
+            case 'm':
+                fv = material->getFloatVec(key, size);
+                if (fv != NULL) {
+                    switch (size) {
+                        case 1:
+                            data.x = *fv;
+                            material_ubo->setVec(key,glm::value_ptr(data), 4);
+                            break;
 
-    void VulkanCore::updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data) {
+                        case 2:
+                            data.x = *fv;
+                            data.y = fv[1];
+                            material_ubo->setVec(key,glm::value_ptr(data), 4);
+                            break;
+
+                        case 3:
+                            data.x = fv[0];
+                            data.y=  fv[1];
+                            data.z = fv[2];
+                            material_ubo->setVec(key,glm::value_ptr(data), 4);
+                            break;
+
+                        case 4:
+                            material_ubo->setVec(key,fv, 4);
+                            break;
+
+                        case 16:
+                            material_ubo->setVec(key,fv, 16);
+                            break;
+                    }
+                }
+                break;
+
+            case 'i':
+                iv = material->getIntVec(key, size);
+                if (iv != NULL)
+                    switch (size)
+                    {
+                        case 1:
+                            material_ubo->setInt(key,*iv);
+                            break;
+
+                        case 2:
+                            material_ubo->setIntVec(key,iv,2);
+                            break;
+
+                        case 3:
+                            material_ubo->setIntVec(key,iv,3);
+                            break;
+
+                        case 4:
+                            material_ubo->setIntVec(key,iv, 4);
+                            break;
+                    }
+                break;
+        }
+    }
+    void VulkanCore::updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data,std::unordered_map<std::string,uniformDefination>& nameTypeMap) {
         Material *mat = render_data->material(0);
-        Descriptor &desc = mat->getDescriptor();
-        VulkanUniformBlock &material_ubo = desc.getUBO();
+        Descriptor* desc = mat->getDescriptor();
+        VulkanUniformBlock* material_ubo = desc->getUBO();
 
-        glm::vec4 ambient = glm::vec4(1, 0, 1, 1);
-        material_ubo.setVec4("ambient_color", ambient);
-        material_ubo.updateBuffer(m_device, this);
+        for(auto& it: nameTypeMap){
+            updateUniform(it.first,it.second,material_ubo,mat);
+        }
+
+        material_ubo->updateBuffer(m_device, this);
 
     }
 
@@ -1215,9 +1288,9 @@ namespace gvr {
         glm::mat4 modelViewProjection = proj * view * model;
 
         Descriptor &desc = render_data->getVkData().getDescriptor();
-        VulkanUniformBlock &transform_ubo = desc.getUBO();
-        transform_ubo.setMat4("mvp", glm::value_ptr(modelViewProjection));
-        transform_ubo.updateBuffer(m_device, this);
+        VulkanUniformBlock* transform_ubo = desc.getUBO();
+        transform_ubo->setMat4("u_mvp", glm::value_ptr(modelViewProjection));
+        transform_ubo->updateBuffer(m_device, this);
 
     }
 
@@ -1259,8 +1332,8 @@ namespace gvr {
         Descriptor &transform_desc = rdata->getVkData().getDescriptor();
         VkWriteDescriptorSet &write = transform_desc.getDescriptorSet();
         write.dstSet = descriptorSet;
-        Descriptor &mat_desc = rdata->material(0)->getDescriptor();
-        VkWriteDescriptorSet &write1 = mat_desc.getDescriptorSet();
+        Descriptor* mat_desc = rdata->material(0)->getDescriptor();
+        VkWriteDescriptorSet &write1 = mat_desc->getDescriptorSet();
         write1.dstSet = descriptorSet;
         VkWriteDescriptorSet writes[2] = {};
         writes[0] = write;

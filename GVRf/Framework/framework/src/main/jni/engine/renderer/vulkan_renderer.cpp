@@ -39,6 +39,7 @@
 #include "vulkan_renderer.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <shaderc/shaderc.h>
 #include "objects/uniform_block.h"
 
 namespace gvr {
@@ -51,6 +52,8 @@ namespace gvr {
         if(!vulkanCore_->swapChainCreated())
             vulkanCore_->initVulkanCore();
 
+        if(render_data_vector.size() == 1)
+            return;
 
         std::vector<VkDescriptorSet> allDescriptors;
 
@@ -67,6 +70,7 @@ namespace gvr {
 
                 vulkanCore_->InitLayoutRenderData(rdata);
                 Shader *shader = shader_manager->getShader(rdata->get_shader());
+
                 rdata->mesh()->generateVKBuffers(shader->getVertexDescriptor(),
                                                  vulkanCore_->getDevice(), vulkanCore_);
 
@@ -74,7 +78,7 @@ namespace gvr {
 
                 vulkanCore_->InitDescriptorSetForRenderData(rdata);
                 vulkanCore_->InitPipelineForRenderData(vert, rdata, shader->getVkVertexShader(), shader->getVkFragmentShader());
-                vulkanCore_->updateMaterialUniform(scene, camera, rdata);
+                vulkanCore_->updateMaterialUniform(scene, camera, rdata, shader->getUniformNames());
                 rdata->uniform_dirty = false;
             }
 

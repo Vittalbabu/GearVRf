@@ -26,7 +26,7 @@
 #include <string>
 #include <objects/components/camera.h>
 #include "glm/glm.hpp"
-//#include "vulkanThreadPool.h"
+#include <unordered_map>
 
 #define GVR_VK_CHECK(X) if (!(X)) { LOGD("VK_CHECK Failure"); assert((X));}
 #define GVR_VK_VERTEX_BUFFER_BIND_ID 0
@@ -35,6 +35,10 @@
 #define SWAP_CHAIN_COUNT 6
 
 namespace gvr {
+    struct uniformDefination{
+        std::string type;
+        int size;
+    };
     enum ShaderType{
         VERTEX_SHADER,
         FRAGMENT_SHADER
@@ -59,10 +63,9 @@ namespace gvr {
                 return theInstance;
             return NULL;
         }
-
         void InitLayoutRenderData(RenderData *rdata);
 
-        void updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data);
+        void updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data,std::unordered_map<std::string,uniformDefination>& nameTypeMap );
 
         void UpdateUniforms(Scene *scene, Camera *camera, RenderData *render_data);
 

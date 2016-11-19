@@ -228,7 +228,7 @@ bool UniformBlock::getMat4(std::string name, glm::mat4& val) const
     return false;
 }
 
-void   UniformBlock::parseDescriptor()
+void  UniformBlock::parseDescriptor()
 {
     const char* p = Descriptor.c_str();
     const char* type_start;
@@ -290,6 +290,8 @@ void   UniformBlock::parseDescriptor()
         uniform.Type = type;
         uniform.Offset = offset;
         uniform.Size = calcSize(type) * array_size;                // get number of bytes
+
+
         if (uniform.Size == 0)
             continue;
         if (offset & VEC4_BOUNDARY)                   // pad to 4 float boundary?

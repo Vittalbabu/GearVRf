@@ -590,13 +590,63 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     checkGlError("Shader::render");
 }
 
+    void static fillDelims(std::unordered_map<std::string, int> &delims, std::string &delimsTypes){
+        for(uint i = 0; i < delimsTypes.length(); i++){
+            delims[delimsTypes.substr(i,1)] = 1;
+        }
+    }
+
+    std::vector<std::string> static getTokens(std::string &input){
+        std::vector <std::string> tokens;
+        std::unordered_map<std::string, int> delims;
+        std::string delimiters = " ;+-/*%()<>!={}\n";
+        fillDelims(delims, delimiters);
+
+        int prev = 0;
+        for(uint i = 0; i < input.length(); i++){
+            if(delims[input.substr(i, 1)]){
+                tokens.push_back(input.substr(prev, i-prev));
+                tokens.push_back(input.substr(i, 1));
+                prev = i+1;
+            }
+            else{
+
+            }
+        }
+
+        return tokens;
+    }
+
+    void static insertBindingPoints(std::string &shader){
+        std::unordered_map<std::string, std::string> uniformBindings;
+        uniformBindings["Material_ubo"] = "1";
+        uniformBindings["Transform_ubo"] = "0";
+        std::vector<std::string> tokens = getTokens(shader);
+
+        for(uint i = 0; i < tokens.size(); ++i){
+            if(tokens[i] == "std140"){
+                for(uint j = i+1; j < tokens.size(); ++j){
+                    std::unordered_map<std::string, std::string>::const_iterator found = uniformBindings.find(tokens[j]);
+                    if(found != uniformBindings.end()){
+                        tokens[i] += ", binding = " + uniformBindings[tokens[j]];
+                        i = j + 1;
+                        break;
+                    }
+                }
+            }
+        }
+        shader = "";
+
+        for(uint i = 0; i < tokens.size(); ++i){
+            shader += tokens[i];
+        }
+    }
+
     std::vector<uint32_t> Shader::CompileVulkanShader(const std::string& shaderName, ShaderType shaderTypeID, std::string& shaderContents){
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
         shaderc_shader_kind shaderType;
-
-        LOGI("Abhijit : %s", shaderContents.c_str());
 
         switch(shaderTypeID){
             case VERTEX_SHADER:
@@ -613,6 +663,9 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         if (found!=std::string::npos){
             shaderContents.replace(found, 6, append);
         }
+
+        // Inserting Binding points
+        insertBindingPoints(shaderContents);
 
         shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderContents.c_str(), shaderContents.size(), shaderType, shaderName.c_str(), options);
 

@@ -40,7 +40,10 @@
 namespace gvr {
 
 struct ShaderUniformsPerObject;
-
+    /*struct uniformDefination{
+        std::string type;
+        int size;
+    };*/
 typedef std::function<void(Mesh&, GLuint)> AttributeVariableBind;
 typedef std::function<void(ShaderData&, GLuint)> UniformVariableBind;
 
@@ -169,6 +172,45 @@ public:
         return compiledFS;
     }
 
+    void parseUniformDescriptor() {
+        const char *p = uniformDescriptor_.c_str();
+        const char *type_start;
+        int type_size;
+        const char *name_start;
+        int name_size;
+
+        while (*p) {
+            while (std::isspace(*p) || std::ispunct(*p))
+                ++p;
+            type_start = p;
+            if (*p == 0)
+                break;
+            while (std::isalnum(*p))
+                ++p;
+            type_size = p - type_start;
+            if (type_size == 0) {
+                LOGE("SHADER: SYNTAX ERROR: expecting data type %s\n", uniformDescriptor_.c_str());
+                break;
+            }
+            std::string type(type_start, type_size);
+            while (std::isspace(*p))
+                ++p;
+            name_start = p;
+            while (std::isalnum(*p) || (*p == '_'))
+                ++p;
+            name_size = p - name_start;
+            if (name_size == 0) {
+                LOGE("SHADER: SYNTAX ERROR: expecting name\n");
+                break;
+            }
+            std::string name(name_start, name_size);
+            uniformDefination data;
+            data.type = type;
+            data.size = calcSize(type);
+            nameTypeMap[name] = data;
+        }
+    }
+
 private:
     Shader(const Shader& shader);
     Shader(Shader&& shader);
@@ -185,6 +227,15 @@ private:
     // Vulkan
     std::vector<uint32_t> CompileVulkanShader(const std::string& shaderName, ShaderType shaderTypeID, std::string& shaderContents);
 
+private:
+
+    std::unordered_map<std::string,uniformDefination> nameTypeMap;
+public:
+    std::unordered_map<std::string,uniformDefination>& getUniformNames(){
+        if(nameTypeMap.size() == 0)
+            parseUniformDescriptor();
+        return nameTypeMap;
+    }
 private:
     GLProgram* program_;
     std::string signature_;
