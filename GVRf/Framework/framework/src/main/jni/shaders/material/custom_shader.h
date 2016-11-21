@@ -110,7 +110,7 @@ public:
  * Returns the unique signature for this shader (provided
  * to ShaderManager::addShader when this Shader was created).
  */
-    const std::string& signature() const { return signature_; }
+     std::string& signature()  { return signature_; }
 
     /*
      * Returns the GL program ID for the native shader

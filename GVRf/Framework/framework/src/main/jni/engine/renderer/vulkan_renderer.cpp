@@ -71,7 +71,7 @@ namespace gvr {
                 vulkanCore_->InitLayoutRenderData(rdata);
                 Shader *shader = shader_manager->getShader(rdata->get_shader());
 
-                rdata->mesh()->generateVKBuffers(shader->getVertexDescriptor(),
+                rdata->mesh()->generateVKBuffers(shader->signature(),
                                                  vulkanCore_->getDevice(), vulkanCore_);
 
                 GVR_VK_Vertices &vert = rdata->mesh()->getVkVertices();
