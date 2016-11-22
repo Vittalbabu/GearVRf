@@ -1,18 +1,35 @@
 #ifdef HAS_MULTIVIEW
-#extension GL_OVR_multiview2 : enable
-	precision highp float;
-    precision highp sampler2DArray;
-	uniform mat4 u_view_[2];
-#else
-    precision highp float;
-    precision highp sampler2DArray;
-    uniform mat4 u_view; 
+	flat in int view_id;
 #endif
 
 out vec4 fragColor;
 
-uniform mat4 u_model;
+layout (std140) uniform Transform_ubo{
+ #ifdef HAS_MULTIVIEW
+     mat4 u_view_[2];
+     mat4 u_mvp_[2];
+     mat4 u_mv_[2];
+     mat4 u_mv_it_[2];
+ #else
+     mat4 u_view;
+     mat4 u_mvp;
+     mat4 u_mv;
+     mat4 u_mv_it;
+ #endif
+     mat4 u_model;
+     mat4 u_view_i;
+     vec4 u_right;
+};
 
+layout (std140) uniform Material_ubo{
+        vec4 u_opacity;
+        vec4 u_color;
+        vec4 ambient_color;
+        vec4 diffuse_color;
+        vec4 specular_color;
+        vec4 emissive_color;
+        vec4 specular_exponent;
+};
 in vec3 viewspace_position;
 in vec3 viewspace_normal;
 in vec4 local_position;

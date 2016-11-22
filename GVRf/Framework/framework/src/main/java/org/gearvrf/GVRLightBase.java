@@ -65,7 +65,7 @@ import android.util.Log;
  * @see GVRRenderData#bindShader(GVRScene)
  * @see GVRLightBase#setCastShadow(boolean)
  */
-public class GVRLightBase extends GVRComponent implements GVRDrawFrameListener
+public class GVRLightBase extends GVRJavaComponent implements GVRDrawFrameListener
 {
     protected Matrix4f lightrot;
     protected Vector3f olddir;
@@ -104,7 +104,6 @@ public class GVRLightBase extends GVRComponent implements GVRDrawFrameListener
         setVec3("world_direction", 0.0f, 0.0f, 1.0f);
     }
 
-
     static public long getComponentType() {
         return NativeLight.getComponentType();
     }
@@ -135,10 +134,17 @@ public class GVRLightBase extends GVRComponent implements GVRDrawFrameListener
 
         if (enableFlag)
         {
-            GVRMaterial mtl = getShadowMaterial(context);
-            GVRShaderTemplate depthShader = context.getMaterialShaderManager().retrieveShaderTemplate(GVRDepthShader.class);
-            depthShader.bindShader(context, mtl);
-            NativeLight.setCastShadow(getNative(), mtl.getNative());
+            if (mShadowMaterial == null)
+            {
+                GVRShaderId id = context.getMaterialShaderManager().getShaderType(GVRDepthShader.class);
+                mShadowMaterial = new GVRMaterial(context, id);
+                GVRShader shader = id.getTemplate(context);
+                if (shader != null)
+                {
+                    shader.bindShader(context, mShadowMaterial);
+                }
+            }
+            NativeLight.setCastShadow(getNative(), mShadowMaterial.getNative());
         }
         else
         {
