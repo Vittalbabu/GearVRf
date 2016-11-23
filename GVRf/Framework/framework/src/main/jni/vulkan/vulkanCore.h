@@ -43,6 +43,18 @@ namespace gvr {
         VERTEX_SHADER,
         FRAGMENT_SHADER
     };
+
+    struct TextureObject{
+        VkSampler m_sampler;
+        VkImage m_image;
+        VkImageView m_view;
+        VkDeviceMemory m_mem;
+        VkFormat m_format;
+        VkImageLayout m_imageLayout;
+        uint32_t m_width;
+        uint32_t m_height;
+    };
+
     class Scene;
 
     class RenderData;
@@ -148,7 +160,8 @@ namespace gvr {
         void InitUniformBuffers();
 
         void createPipelineCache();
-
+        void InitTexture();
+        VkCommandBuffer textureCmdBuffer;
 
         bool m_Vulkan_Initialised;
 
@@ -204,6 +217,7 @@ namespace gvr {
 
         //uint m_threadCount;
         //ThreadPool m_threadPool;
+        TextureObject * textureObject;
     };
 
 

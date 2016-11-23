@@ -39,13 +39,18 @@ std::string data_frag = std::string("") +
                         "#extension GL_ARB_separate_shader_objects : enable \n" +
                         "#extension GL_ARB_shading_language_420pack : enable \n" +
 
-                        "layout (std140, binding = 1) uniform Material_ubo{\n"
+                        "layout (std140, set = 0, binding = 2) uniform Material_ubo{\n"
                                 "    vec4 u_color;\n"
-                                "};"
+                                "};\n"
+
+                                " layout(set = 0, binding = 1) uniform sampler2D tex;\n" +
                         "layout (location = 0) out vec4 uFragColor;  \n" +
+        "layout(location = 1 )in vec2 o_texcoord; \n" +
                         "void main() {  \n" +
                         " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
-                        "   uFragColor = u_color;  \n" +
+     //                   "   uFragColor = vec4(o_texcoord, 0, 1);  \n" +
+    //    "   uFragColor = texture(tex, vec2(0.0,0.0));  \n" +
+       "   uFragColor = u_color;  \n" +
                         "}";
 
 
@@ -53,7 +58,7 @@ std::string vertexShaderData = std::string("") +
                                "#version 400 \n" +
                                "#extension GL_ARB_separate_shader_objects : enable \n" +
                                "#extension GL_ARB_shading_language_420pack : enable \n" +
-                               "layout (std140, binding = 0) uniform Transform_ubo { "
+                               "layout (std140, set = 0, binding = 0) uniform Transform_ubo { "
                                        "mat4 u_view;\n"
                                        "     mat4 u_mvp;\n"
                                        "     mat4 u_mv;\n"
@@ -62,8 +67,11 @@ std::string vertexShaderData = std::string("") +
                                        "     mat4 u_view_i;\n"
                                        "     vec4 u_right;"
                                        " };\n" +
-                               "in vec3 pos; \n" +
+                               "layout(location = 0)in vec3 pos; \n" +
+        "layout(location = 1)in vec2 a_texcoord; \n" +
+        "layout(location = 1)out vec2 o_texcoord; \n" +
                                "void main() { \n" +
+        "o_texcoord = a_texcoord; \n" +
                                "  gl_Position = u_mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
                                "}";
 namespace gvr {
@@ -578,6 +586,15 @@ namespace gvr {
 
             GVR_VK_CHECK(!ret);
         }
+
+        // Allocating Command Buffer for Texture
+        ret = vkAllocateCommandBuffers(
+                m_device,
+                gvr::CmdBufferCreateInfo(VK_COMMAND_BUFFER_LEVEL_PRIMARY, m_commandPool),
+                &textureCmdBuffer
+        );
+
+        GVR_VK_CHECK(!ret);
     }
 
 
@@ -586,7 +603,7 @@ namespace gvr {
         Descriptor &transform = rdata->getVkData().getDescriptor();
         VkDescriptorSetLayoutBinding &transform_uniformBinding = transform.getLayoutBinding();
 
-        VkDescriptorSetLayoutBinding uniformAndSamplerBinding[2] = {};
+        VkDescriptorSetLayoutBinding uniformAndSamplerBinding[3] = {};
         // Our MVP matrix
         uniformAndSamplerBinding[0].binding = 0;
         uniformAndSamplerBinding[0].descriptorCount = 1;
@@ -596,11 +613,21 @@ namespace gvr {
         uniformAndSamplerBinding[0] = transform_uniformBinding;
         Descriptor* material_descriptor = rdata->material(0)->getDescriptor();
         VkDescriptorSetLayoutBinding &material_uniformBinding = material_descriptor->getLayoutBinding();
-        uniformAndSamplerBinding[1] = material_uniformBinding;
+
+        material_uniformBinding.binding = 2;
+        uniformAndSamplerBinding[2] = material_uniformBinding;
+
+        // Texture
+        uniformAndSamplerBinding[1].binding = 1;
+        uniformAndSamplerBinding[1].descriptorCount = 1;
+        uniformAndSamplerBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        uniformAndSamplerBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        uniformAndSamplerBinding[1].pImmutableSamplers = nullptr;
+
 
         VkDescriptorSetLayout &descriptorLayout = rdata->getVkData().getDescriptorLayout();
 
-        ret = vkCreateDescriptorSetLayout(m_device, gvr::DescriptorSetLayoutCreateInfo(0, 2, &uniformAndSamplerBinding[0]), nullptr,
+        ret = vkCreateDescriptorSetLayout(m_device, gvr::DescriptorSetLayoutCreateInfo(0, 3, &uniformAndSamplerBinding[0]), nullptr,
                                           &descriptorLayout);
         GVR_VK_CHECK(!ret);
 
@@ -913,8 +940,8 @@ namespace gvr {
         scissor.offset.x = 0;
         scissor.offset.y = 0;
 
-        std::vector <uint32_t> result_vert = vs;//CompileShader("VulkanVS", VERTEX_SHADER, vertexShaderData);
-        std::vector <uint32_t> result_frag = fs;//CompileShader("VulkanFS", FRAGMENT_SHADER, data_frag);
+        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER, vertexShaderData);//vs;//
+        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER, data_frag);//fs;//
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
@@ -1048,6 +1075,29 @@ namespace gvr {
         err = vkBeginCommandBuffer(cmdBuffer, &cmd_buf_info);
         GVR_VK_CHECK(!err);
 
+
+        VkImageMemoryBarrier preRenderBarrier = {};
+        preRenderBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        preRenderBarrier.pNext = nullptr;
+        preRenderBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        preRenderBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        preRenderBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        preRenderBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        preRenderBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        preRenderBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        preRenderBarrier.image = m_swapchainBuffers[i].image;
+        preRenderBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        preRenderBarrier.subresourceRange.baseArrayLayer = 0;
+        preRenderBarrier.subresourceRange.baseMipLevel = 1;
+        preRenderBarrier.subresourceRange.layerCount = 0;
+        preRenderBarrier.subresourceRange.levelCount = 1;
+        // Thie PipelineBarrier function can operate on memoryBarriers,
+        // bufferMemory and imageMemory buffers. We only provide a single
+        // imageMemoryBarrier.
+        vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             0, 0, nullptr, 0, nullptr, 1, &preRenderBarrier);
+
         // When starting the render pass, we can set clear values.
         VkClearValue clear_values[1] = {};
         clear_values[0].color.float32[0] = camera->background_color_r();
@@ -1094,6 +1144,25 @@ namespace gvr {
 
         // Now our render pass has ended.
         vkCmdEndRenderPass(cmdBuffer);
+
+        VkImageMemoryBarrier prePresentBarrier = {};
+        prePresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        prePresentBarrier.pNext = nullptr;
+        prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        prePresentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        prePresentBarrier.image = m_swapchainBuffers[i].image;
+        prePresentBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        prePresentBarrier.subresourceRange.baseArrayLayer = 0;
+        prePresentBarrier.subresourceRange.baseMipLevel = 1;
+        prePresentBarrier.subresourceRange.layerCount = 0;
+        vkCmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                             0, 0, nullptr, 0, nullptr, 1, &prePresentBarrier);
+
 
         // By ending the command buffer, it is put out of record mode.
         err = vkEndCommandBuffer(cmdBuffer);
@@ -1298,18 +1367,21 @@ namespace gvr {
     void VulkanCore::InitDescriptorSetForRenderData(
             RenderData *rdata) { //VkDescriptorSet &m_descriptorSet) {
         //Create a pool with the amount of descriptors we require
-        VkDescriptorPoolSize poolSize[2] = {};
+        VkDescriptorPoolSize poolSize[3] = {};
         poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSize[0].descriptorCount = 1;
 
-        poolSize[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSize[2].descriptorCount = 1;
+
+        poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         poolSize[1].descriptorCount = 1;
 
         VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
         descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         descriptorPoolCreateInfo.pNext = nullptr;
         descriptorPoolCreateInfo.maxSets = 1;
-        descriptorPoolCreateInfo.poolSizeCount = 2;
+        descriptorPoolCreateInfo.poolSizeCount = 3;
         descriptorPoolCreateInfo.pPoolSizes = poolSize;
 
         VkResult err;
@@ -1335,13 +1407,29 @@ namespace gvr {
         Descriptor* mat_desc = rdata->material(0)->getDescriptor();
         VkWriteDescriptorSet &write1 = mat_desc->getDescriptorSet();
         write1.dstSet = descriptorSet;
-        VkWriteDescriptorSet writes[2] = {};
+        VkWriteDescriptorSet writes[3] = {};
         writes[0] = write;
-        writes[1] = write1;
+        writes[2] = write1;
+        write1.dstBinding = 2;
 
+
+        // Texture
+        VkDescriptorImageInfo descriptorImageInfo = {};
+        descriptorImageInfo.sampler = textureObject->m_sampler;
+        descriptorImageInfo.imageView = textureObject->m_view;
+        descriptorImageInfo.imageLayout = textureObject->m_imageLayout;
+
+
+
+        writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[1].dstBinding = 1;
+        writes[1].dstSet = descriptorSet;
+        writes[1].descriptorCount = 1;
+        writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[1].pImageInfo = &descriptorImageInfo;
 
         LOGI("Vulkan before update descriptor");
-        vkUpdateDescriptorSets(m_device, 2, &writes[0], 0, nullptr);
+        vkUpdateDescriptorSets(m_device, 3, &writes[0], 0, nullptr);
         LOGI("Vulkan after update descriptor");
     }
 
@@ -1376,6 +1464,201 @@ namespace gvr {
         }
         //createPipelineCache();
     }
+
+
+    void VulkanCore::InitTexture(){
+        VkResult   err;
+        bool   pass;
+
+        textureObject = new TextureObject[1];
+        textureObject->m_width = 640;
+        textureObject->m_height = 480;
+
+        VkImageCreateInfo imageCreateInfo = {};
+        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCreateInfo.pNext = NULL;
+        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageCreateInfo.extent.depth = 1.0f;
+        imageCreateInfo.extent.width = textureObject->m_width;
+        imageCreateInfo.extent.height = textureObject->m_height;
+        imageCreateInfo.mipLevels = 1;
+        imageCreateInfo.arrayLayers = 1;
+        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+        imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+        imageCreateInfo.flags = 0;
+        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VkMemoryAllocateInfo memoryAllocateInfo = {};
+        memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memoryAllocateInfo.pNext = NULL;
+        memoryAllocateInfo.allocationSize = 0;
+        memoryAllocateInfo.memoryTypeIndex = 0;
+
+        VkMemoryRequirements mem_reqs;
+
+        err = vkCreateImage(m_device, &imageCreateInfo, NULL, &textureObject->m_image);
+        assert(!err);
+
+        vkGetImageMemoryRequirements(m_device, textureObject->m_image, &mem_reqs);
+
+        memoryAllocateInfo.allocationSize  = mem_reqs.size; 
+
+        pass = GetMemoryTypeFromProperties( mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &memoryAllocateInfo.memoryTypeIndex);
+        assert(pass);
+
+        /* allocate memory */
+        err = vkAllocateMemory(m_device, &memoryAllocateInfo, NULL, &textureObject->m_mem);
+        assert(!err);
+
+        /* bind memory */
+        err = vkBindImageMemory(m_device, textureObject->m_image, textureObject->m_mem, 0);
+        assert(!err);
+
+        // Copy source image data into mapped memory
+        {
+            VkImageSubresource subres;
+            subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            subres.mipLevel = 0;
+            subres.arrayLayer = 0;
+
+            VkSubresourceLayout layout;
+            uint8_t *data;
+            int32_t x, y;
+
+            vkGetImageSubresourceLayout(m_device, textureObject->m_image, &subres, &layout);
+
+            err = vkMapMemory(m_device, textureObject->m_mem, 0, memoryAllocateInfo.allocationSize, 0, (void**)&data);
+            assert(!err);
+
+            for(int i = 0; i < ((textureObject->m_width) * (textureObject->m_height) * 4); i++ ){
+                data[i] = 244;
+                data[i+1] = 244;
+                data[i+2] = 244;
+                data[i+3] = 244;
+                i+=3;
+            }
+
+            vkUnmapMemory(m_device, textureObject->m_mem);
+        }
+
+        // Change the layout of the image to shader read only
+        textureObject->m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        // We use a shared command buffer for setup operations to change layout.
+        // Reset the setup command buffer
+        vkResetCommandBuffer(textureCmdBuffer, 0);
+
+        VkCommandBufferInheritanceInfo commandBufferInheritanceInfo = {};
+        commandBufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+        commandBufferInheritanceInfo.pNext = NULL;
+        commandBufferInheritanceInfo.renderPass = VK_NULL_HANDLE;
+        commandBufferInheritanceInfo.subpass = 0;
+        commandBufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+        commandBufferInheritanceInfo.occlusionQueryEnable = VK_FALSE;
+        commandBufferInheritanceInfo.queryFlags = 0;
+        commandBufferInheritanceInfo.pipelineStatistics = 0;
+
+        VkCommandBufferBeginInfo setupCmdsBeginInfo;
+        setupCmdsBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        setupCmdsBeginInfo.pNext = NULL;
+        setupCmdsBeginInfo.flags = 0;
+        setupCmdsBeginInfo.pInheritanceInfo = &commandBufferInheritanceInfo;
+
+        // Begin recording to the command buffer.
+        vkBeginCommandBuffer(textureCmdBuffer, &setupCmdsBeginInfo);
+
+        VkImageMemoryBarrier imageMemoryBarrier = {};
+        imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imageMemoryBarrier.pNext = NULL;
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageMemoryBarrier.image = textureObject->m_image;
+        imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
+        imageMemoryBarrier.subresourceRange.levelCount = 1;
+        imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+        imageMemoryBarrier.subresourceRange.layerCount = 1;
+        imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+
+        VkPipelineStageFlags src_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        VkPipelineStageFlags dest_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+        // Barrier on image memory, with correct layouts set.
+        vkCmdPipelineBarrier(textureCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &imageMemoryBarrier);
+
+        // We are finished recording operations.
+        vkEndCommandBuffer(textureCmdBuffer);
+
+        VkCommandBuffer buffers[1];
+        buffers[0] = textureCmdBuffer;
+
+        VkSubmitInfo submit_info;
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pNext = NULL;
+        submit_info.waitSemaphoreCount = 0;
+        submit_info.pWaitSemaphores = NULL;
+        submit_info.pWaitDstStageMask = NULL;
+        submit_info.commandBufferCount = 1;
+        submit_info.pCommandBuffers = &buffers[0];
+        submit_info.signalSemaphoreCount = 0;
+        submit_info.pSignalSemaphores = NULL;
+
+        // Submit to our shared graphics queue.
+        err = vkQueueSubmit(m_queue, 1, &submit_info, VK_NULL_HANDLE);
+        assert(!err);
+
+        // Wait for the queue to become idle.
+        err = vkQueueWaitIdle(m_queue);
+        assert(!err);
+
+        // Now create a sampler for this image, with required details
+        VkSamplerCreateInfo samplerCreateInfo = {};
+        samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerCreateInfo.pNext = nullptr;
+        samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+        samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+        samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        samplerCreateInfo.mipLodBias = 0.0f;
+        samplerCreateInfo.anisotropyEnable = VK_FALSE;
+        samplerCreateInfo.maxAnisotropy = 0;
+        samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
+        samplerCreateInfo.minLod = 0.0f;
+        samplerCreateInfo.maxLod = 0.0f;
+        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+        err = vkCreateSampler(m_device, &samplerCreateInfo, NULL, &textureObject->m_sampler);
+        assert(!err);
+
+        // Create the image view
+        VkImageViewCreateInfo viewCreateInfo = {};
+        viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewCreateInfo.pNext = NULL;
+        viewCreateInfo.image = VK_NULL_HANDLE;
+        viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewCreateInfo.format = textureObject->m_format;
+        viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+        viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+        viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+        viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+        viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewCreateInfo.subresourceRange.baseMipLevel = 0;
+        viewCreateInfo.subresourceRange.levelCount = 1;
+        viewCreateInfo.subresourceRange.baseArrayLayer = 0;
+        viewCreateInfo.subresourceRange.layerCount = 1;
+        viewCreateInfo.flags = 0;
+        viewCreateInfo.image = textureObject->m_image;
+
+        err = vkCreateImageView(m_device, &viewCreateInfo, NULL, &textureObject->m_view);
+        assert(!err);
+    }
+
     void VulkanCore::initVulkanCore(){
         GLint viewport[4];
         GLint curFBO;
@@ -1384,6 +1667,8 @@ namespace gvr {
         InitSwapchain(viewport[2], viewport[3]);
         InitTransientCmdPool();
         InitCommandbuffers();
+        InitTexture();
+        LOGE("Vulkan after InitTexture methods");
         InitRenderPass();
         LOGE("Vulkan after InitRenderPass methods");
         InitFrameBuffers();
