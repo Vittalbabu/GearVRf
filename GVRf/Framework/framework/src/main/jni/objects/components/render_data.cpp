@@ -101,11 +101,14 @@ void RenderData::bindShader(Scene* scene)
     if (bindShaderMethod_ && javaObj_)
     {
         JavaVM *javaVM = scene->getJavaVM();
-        JNIEnv *env = getCurrentEnv(javaVM);
+        JNIEnv *env;
+        int rc = javaVM->AttachCurrentThread(&env, NULL);
         if (env)
         {
             LOGD("SHADER: Calling GVRRenderData.bindShaderNative(%p)", this);
             env->CallVoidMethod(javaObj_, bindShaderMethod_);
+            if (rc)
+                javaVM->DetachCurrentThread();
             return;
         }
     }
