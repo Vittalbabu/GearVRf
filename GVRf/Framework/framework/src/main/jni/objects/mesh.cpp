@@ -422,7 +422,6 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
         m_vertices.vi_bindings[0].stride = total_size * sizeof(float); //sizeof(vb[0]);//
         m_vertices.vi_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        LOGE("Abhijit Stride %d", total_size);
         for(int i=0; i< attrMapping.size(); i++){
            // check this
 
@@ -430,8 +429,6 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
             m_vertices.vi_attrs[i].location = attrMapping[i].index;
             m_vertices.vi_attrs[i].format = getDataType(attrMapping[i].data_type); //float3
             m_vertices.vi_attrs[i].offset = attrMapping[i].offset;
-
-            LOGE("Abhijit location %d offset %u", attrMapping[i].index, attrMapping[i].offset);
         }
 
         m_indices.count = static_cast<uint32_t>(indices_.size());

@@ -49,8 +49,8 @@ std::string data_frag = std::string("") +
                         "void main() {  \n" +
                         " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
      //                   "   uFragColor = vec4(o_texcoord, 0, 1);  \n" +
-    //    "   uFragColor = texture(tex, vec2(0.0,0.0));  \n" +
-       "   uFragColor = u_color;  \n" +
+        "   uFragColor = texture(tex, o_texcoord);  \n" +
+    //   "   uFragColor = u_color;  \n" +
                         "}";
 
 
@@ -1473,12 +1473,13 @@ namespace gvr {
         textureObject = new TextureObject[1];
         textureObject->m_width = 640;
         textureObject->m_height = 480;
+        textureObject->m_format = VK_FORMAT_R8G8B8A8_UNORM;
 
         VkImageCreateInfo imageCreateInfo = {};
         imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageCreateInfo.pNext = NULL;
         imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+        imageCreateInfo.format = textureObject->m_format;
         imageCreateInfo.extent.depth = 1.0f;
         imageCreateInfo.extent.width = textureObject->m_width;
         imageCreateInfo.extent.height = textureObject->m_height;
@@ -1534,8 +1535,8 @@ namespace gvr {
 
             for(int i = 0; i < ((textureObject->m_width) * (textureObject->m_height) * 4); i++ ){
                 data[i] = 244;
-                data[i+1] = 244;
-                data[i+2] = 244;
+                data[i+1] = 0;
+                data[i+2] = 0;
                 data[i+3] = 244;
                 i+=3;
             }
