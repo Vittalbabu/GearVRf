@@ -1475,22 +1475,6 @@ namespace gvr {
         textureObject->m_height = 480;
         textureObject->m_format = VK_FORMAT_R8G8B8A8_UNORM;
 
-        VkImageCreateInfo imageCreateInfo = {};
-        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageCreateInfo.pNext = NULL;
-        imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageCreateInfo.format = textureObject->m_format;
-        imageCreateInfo.extent.depth = 1.0f;
-        imageCreateInfo.extent.width = textureObject->m_width;
-        imageCreateInfo.extent.height = textureObject->m_height;
-        imageCreateInfo.mipLevels = 1;
-        imageCreateInfo.arrayLayers = 1;
-        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
-        imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-        imageCreateInfo.flags = 0;
-        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
         VkMemoryAllocateInfo memoryAllocateInfo = {};
         memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         memoryAllocateInfo.pNext = NULL;
@@ -1499,7 +1483,11 @@ namespace gvr {
 
         VkMemoryRequirements mem_reqs;
 
-        err = vkCreateImage(m_device, &imageCreateInfo, NULL, &textureObject->m_image);
+        err = vkCreateImage(m_device, gvr::ImageCreateInfo(VK_IMAGE_TYPE_2D, textureObject->m_format, textureObject->m_width,
+                                                           textureObject->m_height, 1, 1, 1,
+                                                           VK_IMAGE_TILING_LINEAR,
+                                                           VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT,
+                                                           VK_IMAGE_LAYOUT_UNDEFINED), NULL, &textureObject->m_image);
         assert(!err);
 
         vkGetImageMemoryRequirements(m_device, textureObject->m_image, &mem_reqs);
@@ -1615,48 +1603,14 @@ namespace gvr {
         err = vkQueueWaitIdle(m_queue);
         assert(!err);
 
-        // Now create a sampler for this image, with required details
-        VkSamplerCreateInfo samplerCreateInfo = {};
-        samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerCreateInfo.pNext = nullptr;
-        samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-        samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-        samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        samplerCreateInfo.mipLodBias = 0.0f;
-        samplerCreateInfo.anisotropyEnable = VK_FALSE;
-        samplerCreateInfo.maxAnisotropy = 0;
-        samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-        samplerCreateInfo.minLod = 0.0f;
-        samplerCreateInfo.maxLod = 0.0f;
-        samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
-
-        err = vkCreateSampler(m_device, &samplerCreateInfo, NULL, &textureObject->m_sampler);
+        err = vkCreateSampler(m_device, gvr::SamplerCreateInfo(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                               VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, 0.0f, VK_FALSE, 0, VK_FALSE, VK_COMPARE_OP_NEVER,
+        0.0f, 0.0f, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, VK_FALSE), NULL, &textureObject->m_sampler);
         assert(!err);
 
-        // Create the image view
-        VkImageViewCreateInfo viewCreateInfo = {};
-        viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewCreateInfo.pNext = NULL;
-        viewCreateInfo.image = VK_NULL_HANDLE;
-        viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewCreateInfo.format = textureObject->m_format;
-        viewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-        viewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-        viewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-        viewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
-        viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewCreateInfo.subresourceRange.baseMipLevel = 0;
-        viewCreateInfo.subresourceRange.levelCount = 1;
-        viewCreateInfo.subresourceRange.baseArrayLayer = 0;
-        viewCreateInfo.subresourceRange.layerCount = 1;
-        viewCreateInfo.flags = 0;
-        viewCreateInfo.image = textureObject->m_image;
-
-        err = vkCreateImageView(m_device, &viewCreateInfo, NULL, &textureObject->m_view);
+        err = vkCreateImageView(m_device, gvr::ImageViewCreateInfo(textureObject->m_image, VK_IMAGE_VIEW_TYPE_2D,
+                                                                   textureObject->m_format, 1, 1,
+                                                                   VK_IMAGE_ASPECT_COLOR_BIT), NULL, &textureObject->m_view);
         assert(!err);
     }
 

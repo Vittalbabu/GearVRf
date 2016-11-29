@@ -297,4 +297,27 @@ FenceCreateInfo::FenceCreateInfo(VkFenceCreateFlags aFlags)
         mInfo.pushConstantRangeCount = pushConstantRangeCount;
         mInfo.pPushConstantRanges = pPushConstantRanges;
     }
+
+    SamplerCreateInfo::SamplerCreateInfo(VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressModeU,
+                                         VkSamplerAddressMode addressModeV, VkSamplerAddressMode addressModeW, float mipLodBias, VkBool32 anisotropyEnable,
+                                         float maxAnisotropy, VkBool32 compareEnable, VkCompareOp compareOp, float minLod, float maxLod, VkBorderColor borderColor,
+                                         VkBool32 unnormalizedCoordinates) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        mInfo.pNext = nullptr;
+        mInfo.magFilter = magFilter;
+        mInfo.minFilter = minFilter;
+        mInfo.mipmapMode = mipmapMode;
+        mInfo.addressModeU = addressModeU;
+        mInfo.addressModeV = addressModeV;
+        mInfo.addressModeW = addressModeW;
+        mInfo.mipLodBias = mipLodBias;
+        mInfo.anisotropyEnable = anisotropyEnable;
+        mInfo.anisotropyEnable = anisotropyEnable;
+        mInfo.compareOp = compareOp;
+        mInfo.minLod = minLod;
+        mInfo.maxLod = maxLod;
+        mInfo.borderColor = borderColor;
+        mInfo.unnormalizedCoordinates = unnormalizedCoordinates;
+    }
 }
