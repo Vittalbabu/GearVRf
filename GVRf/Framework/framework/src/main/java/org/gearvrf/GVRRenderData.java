@@ -483,19 +483,22 @@ public class GVRRenderData extends GVRJavaComponent implements IRenderable, Pret
      * Called from the GL thread during rendering when a
      * RenderData without a valid shader is encountered.
      */
-    void bindShaderNative()
+    void bindShaderNative(GVRScene scene)
     {
+        bindShader(scene);
+        /*
         if (sBindShaderFromNative == null)
         {
             sBindShaderFromNative = new Runnable()
             {
                 public void run()
                 {
-                    bindShader(getGVRContext().getMainScene());
+                    bindShader(scene);
                 }
             };
         }
         getGVRContext().runOnTheFrameworkThread(sBindShaderFromNative);
+        */
     }
 
     /**

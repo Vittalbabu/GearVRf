@@ -177,6 +177,8 @@ public:
 
     JavaVM* getJavaVM() const { return javaVM_; }
 
+    jobject getJavaObj() const  { return javaObj_; }
+
     static Scene* main_scene() {
         return main_scene_;
     }

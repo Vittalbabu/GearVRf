@@ -130,7 +130,7 @@ public class GVRRenderPass extends GVRHybridObject implements IRenderable {
     {
         GVRShaderId shader = mMaterial.getShaderType();
         GVRShader template = shader.getTemplate(getGVRContext());
-        if ((getShader() == 0) && (template != null))
+        if (template != null)
         {
             template.bindShader(getGVRContext(), this, scene);
         }

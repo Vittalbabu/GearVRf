@@ -83,7 +83,7 @@ JNIEnv* RenderData::set_java(jobject javaObj, JavaVM* javaVM)
     if (env)
     {
         jclass renderDataClass = env->GetObjectClass(javaObj);
-        bindShaderMethod_ = env->GetMethodID(renderDataClass, "bindShaderNative", "()V");
+        bindShaderMethod_ = env->GetMethodID(renderDataClass, "bindShaderNative", "(Lorg/gearvrf/GVRScene;)V");
         if (bindShaderMethod_ == 0)
         {
             LOGE("RenderData::bindShader ERROR cannot find 'GVRRenderData.bindShaderNative()' Java method");
@@ -106,7 +106,7 @@ void RenderData::bindShader(Scene* scene)
         if (env)
         {
             LOGD("SHADER: Calling GVRRenderData.bindShaderNative(%p)", this);
-            env->CallVoidMethod(javaObj_, bindShaderMethod_);
+            env->CallVoidMethod(javaObj_, bindShaderMethod_, scene->getJavaObj());
             if (rc)
                 javaVM->DetachCurrentThread();
             return;

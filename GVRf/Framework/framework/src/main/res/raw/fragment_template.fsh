@@ -1,4 +1,4 @@
-
+precision highp float;
 
 layout (std140) uniform Material_ubo{
     vec4 u_opacity;
