@@ -1,7 +1,7 @@
-
-  #version 300 es
-       in vec3 a_position;
-        in vec3 a_normal;
+#version 300 es
+precision highp float;
+in vec3 a_position;
+in vec3 a_normal;
 layout (std140) uniform Transform_ubo{
  #ifdef HAS_MULTIVIEW
      mat4 u_view_[2];

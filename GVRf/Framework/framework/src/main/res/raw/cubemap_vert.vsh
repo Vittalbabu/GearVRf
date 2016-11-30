@@ -1,6 +1,7 @@
-            #version 300 es
-            in vec3 a_position;
-layout (std140) uniform Transform_ubo{
+precision highp float;
+in vec3 a_position;
+layout (std140) uniform Transform_ubo
+{
  #ifdef HAS_MULTIVIEW
      mat4 u_view_[2];
      mat4 u_mvp_[2];
@@ -16,10 +17,11 @@ layout (std140) uniform Transform_ubo{
      mat4 u_view_i;
      vec4 u_right;
 };
-            out vec3 diffuse_coord;
-            void main() {
-              vec4 pos = vec4(a_position, 1.0);
-              diffuse_coord = normalize((u_model * pos).xyz);
-              diffuse_coord.z = -diffuse_coord.z;
-              gl_Position = u_mvp * pos;
-            }
+out vec3 diffuse_coord;
+void main()
+{
+  vec4 pos = vec4(a_position, 1.0);
+  diffuse_coord = normalize((u_model * pos).xyz);
+  diffuse_coord.z = -diffuse_coord.z;
+  gl_Position = u_mvp * pos;
+}

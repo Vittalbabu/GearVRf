@@ -1,3 +1,4 @@
+precision highp float;
 #ifdef HAS_MULTIVIEW
 	flat in int view_id;
 #endif
