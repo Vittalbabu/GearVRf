@@ -39,6 +39,7 @@ namespace gvr {
         std::string type;
         int size;
     };
+
     enum ShaderType{
         VERTEX_SHADER,
         FRAGMENT_SHADER
@@ -53,6 +54,9 @@ namespace gvr {
         VkImageLayout m_imageLayout;
         uint32_t m_width;
         uint32_t m_height;
+        VkImageType m_textureType;
+        VkImageViewType m_textureViewType;
+        uint8_t *m_data;
     };
 
     class Scene;
@@ -145,17 +149,11 @@ namespace gvr {
 
         void InitTransientCmdPool();
 
-        void InitVertexBuffers();
-
-        void InitLayouts();
-
         void InitRenderPass();
 
         void InitFrameBuffers();
 
         void InitSync();
-
-        void BuildCmdBuffer();
 
         void InitUniformBuffers();
 
@@ -169,6 +167,8 @@ namespace gvr {
                                              ShaderType shaderTypeID,
                                              const std::string &shaderContents);
         void InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader);
+        void CreateSampler(TextureObject * &textureObject);
+
         ANativeWindow *m_androidWindow;
 
         VkInstance m_instance;

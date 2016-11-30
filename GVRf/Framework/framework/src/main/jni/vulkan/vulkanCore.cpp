@@ -30,6 +30,7 @@
 #include <thread>
 #include <shaderc/shaderc.hpp>
 #include "gvr_time.h"
+
 #define UINT64_MAX 99999
 
 #define QUEUE_INDEX_MAX 99999
@@ -45,12 +46,12 @@ std::string data_frag = std::string("") +
 
                                 " layout(set = 0, binding = 1) uniform sampler2D tex;\n" +
                         "layout (location = 0) out vec4 uFragColor;  \n" +
-        "layout(location = 1 )in vec2 o_texcoord; \n" +
+                        "layout(location = 1 )in vec2 o_texcoord; \n" +
                         "void main() {  \n" +
                         " vec4 temp = vec4(1.0,0.0,1.0,1.0);\n" +
-     //                   "   uFragColor = vec4(o_texcoord, 0, 1);  \n" +
-        "   uFragColor = texture(tex, o_texcoord);  \n" +
-    //   "   uFragColor = u_color;  \n" +
+                        //                   "   uFragColor = vec4(o_texcoord, 0, 1);  \n" +
+                        "   uFragColor = texture(tex, o_texcoord);  \n" +
+                        //   "   uFragColor = u_color;  \n" +
                         "}";
 
 
@@ -62,30 +63,33 @@ std::string vertexShaderData = std::string("") +
                                        "mat4 u_view;\n"
                                        "     mat4 u_mvp;\n"
                                        "     mat4 u_mv;\n"
-                                        "     mat4 u_mv_it;"
-                                           " mat4 u_model;\n"
+                                       "     mat4 u_mv_it;"
+                                       " mat4 u_model;\n"
                                        "     mat4 u_view_i;\n"
                                        "     vec4 u_right;"
                                        " };\n" +
                                "layout(location = 0)in vec3 pos; \n" +
-        "layout(location = 1)in vec2 a_texcoord; \n" +
-        "layout(location = 1)out vec2 o_texcoord; \n" +
+                               "layout(location = 1)in vec2 a_texcoord; \n" +
+                               "layout(location = 1)out vec2 o_texcoord; \n" +
                                "void main() { \n" +
-        "o_texcoord = a_texcoord; \n" +
+                               "o_texcoord = a_texcoord; \n" +
                                "  gl_Position = u_mvp * vec4(pos.x, pos.y, pos.z,1.0); \n" +
                                "}";
 namespace gvr {
     VulkanCore *VulkanCore::theInstance = NULL;
     uint8_t *oculusTexData;
     uint8_t *oculus_data[SWAP_CHAIN_COUNT];
+
     void Descriptor::createBuffer(VkDevice &device, VulkanCore *vk) {
         ubo->createBuffer(device, vk);
     }
-    void Descriptor::createDescriptor(VkDevice &device,VulkanCore* vk, int index, VkShaderStageFlagBits shaderStageFlagBits){
-        createBuffer(device,vk);
-        createLayoutBinding(index,shaderStageFlagBits);
+
+    void Descriptor::createDescriptor(VkDevice &device, VulkanCore *vk, int index,
+                                      VkShaderStageFlagBits shaderStageFlagBits) {
+        createBuffer(device, vk);
+        createLayoutBinding(index, shaderStageFlagBits);
         VkDescriptorSet desc;
-        createDescriptorWriteInfo(index,shaderStageFlagBits, desc);
+        createDescriptorWriteInfo(index, shaderStageFlagBits, desc);
 
     }
 
@@ -111,7 +115,7 @@ namespace gvr {
 
     }
 
-    VulkanUniformBlock* Descriptor::getUBO() {
+    VulkanUniformBlock *Descriptor::getUBO() {
         return ubo;
     }
 
@@ -160,11 +164,15 @@ namespace gvr {
             GVR_VK_CHECK(enabledExtensionCount < 16);
         }
         if (!surfaceExtFound) {
-            LOGE("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_SURFACE_EXTENSION_NAME " extension.");
+            LOGE("vkEnumerateInstanceExtensionProperties failed to find the "
+                         VK_KHR_SURFACE_EXTENSION_NAME
+                         " extension.");
             return false;
         }
         if (!platformSurfaceExtFound) {
-            LOGE("vkEnumerateInstanceExtensionProperties failed to find the " VK_KHR_ANDROID_SURFACE_EXTENSION_NAME" extension.");
+            LOGE("vkEnumerateInstanceExtensionProperties failed to find the "
+                         VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
+                         " extension.");
             return false;
         }
 
@@ -234,7 +242,6 @@ namespace gvr {
         ret = vkEnumeratePhysicalDevices(m_instance, &(m_physicalDeviceCount), m_pPhysicalDevices);
         GVR_VK_CHECK(!ret);
 
-
         // For purposes of this sample, we simply use the first device.
         m_physicalDevice = m_pPhysicalDevices[0];
 
@@ -298,7 +305,9 @@ namespace gvr {
             GVR_VK_CHECK(enabledExtensionCount < 16);
         }
         if (!swapchainExtFound) {
-            LOGE("vkEnumerateDeviceExtensionProperties failed to find the " VK_KHR_SWAPCHAIN_EXTENSION_NAME " extension: vkCreateInstance Failure");
+            LOGE("vkEnumerateDeviceExtensionProperties failed to find the "
+                         VK_KHR_SWAPCHAIN_EXTENSION_NAME
+                         " extension: vkCreateInstance Failure");
 
             // Always attempt to enable the swapchain
             extensionNames[enabledExtensionCount++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
@@ -322,7 +331,8 @@ namespace gvr {
         // this surface, so it is important to test for this.
         VkBool32 *supportsPresent = new VkBool32[queueFamilyCount];
         for (uint32_t i = 0; i < queueFamilyCount; i++) {
-            vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, i, m_surface, &supportsPresent[i]);
+            vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, i, m_surface,
+                                                 &supportsPresent[i]);
         }
 
 
@@ -432,14 +442,18 @@ namespace gvr {
                                                &memoryTypeIndex);
             GVR_VK_CHECK(pass);
 
-            err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr, &m_swapchainBuffers[i].mem);
+            err = vkAllocateMemory(m_device,
+                                   gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr,
+                                   &m_swapchainBuffers[i].mem);
             GVR_VK_CHECK(!err);
 
             // Bind memory to the image
-            err = vkBindImageMemory(m_device, m_swapchainBuffers[i].image, m_swapchainBuffers[i].mem, 0);
+            err = vkBindImageMemory(m_device, m_swapchainBuffers[i].image,
+                                    m_swapchainBuffers[i].mem, 0);
             GVR_VK_CHECK(!err);
 
-            err = vkBindBufferMemory(m_device, m_swapchainBuffers[i].buf, m_swapchainBuffers[i].mem, 0);
+            err = vkBindBufferMemory(m_device, m_swapchainBuffers[i].buf, m_swapchainBuffers[i].mem,
+                                     0);
             GVR_VK_CHECK(!err);
 
             err = vkCreateImageView(
@@ -468,7 +482,9 @@ namespace gvr {
             GVR_VK_CHECK(pass);
 
             outputImage[i].size = mem_reqs.size;
-            err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr, &outputImage[i].mem);
+            err = vkAllocateMemory(m_device,
+                                   gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr,
+                                   &outputImage[i].mem);
             GVR_VK_CHECK(!err);
 
             err = vkBindBufferMemory(m_device, outputImage[i].buf, outputImage[i].mem, 0);
@@ -501,7 +517,9 @@ namespace gvr {
                                                &memoryTypeIndex);
             GVR_VK_CHECK(pass);
 
-            err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr, &m_depthBuffers[i].mem);
+            err = vkAllocateMemory(m_device,
+                                   gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), nullptr,
+                                   &m_depthBuffers[i].mem);
             GVR_VK_CHECK(!err);
 
             // Bind memory to the image
@@ -611,7 +629,7 @@ namespace gvr {
         uniformAndSamplerBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
         uniformAndSamplerBinding[0].pImmutableSamplers = nullptr;
         uniformAndSamplerBinding[0] = transform_uniformBinding;
-        Descriptor* material_descriptor = rdata->material(0)->getDescriptor();
+        Descriptor *material_descriptor = rdata->material(0)->getDescriptor();
         VkDescriptorSetLayoutBinding &material_uniformBinding = material_descriptor->getLayoutBinding();
 
         material_uniformBinding.binding = 2;
@@ -627,12 +645,16 @@ namespace gvr {
 
         VkDescriptorSetLayout &descriptorLayout = rdata->getVkData().getDescriptorLayout();
 
-        ret = vkCreateDescriptorSetLayout(m_device, gvr::DescriptorSetLayoutCreateInfo(0, 3, &uniformAndSamplerBinding[0]), nullptr,
+        ret = vkCreateDescriptorSetLayout(m_device, gvr::DescriptorSetLayoutCreateInfo(0, 3,
+                                                                                       &uniformAndSamplerBinding[0]),
+                                          nullptr,
                                           &descriptorLayout);
         GVR_VK_CHECK(!ret);
 
         VkPipelineLayout &pipelineLayout = rdata->getVkData().getPipelineLayout();
-        ret = vkCreatePipelineLayout(m_device, gvr::PipelineLayoutCreateInfo(0, 1, &descriptorLayout, 0, 0), nullptr, &pipelineLayout);
+        ret = vkCreatePipelineLayout(m_device,
+                                     gvr::PipelineLayoutCreateInfo(0, 1, &descriptorLayout, 0, 0),
+                                     nullptr, &pipelineLayout);
         GVR_VK_CHECK(!ret);
     }
 
@@ -669,7 +691,8 @@ namespace gvr {
         // We keep the size of the allocation for remapping it later when we update contents
         m_modelViewMatrixUniform.allocSize = mem_reqs.size;
 
-        err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex), NULL, &m_modelViewMatrixUniform.mem);
+        err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(mem_reqs.size, memoryTypeIndex),
+                               NULL, &m_modelViewMatrixUniform.mem);
         assert(!err);
 
         // Create our initial MVP matrix
@@ -736,7 +759,8 @@ namespace gvr {
         // We keep the size of the allocation for remapping it later when we update contents
         m_modelViewMatrixUniform.allocSize = mem_reqs.size;
 
-        err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(memoryTypeIndex, mem_reqs.size), NULL, &m_modelViewMatrixUniform.mem);
+        err = vkAllocateMemory(m_device, gvr::MemoryAllocateInfo(memoryTypeIndex, mem_reqs.size),
+                               NULL, &m_modelViewMatrixUniform.mem);
         assert(!err);
 
         // Create our initial MVP matrix
@@ -820,25 +844,29 @@ namespace gvr {
         subpassDescription.pPreserveAttachments = nullptr;
 
         VkResult ret;
-        ret = vkCreateRenderPass(m_device, gvr::RenderPassCreateInfo(0, (uint32_t)2, attachmentDescriptions, 1, &subpassDescription, (uint32_t)0, nullptr), nullptr, &m_renderPass);
+        ret = vkCreateRenderPass(m_device,
+                                 gvr::RenderPassCreateInfo(0, (uint32_t) 2, attachmentDescriptions,
+                                                           1, &subpassDescription, (uint32_t) 0,
+                                                           nullptr), nullptr, &m_renderPass);
         GVR_VK_CHECK(!ret);
     }
-  /*  void VulkanCore::CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size) {
-        VkResult err;
 
-        // Creating a shader is very simple once it's in memory as compiled SPIR-V.
-        VkShaderModuleCreateInfo moduleCreateInfo = {};
-        moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        moduleCreateInfo.pNext = nullptr;
-        moduleCreateInfo.codeSize = size * sizeof(unsigned int);
-        moduleCreateInfo.pCode = code.data();
-        moduleCreateInfo.flags = 0;
-        err = vkCreateShaderModule(m_device, gvr::ShaderModuleCreateInfo(code.data(), size *
-                                                                                      sizeof(unsigned int)),
-                                   nullptr, &module);
-        GVR_VK_CHECK(!err);
-    }
-  */  VkShaderModule VulkanCore::CreateShaderModule(std::vector <uint32_t> code, uint32_t size) {
+    /*  void VulkanCore::CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size) {
+          VkResult err;
+
+          // Creating a shader is very simple once it's in memory as compiled SPIR-V.
+          VkShaderModuleCreateInfo moduleCreateInfo = {};
+          moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+          moduleCreateInfo.pNext = nullptr;
+          moduleCreateInfo.codeSize = size * sizeof(unsigned int);
+          moduleCreateInfo.pCode = code.data();
+          moduleCreateInfo.flags = 0;
+          err = vkCreateShaderModule(m_device, gvr::ShaderModuleCreateInfo(code.data(), size *
+                                                                                        sizeof(unsigned int)),
+                                     nullptr, &module);
+          GVR_VK_CHECK(!err);
+      }
+    */  VkShaderModule VulkanCore::CreateShaderModule(std::vector<uint32_t> code, uint32_t size) {
         VkShaderModule module;
         VkResult err;
 
@@ -868,13 +896,15 @@ namespace gvr {
      * shaderTypeID 2 : Fragment Shader
      */
 
-    std::vector<uint32_t> VulkanCore::CompileShader(const std::string& shaderName, ShaderType shaderTypeID, const std::string& shaderContents) {
+    std::vector<uint32_t> VulkanCore::CompileShader(const std::string &shaderName,
+                                                    ShaderType shaderTypeID,
+                                                    const std::string &shaderContents) {
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
         shaderc_shader_kind shaderType;
 
-        switch(shaderTypeID){
+        switch (shaderTypeID) {
             case VERTEX_SHADER:
                 shaderType = shaderc_glsl_default_vertex_shader;
                 break;
@@ -883,7 +913,11 @@ namespace gvr {
                 break;
         }
 
-        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderContents.c_str(), shaderContents.size(), shaderType, shaderName.c_str(), options);
+        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(shaderContents.c_str(),
+                                                                         shaderContents.size(),
+                                                                         shaderType,
+                                                                         shaderName.c_str(),
+                                                                         options);
 
         if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
             LOGI("Vulkan shader unable to compile : %s", module.GetErrorMessage().c_str());
@@ -892,27 +926,36 @@ namespace gvr {
         std::vector<uint32_t> result(module.cbegin(), module.cend());
         return result;
     }
-    void VulkanCore::InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader) {
 
-        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER , vertexShader);
-        std::vector<uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER , fragmentShader);
+    void VulkanCore::InitShaders(VkPipelineShaderStageCreateInfo shaderStages[],
+                                 std::string &vertexShader, std::string &fragmentShader) {
+
+        std::vector<uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER, vertexShader);
+        std::vector<uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER,
+                                                          fragmentShader);
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
         VkShaderModule module;
-        module =CreateShaderModule(result_vert, result_vert.size());
-        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_VERTEX_BIT, module, "main");
+        module = CreateShaderModule(result_vert, result_vert.size());
+        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, VK_SHADER_STAGE_VERTEX_BIT,
+                module, "main");
         shaderStages[0] = *shaderStageInfo;
 
 
-        module= CreateShaderModule(result_frag, result_frag.size());
-        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_FRAGMENT_BIT, module, "main");
+        module = CreateShaderModule(result_frag, result_frag.size());
+        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, VK_SHADER_STAGE_FRAGMENT_BIT,
+                module, "main");
         shaderStages[1] = *shaderStageInfo;
 
     }
 
 
-    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata, std::vector<uint32_t> &vs, std::vector<uint32_t> &fs) {
+    void VulkanCore::InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata,
+                                               std::vector<uint32_t> &vs,
+                                               std::vector<uint32_t> &fs) {
         VkResult err;
 
         // The pipeline contains all major state for rendering.
@@ -940,18 +983,24 @@ namespace gvr {
         scissor.offset.x = 0;
         scissor.offset.y = 0;
 
-        std::vector <uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER, vertexShaderData);//vs;//
-        std::vector <uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER, data_frag);//fs;//
+        std::vector<uint32_t> result_vert = CompileShader("VulkanVS", VERTEX_SHADER,
+                                                          vertexShaderData);//vs;//
+        std::vector<uint32_t> result_frag = CompileShader("VulkanFS", FRAGMENT_SHADER,
+                                                          data_frag);//fs;//
 
         // We define two shader stages: our vertex and fragment shader.
         // they are embedded as SPIR-V into a header file for ease of deployment.
         VkPipelineShaderStageCreateInfo shaderStages[2] = {};
-        VkShaderModule  module = CreateShaderModule(result_vert, result_vert.size());
-        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_VERTEX_BIT, module, "main");
+        VkShaderModule module = CreateShaderModule(result_vert, result_vert.size());
+        gvr::PipelineShaderStageCreateInfo shaderStageInfo = gvr::PipelineShaderStageCreateInfo(
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, VK_SHADER_STAGE_VERTEX_BIT,
+                module, "main");
         shaderStages[0] = *shaderStageInfo;
 
         module = CreateShaderModule(result_frag, result_frag.size());
-        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,VK_SHADER_STAGE_FRAGMENT_BIT, module, "main");
+        shaderStageInfo = gvr::PipelineShaderStageCreateInfo(
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, VK_SHADER_STAGE_FRAGMENT_BIT,
+                module, "main");
         shaderStages[1] = *shaderStageInfo;
 
 
@@ -961,12 +1010,31 @@ namespace gvr {
         pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         pipelineCreateInfo.layout = rdata->getVkData().m_pipelineLayout;
         pipelineCreateInfo.pVertexInputState = &vi;
-        pipelineCreateInfo.pInputAssemblyState = gvr::PipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-        pipelineCreateInfo.pRasterizationState = gvr::PipelineRasterizationStateCreateInfo(VK_FALSE, VK_FALSE, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, VK_FALSE, 0, 0, 0, 0);
-        pipelineCreateInfo.pColorBlendState = gvr::PipelineColorBlendStateCreateInfo(1, &att_state[0]);
-        pipelineCreateInfo.pMultisampleState = gvr::PipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE);
-        pipelineCreateInfo.pViewportState = gvr::PipelineViewportStateCreateInfo(1, &viewport,1, &scissor);
-        pipelineCreateInfo.pDepthStencilState = gvr::PipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, VK_FALSE, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS, VK_FALSE);
+        pipelineCreateInfo.pInputAssemblyState = gvr::PipelineInputAssemblyStateCreateInfo(
+                VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        pipelineCreateInfo.pRasterizationState = gvr::PipelineRasterizationStateCreateInfo(VK_FALSE,
+                                                                                           VK_FALSE,
+                                                                                           VK_POLYGON_MODE_FILL,
+                                                                                           VK_CULL_MODE_BACK_BIT,
+                                                                                           VK_FRONT_FACE_CLOCKWISE,
+                                                                                           VK_FALSE,
+                                                                                           0, 0, 0,
+                                                                                           0);
+        pipelineCreateInfo.pColorBlendState = gvr::PipelineColorBlendStateCreateInfo(1,
+                                                                                     &att_state[0]);
+        pipelineCreateInfo.pMultisampleState = gvr::PipelineMultisampleStateCreateInfo(
+                VK_SAMPLE_COUNT_1_BIT, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                VK_NULL_HANDLE, VK_NULL_HANDLE);
+        pipelineCreateInfo.pViewportState = gvr::PipelineViewportStateCreateInfo(1, &viewport, 1,
+                                                                                 &scissor);
+        pipelineCreateInfo.pDepthStencilState = gvr::PipelineDepthStencilStateCreateInfo(VK_TRUE,
+                                                                                         VK_TRUE,
+                                                                                         VK_COMPARE_OP_LESS_OR_EQUAL,
+                                                                                         VK_FALSE,
+                                                                                         VK_STENCIL_OP_KEEP,
+                                                                                         VK_STENCIL_OP_KEEP,
+                                                                                         VK_COMPARE_OP_ALWAYS,
+                                                                                         VK_FALSE);
         pipelineCreateInfo.pStages = &shaderStages[0];
         pipelineCreateInfo.renderPass = m_renderPass;
         pipelineCreateInfo.pDynamicState = nullptr;
@@ -1003,7 +1071,10 @@ namespace gvr {
             }
             else
                 LOGE("Vulkan image view not null");
-            ret = vkCreateFramebuffer(m_device, gvr::FramebufferCreateInfo(0, m_renderPass, uint32_t(2), attachments, m_width, m_width, uint32_t(1)), nullptr,
+            ret = vkCreateFramebuffer(m_device,
+                                      gvr::FramebufferCreateInfo(0, m_renderPass, uint32_t(2),
+                                                                 attachments, m_width, m_width,
+                                                                 uint32_t(1)), nullptr,
                                       &m_frameBuffers[i]);
             GVR_VK_CHECK(!ret);
         }
@@ -1041,9 +1112,10 @@ namespace gvr {
         LOGI("Vulkan initsync end");
     }
 
-    void VulkanCore::BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors,
+    void VulkanCore::BuildCmdBufferForRenderData(std::vector<VkDescriptorSet> &allDescriptors,
                                                  int &swapChainIndex,
-                                                 std::vector<RenderData *> &render_data_vector, Camera* camera) {
+                                                 std::vector<RenderData *> &render_data_vector,
+                                                 Camera *camera) {
         // For the triangle sample, we pre-record our command buffer, as it is static.
         // We have a buffer per swap chain image, so loop over the creation process.
         int i = swapChainIndex;
@@ -1125,7 +1197,8 @@ namespace gvr {
 
             // Set our pipeline. This holds all major state
             // the pipeline defines, for example, that the vertex buffer is a triangle list.
-            vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, render_data_vector[j]->getVkData().m_pipeline);
+            vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              render_data_vector[j]->getVkData().m_pipeline);
 
             //bind out descriptor set, which handles our uniforms and samplers
             vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1138,8 +1211,10 @@ namespace gvr {
             vkCmdBindVertexBuffers(cmdBuffer, VERTEX_BUFFER_BIND_ID, 1, &(vert.buf), offsets);
 
             // Bind triangle index buffer
-            vkCmdBindIndexBuffer(cmdBuffer, (render_data_vector[j]->mesh()->getVkIndices()).buffer, 0, VK_INDEX_TYPE_UINT16);
-            vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->mesh()->getVkIndices()).count, 1, 0, 0, 1);
+            vkCmdBindIndexBuffer(cmdBuffer, (render_data_vector[j]->mesh()->getVkIndices()).buffer,
+                                 0, VK_INDEX_TYPE_UINT16);
+            vkCmdDrawIndexed(cmdBuffer, (render_data_vector[j]->mesh()->getVkIndices()).count, 1, 0,
+                             0, 1);
         }
 
         // Now our render pass has ended.
@@ -1196,7 +1271,7 @@ namespace gvr {
         err = vkQueueSubmit(m_queue, 1, &submitInfo, waitFences[m_swapchainCurrentIdx]);
         GVR_VK_CHECK(!err);
 
-        err= vkGetFenceStatus(m_device,waitFences[m_swapchainCurrentIdx]);
+        err = vkGetFenceStatus(m_device, waitFences[m_swapchainCurrentIdx]);
         int swapChainIndx;
         bool found = false;
         VkResult status;
@@ -1261,15 +1336,15 @@ namespace gvr {
         err = vkResetFences(m_device, 1, &waitSCBFences[swapChainIndx]);
         GVR_VK_CHECK(!err);
     }
-    void updateUniform(const std::string& key, uniformDefination uniformInfo, VulkanUniformBlock* material_ubo, Material* material)
-    {
-        const float* fv;
-        const int* iv;
-        glm::vec4 data(1.0,1.0,1.0,1.0);
-        std::string type= uniformInfo.type;
+
+    void updateUniform(const std::string &key, uniformDefination uniformInfo,
+                       VulkanUniformBlock *material_ubo, Material *material) {
+        const float *fv;
+        const int *iv;
+        glm::vec4 data(1.0, 1.0, 1.0, 1.0);
+        std::string type = uniformInfo.type;
         int size = uniformInfo.size;
-        switch (tolower(type[0]))
-        {
+        switch (tolower(type[0])) {
             case 'f':
             case 'm':
                 fv = material->getFloatVec(key, size);
@@ -1277,28 +1352,28 @@ namespace gvr {
                     switch (size) {
                         case 1:
                             data.x = *fv;
-                            material_ubo->setVec(key,glm::value_ptr(data), 4);
+                            material_ubo->setVec(key, glm::value_ptr(data), 4);
                             break;
 
                         case 2:
                             data.x = *fv;
                             data.y = fv[1];
-                            material_ubo->setVec(key,glm::value_ptr(data), 4);
+                            material_ubo->setVec(key, glm::value_ptr(data), 4);
                             break;
 
                         case 3:
                             data.x = fv[0];
-                            data.y=  fv[1];
+                            data.y = fv[1];
                             data.z = fv[2];
-                            material_ubo->setVec(key,glm::value_ptr(data), 4);
+                            material_ubo->setVec(key, glm::value_ptr(data), 4);
                             break;
 
                         case 4:
-                            material_ubo->setVec(key,fv, 4);
+                            material_ubo->setVec(key, fv, 4);
                             break;
 
                         case 16:
-                            material_ubo->setVec(key,fv, 16);
+                            material_ubo->setVec(key, fv, 16);
                             break;
                     }
                 }
@@ -1307,34 +1382,35 @@ namespace gvr {
             case 'i':
                 iv = material->getIntVec(key, size);
                 if (iv != NULL)
-                    switch (size)
-                    {
+                    switch (size) {
                         case 1:
-                            material_ubo->setInt(key,*iv);
+                            material_ubo->setInt(key, *iv);
                             break;
 
                         case 2:
-                            material_ubo->setIntVec(key,iv,2);
+                            material_ubo->setIntVec(key, iv, 2);
                             break;
 
                         case 3:
-                            material_ubo->setIntVec(key,iv,3);
+                            material_ubo->setIntVec(key, iv, 3);
                             break;
 
                         case 4:
-                            material_ubo->setIntVec(key,iv, 4);
+                            material_ubo->setIntVec(key, iv, 4);
                             break;
                     }
                 break;
         }
     }
-    void VulkanCore::updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data,std::unordered_map<std::string,uniformDefination>& nameTypeMap) {
-        Material *mat = render_data->material(0);
-        Descriptor* desc = mat->getDescriptor();
-        VulkanUniformBlock* material_ubo = desc->getUBO();
 
-        for(auto& it: nameTypeMap){
-            updateUniform(it.first,it.second,material_ubo,mat);
+    void VulkanCore::updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data,
+                                           std::unordered_map<std::string, uniformDefination> &nameTypeMap) {
+        Material *mat = render_data->material(0);
+        Descriptor *desc = mat->getDescriptor();
+        VulkanUniformBlock *material_ubo = desc->getUBO();
+
+        for (auto &it: nameTypeMap) {
+            updateUniform(it.first, it.second, material_ubo, mat);
         }
 
         material_ubo->updateBuffer(m_device, this);
@@ -1357,7 +1433,7 @@ namespace gvr {
         glm::mat4 modelViewProjection = proj * view * model;
 
         Descriptor &desc = render_data->getVkData().getDescriptor();
-        VulkanUniformBlock* transform_ubo = desc.getUBO();
+        VulkanUniformBlock *transform_ubo = desc.getUBO();
         transform_ubo->setMat4("u_mvp", glm::value_ptr(modelViewProjection));
         transform_ubo->updateBuffer(m_device, this);
 
@@ -1404,7 +1480,7 @@ namespace gvr {
         Descriptor &transform_desc = rdata->getVkData().getDescriptor();
         VkWriteDescriptorSet &write = transform_desc.getDescriptorSet();
         write.dstSet = descriptorSet;
-        Descriptor* mat_desc = rdata->material(0)->getDescriptor();
+        Descriptor *mat_desc = rdata->material(0)->getDescriptor();
         VkWriteDescriptorSet &write1 = mat_desc->getDescriptorSet();
         write1.dstSet = descriptorSet;
         VkWriteDescriptorSet writes[3] = {};
@@ -1418,7 +1494,6 @@ namespace gvr {
         descriptorImageInfo.sampler = textureObject->m_sampler;
         descriptorImageInfo.imageView = textureObject->m_view;
         descriptorImageInfo.imageLayout = textureObject->m_imageLayout;
-
 
 
         writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1436,7 +1511,8 @@ namespace gvr {
     void VulkanCore::createPipelineCache() {
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
         pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-        GVR_VK_CHECK(vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+        GVR_VK_CHECK(vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr,
+                                           &m_pipelineCache));
         LOGE("Pipleline cace faile");
     }
 
@@ -1465,15 +1541,9 @@ namespace gvr {
         //createPipelineCache();
     }
 
-
-    void VulkanCore::InitTexture(){
-        VkResult   err;
-        bool   pass;
-
-        textureObject = new TextureObject[1];
-        textureObject->m_width = 640;
-        textureObject->m_height = 480;
-        textureObject->m_format = VK_FORMAT_R8G8B8A8_UNORM;
+    void VulkanCore::CreateSampler(TextureObject *&textureObject) {
+        VkResult err;
+        bool pass;
 
         VkMemoryAllocateInfo memoryAllocateInfo = {};
         memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1483,18 +1553,24 @@ namespace gvr {
 
         VkMemoryRequirements mem_reqs;
 
-        err = vkCreateImage(m_device, gvr::ImageCreateInfo(VK_IMAGE_TYPE_2D, textureObject->m_format, textureObject->m_width,
+        err = vkCreateImage(m_device, gvr::ImageCreateInfo(textureObject->m_textureType,
+                                                           textureObject->m_format,
+                                                           textureObject->m_width,
                                                            textureObject->m_height, 1, 1, 1,
                                                            VK_IMAGE_TILING_LINEAR,
-                                                           VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT,
-                                                           VK_IMAGE_LAYOUT_UNDEFINED), NULL, &textureObject->m_image);
+                                                           VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                           VK_SAMPLE_COUNT_1_BIT,
+                                                           VK_IMAGE_LAYOUT_UNDEFINED), NULL,
+                            &textureObject->m_image);
         assert(!err);
 
         vkGetImageMemoryRequirements(m_device, textureObject->m_image, &mem_reqs);
 
-        memoryAllocateInfo.allocationSize  = mem_reqs.size; 
+        memoryAllocateInfo.allocationSize = mem_reqs.size;
 
-        pass = GetMemoryTypeFromProperties( mem_reqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &memoryAllocateInfo.memoryTypeIndex);
+        pass = GetMemoryTypeFromProperties(mem_reqs.memoryTypeBits,
+                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                                           &memoryAllocateInfo.memoryTypeIndex);
         assert(pass);
 
         /* allocate memory */
@@ -1514,19 +1590,19 @@ namespace gvr {
 
             VkSubresourceLayout layout;
             uint8_t *data;
-            int32_t x, y;
 
             vkGetImageSubresourceLayout(m_device, textureObject->m_image, &subres, &layout);
 
-            err = vkMapMemory(m_device, textureObject->m_mem, 0, memoryAllocateInfo.allocationSize, 0, (void**)&data);
+            err = vkMapMemory(m_device, textureObject->m_mem, 0, memoryAllocateInfo.allocationSize,
+                              0, (void **) &data);
             assert(!err);
 
-            for(int i = 0; i < ((textureObject->m_width) * (textureObject->m_height) * 4); i++ ){
-                data[i] = 244;
-                data[i+1] = 0;
-                data[i+2] = 0;
-                data[i+3] = 244;
-                i+=3;
+            for (int i = 0; i < ((textureObject->m_width) * (textureObject->m_height) * 4); i++) {
+                data[i] = textureObject->m_data[i];
+                data[i + 1] = textureObject->m_data[i + 1];
+                data[i + 2] = textureObject->m_data[i + 2];
+                data[i + 3] = textureObject->m_data[i + 3];
+                i += 3;
             }
 
             vkUnmapMemory(m_device, textureObject->m_mem);
@@ -1570,13 +1646,16 @@ namespace gvr {
         imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
         imageMemoryBarrier.subresourceRange.layerCount = 1;
         imageMemoryBarrier.srcAccessMask = 0;
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+        imageMemoryBarrier.dstAccessMask =
+                VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 
         VkPipelineStageFlags src_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         VkPipelineStageFlags dest_stages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
         // Barrier on image memory, with correct layouts set.
-        vkCmdPipelineBarrier(textureCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &imageMemoryBarrier);
+        vkCmdPipelineBarrier(textureCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1,
+                             &imageMemoryBarrier);
 
         // We are finished recording operations.
         vkEndCommandBuffer(textureCmdBuffer);
@@ -1603,18 +1682,52 @@ namespace gvr {
         err = vkQueueWaitIdle(m_queue);
         assert(!err);
 
-        err = vkCreateSampler(m_device, gvr::SamplerCreateInfo(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                                                               VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, 0.0f, VK_FALSE, 0, VK_FALSE, VK_COMPARE_OP_NEVER,
-        0.0f, 0.0f, VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE, VK_FALSE), NULL, &textureObject->m_sampler);
+        err = vkCreateSampler(m_device, gvr::SamplerCreateInfo(VK_FILTER_LINEAR, VK_FILTER_LINEAR,
+                                                               VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                                                               VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                               VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                               VK_SAMPLER_ADDRESS_MODE_REPEAT, 0.0f,
+                                                               VK_FALSE, 0, VK_FALSE,
+                                                               VK_COMPARE_OP_NEVER,
+                                                               0.0f, 0.0f,
+                                                               VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                                                               VK_FALSE), NULL,
+                              &textureObject->m_sampler);
         assert(!err);
 
-        err = vkCreateImageView(m_device, gvr::ImageViewCreateInfo(textureObject->m_image, VK_IMAGE_VIEW_TYPE_2D,
+        err = vkCreateImageView(m_device, gvr::ImageViewCreateInfo(textureObject->m_image,
+                                                                   textureObject->m_textureViewType,
                                                                    textureObject->m_format, 1, 1,
-                                                                   VK_IMAGE_ASPECT_COLOR_BIT), NULL, &textureObject->m_view);
+                                                                   VK_IMAGE_ASPECT_COLOR_BIT), NULL,
+                                &textureObject->m_view);
         assert(!err);
     }
 
-    void VulkanCore::initVulkanCore(){
+    void VulkanCore::InitTexture() {
+        VkResult err;
+        bool pass;
+
+        textureObject = new TextureObject[1];
+        textureObject->m_width = 640;
+        textureObject->m_height = 480;
+        textureObject->m_format = VK_FORMAT_R8G8B8A8_UNORM;
+        textureObject->m_textureType = VK_IMAGE_TYPE_2D;
+        textureObject->m_textureViewType = VK_IMAGE_VIEW_TYPE_2D;
+
+        textureObject->m_data = new uint8_t[((textureObject->m_width) * (textureObject->m_height) * 4)];
+
+        for (int i = 0; i < ((textureObject->m_width) * (textureObject->m_height) * 4); i++) {
+            textureObject->m_data[i] = 244;
+            textureObject->m_data[i + 1] = 0;
+            textureObject->m_data[i + 2] = 0;
+            textureObject->m_data[i + 3] = 244;
+            i += 3;
+        }
+
+        CreateSampler(textureObject);
+    }
+
+    void VulkanCore::initVulkanCore() {
         GLint viewport[4];
         GLint curFBO;
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &curFBO);
@@ -1629,6 +1742,5 @@ namespace gvr {
         InitFrameBuffers();
         InitSync();
         swap_chain_init_ = true;
-
     }
 }
