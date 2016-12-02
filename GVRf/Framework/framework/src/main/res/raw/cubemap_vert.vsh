@@ -1,5 +1,6 @@
-precision highp float;
 in vec3 a_position;
+out vec3 diffuse_coord;
+
 layout (std140) uniform Transform_ubo
 {
  #ifdef HAS_MULTIVIEW
@@ -17,7 +18,7 @@ layout (std140) uniform Transform_ubo
      mat4 u_view_i;
      vec4 u_right;
 };
-out vec3 diffuse_coord;
+
 void main()
 {
   vec4 pos = vec4(a_position, 1.0);

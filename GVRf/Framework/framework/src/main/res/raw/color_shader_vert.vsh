@@ -1,7 +1,7 @@
-#version 300 es
 precision mediump float;
 in vec3 a_position;
-layout (std140) uniform Transform_ubo{
+layout (std140) uniform Transform_ubo
+{
  #ifdef HAS_MULTIVIEW
      mat4 u_view_[2];
      mat4 u_mvp_[2];
@@ -17,6 +17,7 @@ layout (std140) uniform Transform_ubo{
      mat4 u_view_i;
      vec4 u_right;
 };
-void main() {
+void main()
+{
    gl_Position = u_mvp * vec4(a_position, 1);
  }
