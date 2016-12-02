@@ -1,13 +1,14 @@
 precision highp float;
 uniform samplerCube u_texture;
+in vec3 diffuse_coord;
+out vec4 fragColor;
+
 layout (std140) uniform Material_ubo
 {
     vec4 u_opacity;
     vec4 u_color;
 };
 
-in vec3 diffuse_coord;
-out vec4 fragColor;
 void main()
 {
   vec4 color = texture(u_texture, diffuse_coord);

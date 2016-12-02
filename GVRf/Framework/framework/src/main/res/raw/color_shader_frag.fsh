@@ -1,7 +1,7 @@
-#version 300 es
 precision mediump float;
 
-layout (std140) uniform Material_ubo{
+layout (std140) uniform Material_ubo
+{
     vec4 u_color;
 };
 out vec4 outColor;

@@ -442,6 +442,8 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      */
     void bindShadersNative()
     {
+        bindShaders(getRoot());
+        /*
         if (sBindShadersFromNative == null)
         {
             sBindShadersFromNative = new Runnable()
@@ -453,6 +455,7 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
             };
         }
         getGVRContext().runOnTheFrameworkThread(sBindShadersFromNative);
+        */
     }
 
     /**

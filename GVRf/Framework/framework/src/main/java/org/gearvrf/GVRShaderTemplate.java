@@ -431,31 +431,40 @@ public class GVRShaderTemplate extends GVRShader
         GVRMaterialShaderManager shaderManager = context.getMaterialShaderManager();
         int nativeShader = shaderManager.getShader(signature);
 
-        if (nativeShader == 0)
+        synchronized (shaderManager)
         {
-            Map<String, LightClass> lightClasses = scanLights(lightlist);
-
-            String vertexShaderSource = generateShaderVariant("Vertex", variantDefines, lightlist, lightClasses, material);
-            String fragmentShaderSource = generateShaderVariant("Fragment", variantDefines, lightlist, lightClasses, material);
-            StringBuilder uniformDescriptor = new StringBuilder();
-            StringBuilder textureDescriptor = new StringBuilder();
-            StringBuilder vertexDescriptor = new StringBuilder();
-            updateDescriptors(mesh, material, uniformDescriptor, textureDescriptor, vertexDescriptor);
-            nativeShader = shaderManager.addShader(signature, uniformDescriptor.toString(),
-                                                    textureDescriptor.toString(), vertexDescriptor.toString(),
-                                                    vertexShaderSource, fragmentShaderSource);
-            if (mWriteShadersToDisk)
+            if (nativeShader == 0)
             {
-                writeShader(context, "V-" + signature + ".glsl", vertexShaderSource);
-                writeShader(context, "F-" + signature + ".glsl", fragmentShaderSource);
+                Map<String, LightClass> lightClasses = scanLights(lightlist);
+
+                String vertexShaderSource =
+                        generateShaderVariant("Vertex", variantDefines, lightlist, lightClasses,
+                                              material);
+                String fragmentShaderSource =
+                        generateShaderVariant("Fragment", variantDefines, lightlist, lightClasses,
+                                              material);
+                StringBuilder uniformDescriptor = new StringBuilder();
+                StringBuilder textureDescriptor = new StringBuilder();
+                StringBuilder vertexDescriptor = new StringBuilder();
+                updateDescriptors(mesh, material, uniformDescriptor, textureDescriptor,
+                                  vertexDescriptor);
+                nativeShader = shaderManager.addShader(signature, uniformDescriptor.toString(),
+                                                       textureDescriptor.toString(),
+                                                       vertexDescriptor.toString(),
+                                                       vertexShaderSource, fragmentShaderSource);
+                if (mWriteShadersToDisk)
+                {
+                    writeShader(context, "V-" + signature + ".glsl", vertexShaderSource);
+                    writeShader(context, "F-" + signature + ".glsl", fragmentShaderSource);
+                }
+                Log.e(TAG, "SHADER: generated shader #%d %s", nativeShader, signature);
             }
-            Log.e(TAG, "SHADER: generated shader #%d %s", nativeShader, signature);
+            if (nativeShader > 0)
+            {
+                rdata.setShader(nativeShader);
+            }
+            return nativeShader;
         }
-        if (nativeShader > 0)
-        {
-            rdata.setShader(nativeShader);
-        }
-        return nativeShader;
     }
 
     private void writeShader(GVRContext context, String fileName, String sourceCode)
@@ -495,19 +504,26 @@ public class GVRShaderTemplate extends GVRShader
         GVRMaterialShaderManager shaderManager = context.getMaterialShaderManager();
         int nativeShader = shaderManager.getShader(signature);
 
-        if (nativeShader == 0)
+        synchronized (shaderManager)
         {
-            String vertexShaderSource = generateShaderVariant("Vertex", variantDefines, null, null, material);
-            String fragmentShaderSource = generateShaderVariant("Fragment", variantDefines, null, null, material);
-            StringBuilder uniformDescriptor = new StringBuilder();
-            StringBuilder textureDescriptor = new StringBuilder();;
-            updateDescriptors(null, material, uniformDescriptor, textureDescriptor, null);
-            nativeShader = shaderManager.addShader(signature, uniformDescriptor.toString(),
-                                                    textureDescriptor.toString(), mVertexDescriptor,
-                                                    vertexShaderSource, fragmentShaderSource);
-            Log.e(TAG, "SHADER: generated shader #%d %s", nativeShader, signature);
+            if (nativeShader == 0)
+            {
+                String vertexShaderSource =
+                        generateShaderVariant("Vertex", variantDefines, null, null, material);
+                String fragmentShaderSource =
+                        generateShaderVariant("Fragment", variantDefines, null, null, material);
+                StringBuilder uniformDescriptor = new StringBuilder();
+                StringBuilder textureDescriptor = new StringBuilder();
+                ;
+                updateDescriptors(null, material, uniformDescriptor, textureDescriptor, null);
+                nativeShader = shaderManager.addShader(signature, uniformDescriptor.toString(),
+                                                       textureDescriptor.toString(),
+                                                       mVertexDescriptor,
+                                                       vertexShaderSource, fragmentShaderSource);
+                Log.e(TAG, "SHADER: generated shader #%d %s", nativeShader, signature);
+            }
+            return nativeShader;
         }
-        return nativeShader;
     }
 
     /**

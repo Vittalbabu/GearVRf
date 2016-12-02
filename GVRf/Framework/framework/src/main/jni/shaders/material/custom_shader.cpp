@@ -112,10 +112,12 @@ namespace gvr {
         int loc = shader_->getLocation(key);
         if (loc < 0)
         {
-            loc = glGetUniformLocation(shader_->getProgramId(), key.c_str());
-            if (loc >= 0) {
+            GLuint programID = shader_->getProgramId();
+            loc = glGetUniformLocation(programID, key.c_str());
+            if (loc >= 0)
+            {
                 shader_->setLocation(key, loc);
-            //    if (Shader::LOG_SHADER) LOGE("SHADER::uniform:location: %s location: %d", key.c_str(), loc);
+                if (Shader::LOG_SHADER) LOGE("SHADER::uniform:location: %s location: %d", key.c_str(), loc);
             }
         }
     }
@@ -126,9 +128,11 @@ namespace gvr {
         LOGE("in visit %s", key.c_str());
         if (loc < 0)
         {
-            loc = glGetUniformLocation(shader_->getProgramId(), key.c_str());
-            if (loc >= 0) {
-             //   if (Shader::LOG_SHADER) LOGE("SHADER::texture: %s location not found", key.c_str());
+            GLuint programID = shader_->getProgramId();
+            loc = glGetUniformLocation(programID, key.c_str());
+            if (loc < 0)
+            {
+                if (Shader::LOG_SHADER) LOGE("SHADER::texture: %s location not found", key.c_str());
                 AllTexturesAvailable = false;
                 return;
             }
@@ -230,22 +234,24 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
         }
 
         program_ = new GLProgram(vertexShader_.c_str(), modified_frag_shader.c_str());
-      //  if (LOG_SHADER) LOGD("SHADER: creating GLProgram %d", program_->id());
         if (use_multiview && !(strstr(vertexShader_.c_str(), "gl_ViewID_OVR")
                                && strstr(vertexShader_.c_str(), "GL_OVR_multiview2")
-                               && strstr(vertexShader_.c_str(), "GL_OVR_multiview2"))) {
+                               && strstr(vertexShader_.c_str(), "GL_OVR_multiview2")))
+        {
             std::string error = "Your shaders are not multiview";
             LOGE("Your shaders are not multiview");
             throw error;
         }
-        if(use_multiview && !rstate->shadow_map){
+        if (use_multiview && !rstate->shadow_map)
+        {
             LOGE("Rendering with multiview");
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp_[0]");
             u_view_ = glGetUniformLocation(program_->id(), "u_view_[0]");
             u_mv_ = glGetUniformLocation(program_->id(), "u_mv_[0]");
             u_mv_it_ = glGetUniformLocation(program_->id(), "u_mv_it_[0]");
         }
-        else {
+        else
+        {
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp");
             u_view_ = glGetUniformLocation(program_->id(), "u_view");
             u_mv_ = glGetUniformLocation(program_->id(), "u_mv");
@@ -255,18 +261,21 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
         u_model_ = glGetUniformLocation(program_->id(), "u_model");
         vertexShader_.clear();
         fragmentShader_.clear();
-        if (LOG_SHADER) LOGD("SHADER: Custom shader added program %d", program_->id());
-        if (LOG_SHADER) LOGD("SHADER: getting texture locations");
-        TextureLocation tvisit(this);
+        if (getProgramId() != 0)
         {
-            std::lock_guard <std::mutex> lock(textureVariablesLock_);
-            forEach(textureDescriptor_, tvisit);
-        }
-        if (LOG_SHADER) LOGD("SHADER: getting attribute locations");
-        {
-            std::lock_guard <std::mutex> lock(attributeVariablesLock_);
-            AttributeLocation avisit(this, mesh);
-            forEach(vertexDescriptor_, avisit);
+            if (LOG_SHADER) LOGD("SHADER: Custom shader added program %d", program_->id());
+            if (LOG_SHADER) LOGD("SHADER: getting texture locations");
+            TextureLocation tvisit(this);
+            {
+                std::lock_guard<std::mutex> lock(textureVariablesLock_);
+                forEach(textureDescriptor_, tvisit);
+            }
+            if (LOG_SHADER) LOGD("SHADER: getting attribute locations");
+            {
+                std::lock_guard<std::mutex> lock(attributeVariablesLock_);
+                AttributeLocation avisit(this, mesh);
+                forEach(vertexDescriptor_, avisit);
+            }
         }
     }
 

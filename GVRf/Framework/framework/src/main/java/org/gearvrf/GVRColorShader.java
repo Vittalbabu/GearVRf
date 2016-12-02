@@ -28,24 +28,9 @@ import org.gearvrf.utility.TextFile;
  */
 public class GVRColorShader extends GVRShader
 {
-    private String vertexShader = "precision mediump float;\n" +
-            "attribute vec3 a_position;\n" +
-            "uniform mat4 u_mvp;\n" +
-            "void main() {\n" +
-            "  gl_Position = u_mvp * vec4(a_position, 1);\n" +
-            "}\n";
-
-    private String fragmentShader = "precision mediump float;\n" +
-        "uniform vec3 u_color;\n" +
-
-        "void main()\n" +
-        "{\n" +
-        "  gl_FragColor = vec4(u_color, 1);" +
-        "}\n";
-
     public GVRColorShader(GVRContext gvrContext)
     {
-        super("float3 u_color", "", "float3 a_position");
+        super("float3 u_color", "", "float3 a_position", 300);
         Context context = gvrContext.getContext();
         setSegment("FragmentTemplate", TextFile.readTextFile(context, R.raw.color_shader_frag));
         setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.color_shader_vert));
