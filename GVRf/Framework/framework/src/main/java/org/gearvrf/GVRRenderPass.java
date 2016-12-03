@@ -16,6 +16,8 @@
 package org.gearvrf;
 
 
+import java.util.concurrent.ExecutionException;
+
 /**
  * A RenderPass let one render the same scene object multiple times with different settings. This is useful to
  * achieve effects like outline in cartoon-ish rendering or computing addictive lights for instance.
@@ -27,12 +29,12 @@ package org.gearvrf;
  * 
  *
  */
-public class GVRRenderPass extends GVRHybridObject {
+public class GVRRenderPass extends GVRHybridObject implements IRenderable {
     
     private GVRMaterial mMaterial;
+    private GVRMesh     mMesh;
     private GVRCullFaceEnum mCullFace;
-    private int    mShader;
-    
+
     public enum GVRCullFaceEnum {
         /**
          * Tell Graphics API to discard back faces. This value is assumed by
@@ -83,14 +85,14 @@ public class GVRRenderPass extends GVRHybridObject {
         super(gvrContext, NativeRenderPass.ctor());
         setMaterial(new GVRMaterial(gvrContext));
         mCullFace = GVRCullFaceEnum.Back;
-        mShader = 0;
+        mMesh = null;
     }
 
     public GVRRenderPass(GVRContext gvrContext, GVRMaterial material) {
         super(gvrContext, NativeRenderPass.ctor());
         setMaterial(material);
         mCullFace = GVRCullFaceEnum.Back;
-        mShader = 0;
+        mMesh = null;
     }
 
     /**
@@ -104,7 +106,34 @@ public class GVRRenderPass extends GVRHybridObject {
     {
         mMaterial = material;
         NativeRenderPass.setMaterial(getNative(), material.getNative());
-        bindShader();
+    }
+
+    /**
+     * @return The {@link GVRMesh mesh} being rendered.
+     * This will be the mesh associated with the GVRRenderData
+     * this render pass is associated with.
+     */
+    public GVRMesh getMesh() { return mMesh; }
+
+    /**
+     * Sets the mesh to render. Only GVRRenderData should
+     * call this function - it is internal.
+     *
+     * @param mesh
+     */
+    void setMesh(GVRMesh mesh)
+    {
+        mMesh = mesh;
+    }
+
+    public void bindShader(GVRScene scene)
+    {
+        GVRShaderId shader = mMaterial.getShaderType();
+        GVRShader template = shader.getTemplate(getGVRContext());
+        if (template != null)
+        {
+            template.bindShader(getGVRContext(), this, scene);
+        }
     }
 
     /**
@@ -115,10 +144,9 @@ public class GVRRenderPass extends GVRHybridObject {
      *            The native shader this {@link GVRRenderPass pass}
      *            will be rendered with.
      */
-    void setShader(int shader)
+    public void setShader(int shader)
     {
-        mShader = shader;
-        NativeRenderPass.setShader(getNative(), mShader);
+        NativeRenderPass.setShader(getNative(), shader);
     }
 
     /**
@@ -134,28 +162,9 @@ public class GVRRenderPass extends GVRHybridObject {
      */
     int getShader()
     {
-        return mShader;
+        return NativeRenderPass.getShader(getNative());
     }
 
-    void bindShader()
-    {
-        GVRShaderId shader = mMaterial.getShaderType();
-        GVRShader template = shader.getTemplate(getGVRContext());
-        if ((getShader() == 0) && (template != null) && !template.hasVariants())
-        {
-            setShader(template.bindShader(getGVRContext(), mMaterial));
-        }
-    }
-
-    void bindShader(GVRLightBase[] lightList)
-    {
-        GVRShaderId shader = mMaterial.getShaderType();
-        GVRShader template = shader.getTemplate(getGVRContext());
-        if (template != null)
-        {
-            setShader(template.bindShader(getGVRContext(), mMaterial));
-        }
-    }
 
     /**
      * Set the {@link GVRCullFaceEnum face} to be culled when rendering this {@link GVRRenderPass pass}
@@ -182,7 +191,9 @@ public class GVRRenderPass extends GVRHybridObject {
 class NativeRenderPass {
     
     static native long ctor();
-    
+
+    static native int getShader(long renderPass);
+
     static native void setMaterial(long renderPass, long material);
 
     static native void setShader(long renderPass, int shader);

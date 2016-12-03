@@ -353,10 +353,9 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      * can be attached. Components are retrieved based on their type.
      * 
      * @return true if component is attached, false if a component of that class is already attached.
-     * @param component
-     * @see GVRSceneObject.detachComponent
-     * @see GVRSceneObject.findComponent
-     * @see GVRComponent.getComponentType
+     * @param component component to attach.
+     * @see GVRSceneObject#detachComponent(long)
+     * @see GVRSceneObject#getComponent(long)
      */
     public boolean attachComponent(GVRComponent component) {
         if (component.getNative() != 0) {
@@ -381,9 +380,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      * 
      * @return GVRComponent detached or null if component not found
      * @param type  type of component to detach
-     * @see GVRSceneObject.attachComponent
-     * @see GVRSceneObject.findComponent
-     * @see GVRComponent.getComponentType
+     * @see GVRSceneObject#attachComponent(GVRComponent)
      */
     public GVRComponent detachComponent(long type) {
         NativeSceneObject.detachComponent(getNative(), type);
@@ -404,8 +401,8 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      * 
      * @return GVRComponent null if component of the given type not found
      * @param type type of component to find
-     * @see GVRSceneObject.attachComponent
-     * @see GVRSceneObject.detachComponent
+     * @see GVRSceneObject#attachComponent(GVRComponent)
+     * @see GVRSceneObject#detachComponent(long)
      */
     public GVRComponent getComponent(long type) {
         return  mComponents.get(type);
@@ -571,7 +568,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
     }
     
     /**
-     * Detach the object's current {@link GVRLightTemplate}.
+     * Detach the object's current {@link GVRLightBase}.
      */
     public void detachLight() {
         detachComponent(GVRLightBase.getComponentType());
@@ -580,8 +577,8 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
     
     /**
      * Get all components of a specific class from this scene object and its descendants.
-     * @param compClass class derived from GVRComponent
-     *                  (like GVRTransform, GVRRenderData, GVRLightTemplate, ...)
+     * @param T     class which derived from GVRComponent
+     * @param type  component type (as returned from getComponentType())
      * @return ArrayList of components with the specified class.
      */
     @SuppressWarnings("unchecked")
@@ -934,7 +931,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
     /**
      * Performs case-sensitive search
      * 
-     * @param name
+     * @param name name of scene object to look for.
      * @return null if nothing was found or name was null/empty
      */
     public GVRSceneObject[] getSceneObjectsByName(final String name) {
@@ -950,7 +947,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
     /**
      * Performs case-sensitive depth-first search
      * 
-     * @param name
+     * @param name name of scene object to look for.
      * @return first match in the graph; null if nothing was found or name was null/empty;
      * in case there might be multiple matches consider using getSceneObjectsByName
      */
@@ -985,7 +982,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      * @param otherObject
      *            {@link GVRSceneObject Object} to check for collision with this
      *            object.
-     * @return {@code true) if objects collide, {@code false} otherwise
+     * @return {@code true} if objects collide, {@code false} otherwise
      */
     public boolean isColliding(GVRSceneObject otherObject) {
         return NativeSceneObject.isColliding(getNative(),
@@ -1010,7 +1007,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      * If a scene object is not enabled, none of its children
      * will be displayed either.
      * 
-     * @param visible if true the object will be displayed, if false it will not be.
+     * @param enable true the object will be displayed, if false it will not be.
      */
     public void setEnable(boolean enable) {
         NativeSceneObject.setEnable(getNative(), enable);
@@ -1125,8 +1122,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
      *            Position of the child to get.
      * @return {@link GVRSceneObject Child object}.
      * 
-     * @throws {@link java.lang.IndexOutOfBoundsException} if there is no child
-     *         at that position.
+     * @throws IndexOutOfBoundsException if there is no childat that position.
      */
     public GVRSceneObject getChildByIndex(int index) {
         return mChildren.get(index);
@@ -1325,6 +1321,9 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
 
     /**
      * Expand the current volume by the given point
+     * @param pointX    x coordinate of point
+     * @param pointY    y coordinate of point
+     * @param pointZ    z coordinate of point
      * @return the updated BoundingVolume.
      */
     public final BoundingVolume expandBoundingVolume(final float pointX, final float pointY, final float pointZ) {
@@ -1335,6 +1334,7 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
 
     /**
      * Expand the current volume by the given point
+     * @param point point to add to bounding volume.
      * @return the updated BoundingVolume.
      */
     public final BoundingVolume expandBoundingVolume(final Vector3f point) {
@@ -1343,7 +1343,10 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
 
     /**
      * Expand the volume by the incoming center and radius
-     *
+     * @param centerX   X coordinate of center.
+     * @param centerY   Y coordinate of center.
+     * @param centerZ   Z coordinate of center.
+     * @param radius    radius to expand by.
      * @return the updated BoundingVolume.
      */
     public final BoundingVolume expandBoundingVolume(
@@ -1355,7 +1358,8 @@ public class GVRSceneObject extends GVRHybridObject implements PrettyPrint, IScr
 
     /**
      * Expand the volume by the incoming center and radius
-     *
+     * @param center new center
+     * @param radius new radius
      * @return the updated BoundingVolume.
      */
     public final BoundingVolume expandBoundingVolume(final Vector3f center, final float radius) {

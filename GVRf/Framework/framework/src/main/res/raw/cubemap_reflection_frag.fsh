@@ -1,5 +1,6 @@
-        precision highp float;
-        uniform samplerCube u_texture;
+
+precision highp float;
+uniform samplerCube u_texture;
 layout (std140) uniform Material_ubo{
     vec4 u_opacity;
     vec4 u_color;

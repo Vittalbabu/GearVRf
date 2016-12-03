@@ -26,7 +26,7 @@
 #include "gl/gl_program.h"
 #include "glm/glm.hpp"
 #include "objects/mesh.h"
-#include "objects/components/component.h"
+#include "java_component.h"
 #include "objects/render_pass.h"
 #include "objects/material.h"
 #include<sstream>
@@ -57,6 +57,7 @@ class VulkanData {
 
 public:
     VulkanData():vk_descriptor("mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model; mat4 u_view_i; mat4 u_right;"){}
+
     void createTransformDescriptor(VkDevice &device,VulkanCore* vk){
         vk_descriptor.createDescriptor(device, vk, TRANSFORM_UBO_INDEX, VK_SHADER_STAGE_VERTEX_BIT );
     }
@@ -98,7 +99,8 @@ private:
     Descriptor vk_descriptor;
 
 };
-class RenderData: public Component {
+
+class RenderData: public JavaComponent {
 public:
     enum Queue {
         Background = 1000, Geometry = 2000, Transparent = 3000, Overlay = 4000
@@ -113,15 +115,19 @@ public:
     };
 
     RenderData() :
-            Component(RenderData::getComponentType()), mesh_(0), light_(0), use_light_(
-                    false), use_lightmap_(false), batching_(true),  render_mask_(
-                    DEFAULT_RENDER_MASK), batch_(nullptr), rendering_order_(
-                    DEFAULT_RENDERING_ORDER), hash_code_dirty_(true), offset_(
-                    false), offset_factor_(0.0f), offset_units_(0.0f), depth_test_(
-                    true), alpha_blend_(true), alpha_to_coverage_(false), sample_coverage_(
-                    1.0f), invert_coverage_mask_(GL_FALSE), bones_ubo_(nullptr), draw_mode_(
-                    GL_TRIANGLES), texture_capturer(0),uniform_dirty(true),shaderID_(0), renderdata_dirty_(true) {
+            JavaComponent(RenderData::getComponentType()), mesh_(0), light_(0),
+                use_light_(false), use_lightmap_(false), batching_(true),
+                render_mask_(DEFAULT_RENDER_MASK), batch_(nullptr),
+                rendering_order_(DEFAULT_RENDERING_ORDER), hash_code_dirty_(true),
+                offset_(false), offset_factor_(0.0f), offset_units_(0.0f),
+                depth_test_(true), alpha_blend_(true), alpha_to_coverage_(false),
+                sample_coverage_(1.0f), invert_coverage_mask_(GL_FALSE),
+                draw_mode_(GL_TRIANGLES), texture_capturer(0), cast_shadows_(true),
+                    uniform_dirty(true), shaderID_(0), renderdata_dirty_(true)
+    {
     }
+
+    virtual JNIEnv* set_java(jobject javaObj, JavaVM* jvm);
 
     void copy(const RenderData& rdata) {
         Component(rdata.getComponentType());
@@ -132,6 +138,7 @@ public:
         use_lightmap_ = rdata.use_lightmap_;
         batching_ = rdata.batching_;
         render_mask_ = rdata.render_mask_;
+        cast_shadows_ = rdata.cast_shadows_;
         batch_ = rdata.batch_;
         for(int i=0;i<rdata.render_pass_list_.size();i++)
             render_pass_list_.push_back((rdata.render_pass_list_)[i]);
@@ -178,6 +185,13 @@ public:
     Material* material(int pass) const ;
 
     void set_material(Material* material, int pass);
+
+    /**
+     * Select or generate a shader for this render data.
+     * This function executes a Java task on the Framework thread.
+     */
+    void bindShader(Scene* scene);
+
     void set_renderdata_dirty(bool dirty_);
     bool renderdata_dirty(){
         return renderdata_dirty_;
@@ -235,6 +249,14 @@ public:
 
     void set_rendering_order(int rendering_order) {
         rendering_order_ = rendering_order;
+    }
+
+    bool cast_shadows() {
+        return cast_shadows_;
+    }
+
+    void set_cast_shadows(bool cast_shadows) {
+        cast_shadows_ = cast_shadows;
     }
 
     Batch* getBatch() {
@@ -340,7 +362,11 @@ public:
         camera_distance_ = distance;
     }
 
-    float camera_distance() const {
+    float camera_distance() {
+        if (nullptr != cameraDistanceLambda_) {
+            camera_distance_ = cameraDistanceLambda_();
+            cameraDistanceLambda_ = nullptr;
+        }
         return camera_distance_;
     }
 
@@ -363,7 +389,8 @@ public:
         return texture_capturer;
     }
 
-    void set_shader(int shaderid, int pass) {
+    void set_shader(int pass, int shaderid) {
+        LOGD("SHADER: RenderData:set_shader %d %p", shaderid, this);
         render_pass_list_[pass]->set_shader(shaderid);
     }
 
@@ -393,7 +420,9 @@ public:
         }
         return hash_code;
     }
-     
+
+    void setCameraDistanceLambda(std::function<float()> func);
+
     bool uniform_dirty;
     VulkanData& getVkData(){
         return vkData;
@@ -426,9 +455,10 @@ private:
 
 private:
     VulkanData vkData;
- GLUniformBlock *bones_ubo_;
+    GLUniformBlock *bones_ubo_;
     static const int DEFAULT_RENDER_MASK = Left | Right;
     static const int DEFAULT_RENDERING_ORDER = Geometry;
+    jmethodID bindShaderMethod_;
     Mesh* mesh_;
     Batch* batch_;
     bool hash_code_dirty_;
@@ -447,12 +477,15 @@ private:
     bool depth_test_;
     bool alpha_blend_;
     bool alpha_to_coverage_;
+    bool cast_shadows_;
     float sample_coverage_;
     GLboolean invert_coverage_mask_;
     GLenum draw_mode_;
     float camera_distance_;
     int shaderID_;
     TextureCapturer *texture_capturer;
+
+    std::function<float()> cameraDistanceLambda_ = nullptr;
 };
 
 static inline bool compareRenderDataWithFrustumCulling(RenderData* i, RenderData* j) {

@@ -1,3 +1,4 @@
+precision highp float;
 
 #ifdef HAS_MULTIVIEW
 #extension GL_OVR_multiview2 : enable
@@ -79,7 +80,6 @@ out vec2 diffuse_coord;
 out vec2 ambient_coord;
 out vec2 specular_coord;
 out vec2 emissive_coord;
-out vec2 normal_coord;
 out vec2 lightmap_coord;
 
 struct Vertex
@@ -117,7 +117,6 @@ void main() {
 	viewspace_normal = vertex.viewspace_normal;
 	view_direction = vertex.view_direction;
 #ifdef HAS_MULTIVIEW
-	view_id = int(gl_ViewID_OVR);
 	gl_Position = u_mvp_[gl_ViewID_OVR] * vertex.local_position;
 #else
 	gl_Position = u_mvp * vertex.local_position;	

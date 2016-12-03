@@ -213,6 +213,7 @@ int calcSize(std::string type)
     if (type == "mat3") return 12;
     return 0;
 }
+
     void Mesh::getAttribData( std::string& descriptor,std::vector<GLAttributeMapping>& bindings, int& total_size){
         GLAttributeMapping binding;
         int vertices_len = 0;
@@ -292,6 +293,7 @@ int calcSize(std::string type)
         }
 
     }
+
 VkFormat getDataType(std::string& type){
     if(type.compare("float")==0)
         return VK_FORMAT_R32_SFLOAT;
@@ -308,7 +310,7 @@ VkFormat getDataType(std::string& type){
 }
 
 // call this from renderCamera, get attribute descriptor from shader
-void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, VulkanCore* vulkanCore ){
+void Mesh::generateVKBuffers(std::string descriptor, VkDevice& m_device, VulkanCore* vulkanCore ){
         if (!vao_dirty_)
             return;
         int total_size = 0;
@@ -316,7 +318,7 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
     std::vector<GLfloat> buffer;
     createBuffer(buffer, vertices_.size());
         memset(&m_vertices, 0, sizeof(m_vertices));
-    m_vertices.vi_bindings = new VkVertexInputBindingDescription[1/*attrMapping.size()*/];
+    m_vertices.vi_bindings = new VkVertexInputBindingDescription[attrMapping.size()];
     m_vertices.vi_attrs = new VkVertexInputAttributeDescription[attrMapping.size()];
         VkResult   err;
         bool   pass;
@@ -413,11 +415,10 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
         m_vertices.vi.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         m_vertices.vi.pNext = nullptr;
         // check this
-        m_vertices.vi.vertexBindingDescriptionCount = 1;//attrMapping.size();
+        m_vertices.vi.vertexBindingDescriptionCount = attrMapping.size();
         m_vertices.vi.pVertexBindingDescriptions = m_vertices.vi_bindings;
         m_vertices.vi.vertexAttributeDescriptionCount = attrMapping.size();
         m_vertices.vi.pVertexAttributeDescriptions = m_vertices.vi_attrs;
-
         m_vertices.vi_bindings[0].binding = 0;
         m_vertices.vi_bindings[0].stride = total_size * sizeof(float); //sizeof(vb[0]);//
         m_vertices.vi_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;

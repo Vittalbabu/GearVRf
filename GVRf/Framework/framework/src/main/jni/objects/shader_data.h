@@ -34,6 +34,8 @@
 
 namespace gvr {
 
+class Texture;
+
 class ShaderData: public HybridObject {
 public:
     ShaderData() :

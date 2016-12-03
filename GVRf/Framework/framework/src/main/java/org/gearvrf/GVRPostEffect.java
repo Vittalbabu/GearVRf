@@ -119,7 +119,7 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
      * @see getTexture hasUniform
      */
     public boolean hasTexture(String name) {
-        return NativeShaderData.hasTexture(getNative(), name);
+        return textures.containsKey(name);
     }
 
     /**

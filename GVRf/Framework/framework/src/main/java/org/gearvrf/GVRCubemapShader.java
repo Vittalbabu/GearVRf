@@ -67,33 +67,9 @@ import org.gearvrf.utility.TextFile;
  */
 public class GVRCubemapShader extends GVRShader
 {
-    private String vertexShader =
-            "attribute vec3 a_position;\n" +
-            "uniform mat4 u_model;\n" +
-            "uniform mat4 u_mvp;\n" +
-            "varying vec3 diffuse_coord;\n" +
-            "void main() {\n" +
-            "  vec4 pos = vec4(a_position, 1.0);\n" +
-            "  diffuse_coord = normalize((u_model * pos).xyz);\n" +
-            "  diffuse_coord.z = -diffuse_coord.z;\n" +
-            "  gl_Position = u_mvp * pos;\n" +
-            "}\n";
-
-    private String fragmentShader =
-            "precision highp float;\n" +
-            "uniform samplerCube u_texture;\n" +
-            "uniform vec3 u_color;\n" +
-            "uniform float u_opacity;\n" +
-            "varying vec3 diffuse_coord;\n" +
-            "void main()\n" +
-            "{\n" +
-            "  vec4 color = textureCube(u_texture, diffuse_coord);\n" +
-            "  gl_FragColor = vec4(color.r * u_color.r * u_opacity, color.g * u_color.g * u_opacity, color.b * u_color.b * u_opacity, color.a * u_opacity);\n" +
-            "}\n";
-
     public GVRCubemapShader(GVRContext gvrContext)
     {
-        super("float3 u_color float u_opacity", "samplerCube u_texture", "float3 a_position float2 a_texcoord");
+        super("float3 u_color float u_opacity", "samplerCube u_texture", "float3 a_position float2 a_texcoord", 300);
         Context context = gvrContext.getContext();
         setSegment("FragmentTemplate", TextFile.readTextFile(context, R.raw.cubemap_frag));
         setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.cubemap_vert));

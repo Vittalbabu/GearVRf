@@ -25,12 +25,16 @@
 namespace gvr {
 
 Scene* Scene::main_scene_ = NULL;
+
 Scene::Scene() :
         HybridObject(),
+        javaVM_(NULL),
+        javaObj_(0),
         main_camera_rig_(),
         frustum_flag_(false),
         dirtyFlag_(0),transform_ubo_(nullptr),
         occlusion_flag_(false),
+        bindShadersMethod_(0),
         pick_visible_(true),
         is_shadowmap_invalid(true) {
     if (main_scene() == NULL) {
@@ -44,6 +48,48 @@ Scene::Scene() :
 }
 
 Scene::~Scene() {
+    if (javaVM_ && javaObj_)
+    {
+        JNIEnv* env;
+        jint rs = javaVM_->AttachCurrentThread(&env, NULL);
+        if (rs == JNI_OK) {
+            env->DeleteGlobalRef(javaObj_);
+        }
+    }
+}
+
+void Scene::set_java(JavaVM* javaVM, jobject javaScene)
+{
+    JNIEnv *env = getCurrentEnv(javaVM);
+    javaVM_ = javaVM;
+    if (env) {
+        javaObj_ = env->NewGlobalRef(javaScene);
+        jclass sceneClass = env->GetObjectClass(javaScene);
+        bindShadersMethod_ = env->GetMethodID(sceneClass, "bindShadersNative", "()V");
+        if (bindShadersMethod_ == 0) {
+            LOGE("Scene::bindShader ERROR cannot find 'GVRScene.bindShadersNative()' Java method");
+        }
+    }
+}
+
+/**
+ * Called when the shaders need to be generated on the Java side
+ * (usually because a light is added or removed).
+ * This function spawns a Java task on the Framework thread which generates the shaders.
+ */
+void Scene::bindShaders()
+{
+    if (bindShadersMethod_ && javaObj_)
+    {
+        JNIEnv *env = getCurrentEnv(javaVM_);
+        if (env)
+        {
+            LOGD("SHADER: Calling GVRScene.bindShadersNative");
+            env->CallVoidMethod(javaObj_, bindShadersMethod_);
+            return;
+        }
+    }
+    LOGE("SHADER: Could not call GVRScene::bindShadersNative");
 }
 
 void Scene::addSceneObject(SceneObject* scene_object) {
@@ -56,7 +102,12 @@ void Scene::removeSceneObject(SceneObject* scene_object) {
 
 void Scene::removeAllSceneObjects() {
     scene_root_.clear();
+    for (auto it = lightList.begin(); it != lightList.end(); ++it)
+    {
+        (*it)->cleanup();
+    }
     lightList.clear();
+    Light::deleteDepthTexture();
     clearAllColliders();
 }
 
@@ -66,15 +117,6 @@ void Scene::clearAllColliders() {
     visibleColliders.clear();
     unlockColliders();
 }
-
-void Scene::gatherColliders() {
-    lockColliders();
-    allColliders.clear();
-    visibleColliders.clear();
-    scene_root_.getAllComponents(allColliders, Collider::getComponentType());
-    unlockColliders();
-}
-
 
 void Scene::pick(SceneObject* sceneobj) {
     if (pick_visible_) {
@@ -103,9 +145,12 @@ void Scene::removeCollider(Collider* collider) {
     }
 }
 
+/**
+ * Called when the main scene is first presented for render.
+ */
 void Scene::set_main_scene(Scene* scene) {
     main_scene_ = scene;
-    scene->gatherColliders();
+    scene->getRoot()->onAddedToScene(scene);
 }
 
 
@@ -123,8 +168,27 @@ bool Scene::addLight(Light* light) {
     auto it = std::find(lightList.begin(), lightList.end(), light);
     if (it != lightList.end())
         return false;
-     lightList.push_back(light);
-     return true;
+    int index = std::distance(lightList.begin(), it);
+    std::ostringstream os;
+    os << "light" << index;
+    if (lightList.size() >= MAX_LIGHTS)
+    {
+        LOGD("SHADER: light %s not added, more than %d lights not allowed", os.str().c_str(), MAX_LIGHTS);
+        return false;
+    }
+    lightList.push_back(light);
+    light->setLightID(os.str());
+    LOGD("SHADER: light %s added to scene", light->getLightID().c_str());
+    return true;
+}
+
+bool Scene::removeLight(Light* light) {
+    auto it = std::find(lightList.begin(), lightList.end(), light);
+    if (it == lightList.end())
+        return false;
+    lightList.erase(it);
+    LOGD("SHADER: light %s removed from scene", light->getLightID().c_str());
+    return true;
 }
 
 void Scene::clearLights() {

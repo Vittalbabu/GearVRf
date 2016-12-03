@@ -32,14 +32,15 @@
 #include <shaderc/shaderc.hpp>
 
 
+
 namespace gvr {
-    class UniformLocation : public Shader::ShaderVisitor
+    class TextureLocation : public Shader::ShaderVisitor
     {
     private:
         ShaderData* material_;
 
     public:
-         UniformLocation(Shader* shader) : ShaderVisitor(shader), material_(NULL) { }
+        TextureLocation(Shader* shader) : ShaderVisitor(shader), material_(NULL) { }
         void visit(const std::string& key, const std::string& type, int size);
     };
 
@@ -62,7 +63,6 @@ namespace gvr {
         int     TextureIndex;
         bool    AllTexturesAvailable = true;
         TextureUpdate(Shader* shader, ShaderData* material) : ShaderVisitor(shader), material_(material), TextureIndex(0) { }
-        void setLocation(const std::string& key, const std::string& type, int size);
         void visit(const std::string& key, const std::string& type, int size);
     };
 
@@ -74,177 +74,53 @@ namespace gvr {
         AttributeLocation(Shader* shader, Mesh* mesh) : ShaderVisitor(shader), mesh_(mesh) { }
         void visit(const std::string& key, const std::string& type, int size);
     };
-#if 0
+
     void UniformUpdate::visit(const std::string& key, const std::string& type, int size)
     {
-
-        int loc = shader_->getLocation(key);
-        if (loc < 0)
-        {
-            LOGE("SHADER::uniform: %s location not found", key.c_str());
-            return;
-        }
-
-
-        const float* fv;
-        const int* iv;
-     //   if (Shader::LOG_SHADER)
-     //    LOGE("SHADER::uniform:value: %s location: %d", key.c_str(), loc);
-        switch (tolower(type[0]))
-        {
-            case 'f':
-            case 'm':
-            fv = material_->getFloatVec(key, size);
-            if (fv != NULL) {
-                switch (size) {
-                    case 1:
-                    LOGE("unifrom is %s and value is %f", key.c_str(),*fv);
-                    glUniform1fv(loc, 1, fv);
-                    break;
-
-                    case 2:
-
-                    glUniform2fv(loc, 1, fv);
-                    break;
-
-                    case 3:
-                        LOGE("unifrom is %s and value is %f %f %f ", key.c_str(),fv[0],fv[1],fv[2]);
-                    glUniform3fv(loc, 1, fv);
-                    break;
-
-                    case 4:
-                        LOGE("unifrom is %s and value is %f %f %f %f ", key.c_str(),fv[0],fv[1],fv[2],fv[3]);
-                    glUniform4fv(loc, 1, fv);
-                    break;
-
-                    case 16:
-
-                    glUniformMatrix4fv(loc, 1, 0, fv);
-                    break;
-                }
-            }
-            break;
-
-            case 'i':
-            iv = material_->getIntVec(key, size);
-            if (iv != NULL)
-                switch (size)
-                {
-                    case 1:
-
-                    glUniform1iv(loc, 1, iv);
-                    break;
-
-                    case 2:
-
-                    glUniform2iv(loc, 1, iv);
-                    break;
-
-                    case 3:
-
-                    glUniform3iv(loc, 1, iv);
-                    break;
-
-                    case 4:
-
-                    glUniform4iv(loc, 1, iv);
-                    break;
-                }
-            break;
-            }
-    }
-    #endif
-#if 1
-    void UniformUpdate::visit(const std::string& key, const std::string& type, int size)
-    {
-        int loc;
-
         GLUniformBlock* ubo = material_->getMatUbo();
-
         const float* fv;
         const int* iv;
-        glm::vec4 data(1.0,1.0,1.0,1.0);
+        float data[4] = { 1.0,1.0,1.0,1.0 };
+
      //   if (Shader::LOG_SHADER)
      //    LOGE("SHADER::uniform:value: %s location: %d", key.c_str(), loc);
-        switch (tolower(type[0]))
-        {
+        switch (tolower(type[0])) {
             case 'f':
+            fv = material_->getFloatVec(key, size);
+            if ((fv != NULL) && (size <= 4)) {
+                memcpy(data, fv, size * sizeof(float));
+                ubo->setVec(key, data, 4);
+            }
+            break;
+
             case 'm':
             fv = material_->getFloatVec(key, size);
             if (fv != NULL) {
-                switch (size) {
-                    case 1:
-                    data.x = *fv;
-                      //  LOGE("uniform is %s and value is %f", key.c_str(),*fv);
-                    ubo->setVec(key,glm::value_ptr(data), 4);
-                    break;
-
-                    case 2:
-                    data.x = *fv;
-                    data.y = fv[1];
-                      //  LOGE("uniform is %s and value is %f %f", key.c_str(),data[0],data[1]);
-                    ubo->setVec(key,glm::value_ptr(data), 4);
-                    break;
-
-                    case 3:
-                     data.x = fv[0];
-                     data.y=  fv[1];
-                     data.z = fv[2];
-                       // LOGE("uniform is %s and value is %f %f %f", key.c_str(),data[0],data[1], data[2]);
-                     ubo->setVec(key,glm::value_ptr(data), 4);
-                    break;
-
-                    case 4:
-                     //   LOGE("uniform is %s and value is %f %f %f %f", key.c_str(),fv[0],fv[1], fv[2],fv[3]);
-                        ubo->setVec(key,fv, 4);
-                 //       ubo->setVec(key,glm::value_ptr(data), 4);
-                    break;
-
-                    case 16:
-                    ubo->setVec(key,fv, 16);
-                    break;
-                }
+                ubo->setVec(key, fv, 16);
             }
             break;
 
+            // TODO: question - why do we not do the same padding for ints as for floats?
             case 'i':
             iv = material_->getIntVec(key, size);
-            if (iv != NULL)
-                switch (size)
-                {
-                    case 1:
-                    ubo->setInt(key,*iv);
-                    //glUniform1iv(loc, 1, iv);
-                    break;
-
-                    case 2:
-                    ubo->setIntVec(key,iv,2);
-                    //glUniform2iv(loc, 1, iv);
-                    break;
-
-                    case 3:
-                    ubo->setIntVec(key,iv,3);
-                    //glUniform3iv(loc, 1, iv);
-                    break;
-
-                    case 4:
-                    ubo->setIntVec(key,iv, 4);
-                   // glUniform4iv(loc, 1, iv);
-                    break;
-                }
-            break;
+            if (iv != NULL) {
+                ubo->setIntVec(key, iv, size);
             }
+            break;
+        }
     }
-#endif
-    void UniformLocation::visit(const std::string& key, const std::string& type, int size)
+
+    void TextureLocation::visit(const std::string& key, const std::string& type, int size)
     {
         int loc = shader_->getLocation(key);
         if (loc < 0)
         {
-            loc = glGetUniformLocation(shader_->getProgramId(), key.c_str());
-            if (loc >= 0) {
+            GLuint programID = shader_->getProgramId();
+            loc = glGetUniformLocation(programID, key.c_str());
+            if (loc >= 0)
+            {
                 shader_->setLocation(key, loc);
-            //    if (Shader::LOG_SHADER) LOGE("SHADER::uniform:location: %s location: %d", key.c_str(), loc);
+                if (Shader::LOG_SHADER) LOGE("SHADER::uniform:location: %s location: %d", key.c_str(), loc);
             }
         }
     }
@@ -252,11 +128,14 @@ namespace gvr {
     void TextureUpdate::visit(const std::string& key, const std::string& type, int size)
     {
         int loc = shader_->getLocation(key);
+        LOGE("in visit %s", key.c_str());
         if (loc < 0)
         {
-            loc = glGetUniformLocation(shader_->getProgramId(), key.c_str());
-            if (loc >= 0) {
-             //   if (Shader::LOG_SHADER) LOGE("SHADER::texture: %s location not found", key.c_str());
+            GLuint programID = shader_->getProgramId();
+            loc = glGetUniformLocation(programID, key.c_str());
+            if (loc < 0)
+            {
+                if (Shader::LOG_SHADER) LOGE("SHADER::texture: %s location not found", key.c_str());
                 AllTexturesAvailable = false;
                 return;
             }
@@ -265,12 +144,14 @@ namespace gvr {
         Texture* texture = material_->getTextureNoError(key);
         if (texture != NULL)
         {
+            LOGE("texture is not null");
             glActiveTexture(GL_TEXTURE0 + TextureIndex);
             glBindTexture(texture->getTarget(), texture->getId());
             glUniform1i(loc, TextureIndex++);
         }
         else
         {
+            LOGE("texture is null");
             AllTexturesAvailable = false;
         }
     }
@@ -356,24 +237,24 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
         }
 
         program_ = new GLProgram(vertexShader_.c_str(), modified_frag_shader.c_str());
-      //  if (LOG_SHADER) LOGD("SHADER: creating GLProgram %d", program_->id());
         if (use_multiview && !(strstr(vertexShader_.c_str(), "gl_ViewID_OVR")
                                && strstr(vertexShader_.c_str(), "GL_OVR_multiview2")
-                               && strstr(vertexShader_.c_str(), "GL_OVR_multiview2"))) {
+                               && strstr(vertexShader_.c_str(), "GL_OVR_multiview2")))
+        {
             std::string error = "Your shaders are not multiview";
             LOGE("Your shaders are not multiview");
             throw error;
         }
-        const char* temp =  vertexShader_.c_str();
-
-
-        if (use_multiview) {
+        if (use_multiview && !rstate->shadow_map)
+        {
+            LOGE("Rendering with multiview");
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp_[0]");
             u_view_ = glGetUniformLocation(program_->id(), "u_view_[0]");
             u_mv_ = glGetUniformLocation(program_->id(), "u_mv_[0]");
             u_mv_it_ = glGetUniformLocation(program_->id(), "u_mv_it_[0]");
         }
-        else {
+        else
+        {
             u_mvp_ = glGetUniformLocation(program_->id(), "u_mvp");
             u_view_ = glGetUniformLocation(program_->id(), "u_view");
             u_mv_ = glGetUniformLocation(program_->id(), "u_mv");
@@ -383,28 +264,26 @@ void Shader::initializeOnDemand(RenderState* rstate, Mesh* mesh) {
         u_model_ = glGetUniformLocation(program_->id(), "u_model");
         vertexShader_.clear();
         fragmentShader_.clear();
-        if (LOG_SHADER) LOGD("SHADER: Custom shader added program %d", program_->id());
-        if (LOG_SHADER) LOGD("SHADER: getting texture locations");
-        UniformLocation uvisit(this);
+
+        if (getProgramId() != 0)
         {
-            std::lock_guard <std::mutex> lock(textureVariablesLock_);
-            forEach(textureDescriptor_, uvisit);
-        }
-        if (LOG_SHADER) LOGD("SHADER: getting uniform locations");
-        {
-            std::lock_guard <std::mutex> lock(uniformVariablesLock_);
-            forEach(uniformDescriptor_, uvisit);
-        }
-        if (LOG_SHADER) LOGD("SHADER: getting attribute locations");
-        {
-            std::lock_guard <std::mutex> lock(attributeVariablesLock_);
-            AttributeLocation avisit(this, mesh);
-            forEach(vertexDescriptor_, avisit);
+            if (LOG_SHADER) LOGD("SHADER: Custom shader added program %d", program_->id());
+            if (LOG_SHADER) LOGD("SHADER: getting texture locations");
+            TextureLocation tvisit(this);
+            {
+                std::lock_guard<std::mutex> lock(textureVariablesLock_);
+                forEach(textureDescriptor_, tvisit);
+            }
+            if (LOG_SHADER) LOGD("SHADER: getting attribute locations");
+            {
+                std::lock_guard<std::mutex> lock(attributeVariablesLock_);
+                AttributeLocation avisit(this, mesh);
+                forEach(vertexDescriptor_, avisit);
+            }
         }
     }
 
 }
-
 
 void Shader::forEach(const std::string& descriptor, ShaderVisitor& visitor)
 {
@@ -475,12 +354,14 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
 
     Mesh* mesh = render_data->mesh();
     initializeOnDemand(rstate, mesh);
-    if (program_->id() == 0)
+
+    GLint programID = getProgramId();
+    if (programID < 0)
     {
         LOGE("SHADER: shader could not be generated %s", signature_.c_str());
     }
-    if (LOG_SHADER) LOGD("SHADER: rendering with program %d", program_->id());
-    glUseProgram(program_->id());
+    if (LOG_SHADER) LOGD("SHADER: rendering with program %d", programID);
+    glUseProgram(programID);
 
     /*
      * Bind textures
@@ -490,6 +371,7 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         std::lock_guard<std::mutex> lock(textureVariablesLock_);
         TextureUpdate tvisit(this, material);
         forEach(textureDescriptor_, tvisit);
+        LOGE("texture desc %s", textureDescriptor_.c_str());
         texIndex = tvisit.TextureIndex;
         if (!tvisit.AllTexturesAvailable)
         {
@@ -500,15 +382,15 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     /*
      * Update the bone matrices
      */
-    int a_bone_indices = glGetAttribLocation(program_->id(), "a_bone_indices");
-    int a_bone_weights = glGetAttribLocation(program_->id(), "a_bone_weights");
-    int u_bone_matrices = glGetUniformLocation(program_->id(), "u_bone_matrix[0]");
+    int a_bone_indices = glGetAttribLocation(programID, "a_bone_indices");
+    int a_bone_weights = glGetAttribLocation(programID, "a_bone_weights");
+    int u_bone_matrices = glGetUniformLocation(programID, "u_bone_matrix[0]");
     if ((a_bone_indices >= 0) ||
         (a_bone_weights >= 0) ||
         (u_bone_matrices >= 0)) {
         glm::mat4 finalTransform;
         mesh->setBoneLoc(a_bone_indices, a_bone_weights);
-        mesh->generateBoneArrayBuffers(program_->id());
+        mesh->generateBoneArrayBuffers(programID);
         int nBones = mesh->getVertexBoneData().getNumBones();
         if (nBones > MAX_BONES)
             nBones = MAX_BONES;
@@ -516,19 +398,18 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
             finalTransform = mesh->getVertexBoneData().getFinalBoneTransform(i);
          //   glUniformMatrix4fv(u_bone_matrices + i, 1, GL_FALSE, glm::value_ptr(finalTransform));
         }
-        render_data->bindBonesUbo(program_->id());
+        render_data->bindBonesUbo(programID);
         GLUniformBlock* bones_ubo = render_data->getBonesUbo();
 
         std::vector<glm::mat4>& bone_matrices = mesh->getVertexBoneData().getBoneMatrices();
         bones_ubo->setMat4("u_bone_matrix", &bone_matrices[0][0][0]);
-        bones_ubo->render(program_->id());
-
+        bones_ubo->render(programID);
         checkGlError("Shader after bones");
     }
     /*
      * Update values of uniform variables
      */
-     rstate->scene->bindTransformUbo(program_->id());
+     rstate->scene->bindTransformUbo(programID);
      GLUniformBlock* transform_ubo =  rstate->scene->getTransformUbo();
 
      if(use_multiview){
@@ -544,15 +425,14 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         transform_ubo->setMat4("u_mv_it", glm::value_ptr(rstate->uniforms.u_mv_it));
     }
     transform_ubo->setMat4("u_model", glm::value_ptr(rstate->uniforms.u_model));
-
-    transform_ubo->render(program_->id());
+    transform_ubo->render(programID);
 
     /*
      * Update material uniforms
      */
      Material* mat = static_cast<Material*>(material);
      if(!uniformDescriptor_.empty())
-        mat->bindMaterialUbo(program_->id());
+        mat->bindMaterialUbo(programID);
 
      GLUniformBlock* mat_ubo = mat->getMatUbo();
 
@@ -565,7 +445,7 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
     }
 
     if(mat_ubo){
-        mat_ubo->render(program_->id());
+        mat_ubo->render(programID);
     }
 
     /*
@@ -579,13 +459,13 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
          ++it) {
         Light* light = (*it);
          if (light != NULL) {
-            light->render(program_->id(), texIndex);
+            light->render(programID, texIndex);
             if (light->castShadow())
                 castShadow = true;
          }
     }
     if (castShadow) {
-    	Light::bindShadowMap(program_->id(), texIndex);
+    	Light::bindShadowMap(programID, texIndex);
     }
     checkGlError("Shader::render");
 }

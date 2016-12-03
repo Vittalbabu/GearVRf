@@ -56,7 +56,7 @@ void Renderer::initializeStats() {
 ***/
 Renderer* Renderer::getInstance(std::string type){
     if(nullptr == instance){
-     if(1){
+     if(0){
             instance = new VulkanRenderer();
             isVulkan_ = true;
         }
@@ -68,7 +68,10 @@ Renderer* Renderer::getInstance(std::string type){
     return instance;
 }
 
-Renderer::Renderer():numberDrawCalls(0), numberTriangles(0), batch_manager(nullptr) {
+Renderer::Renderer() : numberDrawCalls(0),
+                       numberTriangles(0),
+                       numLights(0),
+                       batch_manager(nullptr) {
     if(do_batching && !gRenderer->isVulkanInstace()) {
         batch_manager = new BatchManager(BATCH_SIZE, MAX_INDICES);
     }
@@ -87,8 +90,27 @@ void Renderer::frustum_cull(glm::vec3 camera_position, SceneObject *object,
     if (!object->enabled()) {
         return;
     }
-    if (need_cull) {
 
+    //allows for on demand calculation of the camera distance; usually matters
+    //when transparent objects are in play
+    RenderData* renderData = object->render_data();
+    if (nullptr != renderData) {
+        renderData->setCameraDistanceLambda([object, camera_position]() {
+            // Transform the bounding volume
+            BoundingVolume bounding_volume_ = object->getBoundingVolume();
+            glm::vec4 transformed_sphere_center(bounding_volume_.center(), 1.0f);
+
+            // Calculate distance from camera
+            glm::vec4 position(camera_position, 1.0f);
+            glm::vec4 difference = transformed_sphere_center - position;
+            float distance = glm::dot(difference, difference);
+
+            // this distance will be used when sorting transparent objects
+            return distance;
+        });
+    }
+
+    if (need_cull) {
         cullVal = object->frustumCull(camera_position, frustum, planeMask);
         if (cullVal == 0) {
             object->setCullStatus(true);
@@ -185,6 +207,11 @@ void Renderer::cull(Scene *scene, Camera *camera,
 void Renderer::cullFromCamera(Scene *scene, Camera* camera,
         ShaderManager* shader_manager,
         std::vector<SceneObject*>& scene_objects) {
+    if (scene->getLightList().size() != numLights)
+    {
+        numLights = scene->getLightList().size();
+        scene->bindShaders();
+    }
     render_data_vector.clear();
     scene_objects.clear();
     RenderState rstate;
@@ -231,19 +258,28 @@ void Renderer::renderRenderDataVector(RenderState &rstate) {
     }
 }
 
-void Renderer::addRenderData(RenderData *render_data) {
+void Renderer::addRenderData(RenderData *render_data, Scene* scene) {
     if (render_data == 0 || render_data->material(0) == 0 || !render_data->enabled()) {
         return;
     }
-
-//    if (render_data->get_shader() == 0) {
-//        return;
-//    }
-
     if (render_data->mesh() == NULL) {
         return;
     }
-
+    const RenderPass* pass = render_data->pass(0);
+    int shaderID = pass->get_shader();
+    if (shaderID < 0)
+    {
+        //LOGE("SHADER: RenderData %p[%p] shader being generated", render_data, pass);
+        return;
+    }
+    if ((shaderID == 0) || render_data->renderdata_dirty())
+    {
+        LOGE("SHADER: RenderData %p[%p] has no shader", render_data, pass);
+        render_data->set_shader(0, -1);
+        render_data->bindShader(scene);
+        render_data->set_renderdata_dirty(false);
+        return;
+    }
     if (render_data->render_mask() == 0) {
         return;
     }
@@ -261,7 +297,7 @@ bool Renderer::occlusion_cull_init(Scene* scene, std::vector<SceneObject*>& scen
         for (auto it = scene_objects.begin(); it != scene_objects.end(); ++it) {
             SceneObject *scene_object = (*it);
             RenderData* render_data = scene_object->render_data();
-            addRenderData(render_data);
+            addRenderData(render_data, scene);
             scene->pick(scene_object);
         }
         scene->unlockColliders();
@@ -390,11 +426,11 @@ void Renderer::renderPostEffectData(RenderState& rstate,
         {
             post_effect_data->setTexture("u_texture", render_texture);
             RenderData* rdata = shader_manager->get_render_data();
-            rdata->set_shader(post_effect_data->get_shader(), 0);
+            rdata->set_shader(0, post_effect_data->get_shader());
             shader->render(&rstate, rdata, post_effect_data);
         }
         else {
-            LOGE("Render: post effect shader %d not found", post_effect_data->get_shader());
+            LOGE("SHADER: post effect shader %d not found", post_effect_data->get_shader());
         }
     } catch (const std::string& error) {
         LOGE("Error detected in Renderer::renderPostEffectData; error : %s", error.c_str());

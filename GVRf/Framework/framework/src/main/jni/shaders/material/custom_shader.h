@@ -59,9 +59,10 @@ class Shader
 public:
     static const bool LOG_SHADER;
 
+
 /*
  * Facilitates visiting the individual elements of a descriptor string.
- * Used to visit the textures, vertex attributes and uniforms
+ * Used to visit the textures and vertex attributes
  */
     class ShaderVisitor
     {
@@ -110,7 +111,7 @@ public:
  * Returns the unique signature for this shader (provided
  * to ShaderManager::addShader when this Shader was created).
  */
-     std::string& signature()  { return signature_; }
+    const std::string& signature() const { return signature_; }
 
     /*
      * Returns the GL program ID for the native shader
@@ -128,7 +129,7 @@ public:
     }
 
     /*
-     * Returns the GL location for a vertex attribute, texture or uniform given its name.
+     * Returns the GL location for a vertex attribute or texture given its name.
      */
     GLuint getLocation(const std::string& key) {
         auto it = locations_.find(key);
@@ -138,7 +139,7 @@ public:
         return -1;
     }
     /*
-     * Sets the GL location for a named uniform, texture or vertex attribute.
+     * Sets the GL location for a named texture or vertex attribute.
      */
     void setLocation(const std::string& key, int loc) {
         locations_[key] = loc;
@@ -155,6 +156,7 @@ public:
      */
     void programInit(RenderState* rstate, RenderData* render_data, ShaderData* material,
                      const std::vector<glm::mat4>& model_matrix, int drawcount, bool batching) { }
+
 
     std::vector<uint32_t>& getVkVertexShader(){
         if(!compiledVS.size()){
@@ -223,7 +225,6 @@ private:
     bool hasUniform(const std::string& name) { return uniformDescriptor_.find(name) != std::string::npos; }
     bool hasTexture(const std::string& name) { return textureDescriptor_.find(name) != std::string::npos; }
     bool hasAttribute(const std::string& name) { return vertexDescriptor_.find(name) != std::string::npos; }
-
     // Vulkan
     std::vector<uint32_t> CompileVulkanShader(const std::string& shaderName, ShaderType shaderTypeID, std::string& shaderContents);
 
@@ -259,7 +260,6 @@ private:
     // Vulkan
     std::vector<uint32_t> compiledVS;
     std::vector<uint32_t> compiledFS;
-
 };
 
 }

@@ -150,7 +150,6 @@ void main() {
 	viewspace_normal = vertex.viewspace_normal;
 	view_direction = vertex.view_direction;
 #ifdef HAS_MULTIVIEW
-	view_id = int(gl_ViewID_OVR);
 	gl_Position = u_mvp_[gl_ViewID_OVR] * vertex.local_position;
 #else
 	gl_Position = u_mvp * vertex.local_position;	

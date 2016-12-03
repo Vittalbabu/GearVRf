@@ -28,6 +28,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /** Wrapper for a GL texture. */
 public class GVRTexture extends GVRHybridObject {
     private List<GVRAtlasInformation> mAtlasInformation = null;
+    private String mVertexTexCoord = null;
+    private String mShaderTexCoord = null;
 
     protected GVRTexture(GVRContext gvrContext, long ptr) {
         super(gvrContext, ptr);
@@ -127,7 +129,7 @@ public class GVRTexture extends GVRHybridObject {
      * @param id
      */
     @SuppressWarnings("unused")
-    protected void idAvailable(final int id) {
+    protected synchronized void idAvailable(final int id) {
         mTextureId = id;
         if (null != mFuture) {
             mFuture.signal();
@@ -172,6 +174,16 @@ public class GVRTexture extends GVRHybridObject {
     }
 
     private final class RealFuture extends FutureBase {
+        RealFuture() {
+            //schedules the gl texture for creation asap
+            getGVRContext().runOnGlThread(new Runnable() {
+                @Override
+                public void run() {
+                    mTextureId = NativeTexture.getId(getNative());
+                }
+            });
+        }
+
         @Override
         public boolean isDone() {
             return 0 != mTextureId;
@@ -193,9 +205,13 @@ public class GVRTexture extends GVRHybridObject {
 
         @Override
         public Integer get() throws InterruptedException, ExecutionException {
+            if (getGVRContext().isCurrentThreadGLThread()) {
+                return mTextureId = NativeTexture.getId(getNative());
+            }
+
             mLock.lock();
             try {
-                while (0 != mTextureId) {
+                while (0 == mTextureId) {
                     mCondition.await();
                 }
             } finally {
@@ -214,6 +230,55 @@ public class GVRTexture extends GVRHybridObject {
                 mLock.unlock();
             }
         }
+    }
+
+    /**
+     *  Sets the name of the texture coordinate vertex
+     *  attribute to use for this texture and what shader
+     *  output is is assigned to.
+     *  This allows a texture to be used with any set
+     *  of texture coordinates from a mesh.
+     *  Initially this parameter is null. You may set it once
+     *  but then it cannot be changed afterwards.
+     *  This is because it is used to generate code for the
+     *  fragment shader and updating it would require the
+     *  shader to be recompiled.
+     * @param vertexTexCoord string with name of texture coordinate attribute in vertex.
+     * @param shaderVariable string with name of shader variable to get the texture coordinates.
+     * @throws UnsupportedOperationException if you change variables more than once.
+     */
+    public void setTexCoords(String vertexTexCoord, String shaderVariable) throws UnsupportedOperationException
+    {
+        if (mVertexTexCoord != null)
+        {
+            throw new UnsupportedOperationException("The texture coordinate attribute can only be set once and then it cannot be changed");
+        }
+        mVertexTexCoord = vertexTexCoord;
+        mShaderTexCoord = shaderVariable;
+    }
+
+    /**
+     *  Gets the name of the texture coordinate vertex
+     *  attribute to use for this texture.
+     *  This allows a texture to be used with any set
+     *  of texture coordinates from a mesh.
+     * @return name of texture coordinate attribute
+     */
+    public String getVertexTexCoord()
+    {
+        return mVertexTexCoord;
+    }
+
+    /**
+     *  Gets the name of the shader variable used to store
+     *  texture coordinates for this texture.
+     *  This allows a texture to be used with any set
+     *  of texture coordinates from a mesh.
+     * @return name of texture coordinate shader variable
+     */
+    public String getShaderTexCoord()
+    {
+        return mShaderTexCoord;
     }
 
 

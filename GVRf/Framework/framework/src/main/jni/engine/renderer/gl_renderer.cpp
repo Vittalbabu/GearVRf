@@ -36,6 +36,7 @@
 #include "gl_renderer.h"
 #include <unordered_map>
 #include <unordered_set>
+#include <gvr_image_capture.h>
 
 namespace gvr {
 void GLRenderer::renderCamera(Scene* scene, Camera* camera, int framebufferId,
@@ -47,6 +48,7 @@ void GLRenderer::renderCamera(Scene* scene, Camera* camera, int framebufferId,
 
     resetStats();
     RenderState rstate;
+    rstate.shadow_map = false;
     rstate.material_override = NULL;
     rstate.viewportX = viewportX;
     rstate.viewportY = viewportY;
@@ -178,6 +180,7 @@ void GLRenderer::restoreRenderStates(RenderData* render_data) {
         GL(glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE));
     }
 }
+
 /**
  * Generate shadow maps for all the lights that cast shadows.
  * The scene is rendered from the viewpoint of the light using a
@@ -222,20 +225,27 @@ void GLRenderer::renderShadowMap(RenderState& rstate, Camera* camera, GLuint fra
     GLint drawFbo = 0, readFbo = 0;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
+    const GLenum attachments[] = {GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT};
 
 	GL(glBindFramebuffer(GL_FRAMEBUFFER, framebufferId));
+    GL(glInvalidateFramebuffer(GL_FRAMEBUFFER, 3, attachments));
     GL(glViewport(rstate.viewportX, rstate.viewportY, rstate.viewportWidth, rstate.viewportHeight));
     glClearColor(0,0,0,1);
     GL(glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT));
-
+    rstate.shadow_map = true;
     for (auto it = render_data_vector.begin();
-            it != render_data_vector.end(); ++it) {
-        GL(renderRenderData(rstate, *it));
+         it != render_data_vector.end(); ++it) {
+        RenderData* rdata = *it;
+        if (rdata->cast_shadows()) {
+            GL(renderRenderData(rstate, rdata));
+        }
     }
-
+    rstate.shadow_map = false;
+    GL(glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, &attachments[1]));
     glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
 }
+
 void GLRenderer::renderCamera(Scene* scene, Camera* camera,
         ShaderManager* shader_manager,
         PostEffectShaderManager* post_effect_shader_manager,
@@ -372,7 +382,7 @@ void GLRenderer::occlusion_cull(RenderState& rstate,
 
             (*it)->set_visible(visibility);
             (*it)->set_query_issued(false);
-            addRenderData((*it)->render_data());
+            addRenderData((*it)->render_data(), rstate.scene);
             rstate.scene->pick(scene_object);
         }
     }
@@ -404,7 +414,11 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     SceneObject *owner = render_data->owner_object();
     ShaderManager *shader_manager = rstate.shader_manager;
 
-
+    Shader* shader = shader_manager->getShader(render_data->get_shader(curr_pass));
+    if (shader == NULL) {
+        LOGE("SHADER: shader not ready %s %p", owner->name().c_str(), render_data);
+        return;
+    }
     if (rstate.material_override != nullptr) {
         curr_material = rstate.material_override;
     }
@@ -424,7 +438,7 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     rstate.uniforms.u_right = rstate.render_mask & RenderData::RenderMaskBit::Right;
 
 
-    if (use_multiview) {
+    if(use_multiview && !rstate.shadow_map){
         rstate.uniforms.u_view_[0] = rstate.scene->main_camera_rig()->left_camera()->getViewMatrix();
         rstate.uniforms.u_view_[1] = rstate.scene->main_camera_rig()->right_camera()->getViewMatrix();
         rstate.uniforms.u_mv_[0] = rstate.uniforms.u_view_[0] * rstate.uniforms.u_model;
@@ -434,61 +448,41 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
         rstate.uniforms.u_mvp_[0] = rstate.uniforms.u_proj * rstate.uniforms.u_mv_[0];
         rstate.uniforms.u_mvp_[1] = rstate.uniforms.u_proj * rstate.uniforms.u_mv_[1];
     }
-    Mesh *mesh = render_data->mesh();
 
-    Shader* shader = shader_manager->getShader(render_data->get_shader(curr_pass));
-    if (shader != NULL) {
-        try {
-            if ((render_data->draw_mode() == GL_LINE_STRIP) ||
-                (render_data->draw_mode() == GL_LINES) ||
-                (render_data->draw_mode() == GL_LINE_LOOP)) {
-                float lineWidth;
-                if (curr_material->getFloat("line_width", lineWidth)) {
-                    glLineWidth(lineWidth);
-                }
-                else {
-                    glLineWidth(1.0f);
-                }
+    try {
+        if ((render_data->draw_mode() == GL_LINE_STRIP) ||
+            (render_data->draw_mode() == GL_LINES) ||
+            (render_data->draw_mode() == GL_LINE_LOOP)) {
+            float lineWidth;
+            if (curr_material->getFloat("line_width", lineWidth)) {
+                glLineWidth(lineWidth);
             }
-            //LOGE("SHADER: selecting shader %s %d", shader->signature().c_str(), shader->getShaderID());
-            shader->render(&rstate, render_data, curr_material);
+            else {
+                glLineWidth(1.0f);
+            }
         }
-        catch (const std::string &error) {
-            LOGE("Error detected in Renderer::renderRenderData; name : %s, error : %s",
-                 render_data->owner_object()->name().c_str(), error.c_str());
-            shader = shader_manager->findShader(std::string("GVRErrorShader"));
-            shader->render(&rstate, render_data, curr_material);
-        }
+        shader->render(&rstate, render_data, curr_material);
     }
-    else {
-        LOGE("Rendering error: GVRRenderData shader cannot be determined, using GVRErrorShader %s \n", owner->name().c_str());
+    catch (const std::string &error) {
+        LOGE("Error detected in Renderer::renderRenderData; name : %s, error : %s",
+             render_data->owner_object()->name().c_str(), error.c_str());
         shader = shader_manager->findShader(std::string("GVRErrorShader"));
         shader->render(&rstate, render_data, curr_material);
     }
+
     GLuint programId = shader->getProgramId();
-    if (Shader::LOG_SHADER) LOGE("SHADER: binding vertex arrays to program %d", programId);
+    Mesh *mesh = render_data->mesh();
+
+    if (Shader::LOG_SHADER) LOGE("SHADER: binding vertex arrays to program %d %p", programId, render_data);
     glBindVertexArray(mesh->getVAOId(programId));
     if (mesh->indices().size() > 0)
     {
-        if(use_multiview)
-        {
-            glDrawElementsInstanced(render_data->draw_mode(), mesh->indices().size(), GL_UNSIGNED_SHORT, NULL, 2 );
-        }
-        else
-        {
-            glDrawElements(render_data->draw_mode(), mesh->indices().size(), GL_UNSIGNED_SHORT, 0);
-        }
+        glDrawElements(render_data->draw_mode(), mesh->indices().size(), GL_UNSIGNED_SHORT, 0);
+
     }
     else
     {
-        if(use_multiview)
-        {
-            glDrawArraysInstanced(render_data->draw_mode(), 0, mesh->vertices().size(),2);
-        }
-        else
-        {
-            glDrawArrays(render_data->draw_mode(), 0, mesh->vertices().size());
-        }
+        glDrawArrays(render_data->draw_mode(), 0, mesh->vertices().size());
     }
     glBindVertexArray(0);
     checkGlError("renderMesh::renderMaterialShader");

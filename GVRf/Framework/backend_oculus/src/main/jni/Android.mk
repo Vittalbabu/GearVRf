@@ -15,13 +15,13 @@
  #
 LOCAL_PATH := $(call my-dir)
 
-
 include $(CLEAR_VARS)
 
 ifndef OVR_MOBILE_SDK
 	OVR_MOBILE_SDK=../../../../../ovr_sdk_mobile
 endif
 
+$(warning OVR_MOBILE_SDK is set to $(OVR_MOBILE_SDK))
 include $(OVR_MOBILE_SDK)/cflags.mk
 
 LOCAL_MODULE := gvrf-oculus
@@ -67,5 +67,4 @@ LOCAL_LDLIBS += $(PROJECT_ROOT)/backend_oculus/build/intermediates/exploded-aar/
 include $(BUILD_SHARED_LIBRARY)
 
 $(call import-add-path, $(OVR_MOBILE_SDK))
-$(call import-module,VrAppSupport/SystemUtils/Projects/AndroidPrebuilt/jni)
 $(call import-module,VrApi/Projects/AndroidPrebuilt/jni)

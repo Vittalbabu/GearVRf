@@ -42,7 +42,7 @@ import static android.opengl.GLES30.GL_TRIANGLE_STRIP;
  * This includes the {@link GVRMesh mesh} itself, the mesh's {@link GVRMaterial
  * material}, camera association, rendering order, and various other parameters.
  */
-public class GVRRenderData extends GVRComponent implements PrettyPrint {
+public class GVRRenderData extends GVRJavaComponent implements IRenderable, PrettyPrint {
 
     private GVRMesh mMesh;
     private ArrayList<GVRRenderPass> mRenderPassList;
@@ -109,7 +109,6 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      */
     public GVRRenderData(GVRContext gvrContext) {
         super(gvrContext, NativeRenderData.ctor());
-        
         GVRRenderPass basePass = new GVRRenderPass(gvrContext);
         mRenderPassList = new ArrayList<GVRRenderPass>();
         addPass(basePass);
@@ -135,10 +134,7 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
     /**
      * @return The {@link GVRMesh mesh} being rendered. If there is
      * a pending future mesh, it is resolved.
-     *
-     * @throws ExecutionException 
-     * @throws InterruptedException 
-     */
+      */
     public GVRMesh getMesh() {
         if (mFutureMesh != null) {
             try
@@ -164,8 +160,13 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
         synchronized (this) {
             mMesh = mesh;
             mFutureMesh = null;
+            for (GVRRenderPass pass : mRenderPassList)
+            {
+                pass.setMesh(mesh);
+            }
         }
         NativeRenderData.setMesh(getNative(), mesh.getNative());
+       // bindShader(getGVRContext().getMainScene());
     }
 
     /**
@@ -353,7 +354,9 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      * @param pass
      */
     public void addPass(GVRRenderPass pass) {
+        GVRMesh mesh = getMesh();
         mRenderPassList.add(pass);
+        pass.setMesh(mesh);
         NativeRenderData.addPass(getNative(), pass.getNative());
     }
     
@@ -384,7 +387,8 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      * @return The {@link GVRMaterial material} the {@link GVRMesh mesh} is
      *         being rendered with.
      */
-    public GVRMaterial getMaterial(int passIndex) {
+    public GVRMaterial getMaterial(int passIndex)
+    {
         if (passIndex < mRenderPassList.size()) {
             return mRenderPassList.get(passIndex).getMaterial();
         } else {
@@ -412,18 +416,28 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      *            The rendering pass this material will be assigned to.
      * 
      */
-    public void setMaterial(GVRMaterial material, int passIndex) {
-        if (passIndex < mRenderPassList.size()) {
+    public void setMaterial(GVRMaterial material, int passIndex)
+    {
+        if (passIndex < mRenderPassList.size())
+        {
             mRenderPassList.get(passIndex).setMaterial(material);
-        } else {
+        }
+        else
+        {
             Log.e(TAG, "Trying to set material from invalid pass. Pass " + passIndex + " was not created.");
         }
     }
 
-    void setShader(int shader)
+    public void setShader(int shader)
     {
         GVRRenderPass pass = mRenderPassList.get(0);
         pass.setShader(shader);
+    }
+
+    int getShader()
+    {
+        GVRRenderPass pass = mRenderPassList.get(0);
+        return pass.getShader();
     }
 
     /**
@@ -455,15 +469,37 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      * @param scene scene being rendered
      * @see GVRShaderTemplate GVRMaterialShader.getShaderType
      */
-     public void bindShader(GVRScene scene) {
-         for (int i = 0; i < mRenderPassList.size(); ++i) {
-             GVRShaderData material = mRenderPassList.get(i).getMaterial();
-             GVRShader shader = material.getShaderType().getTemplate(getGVRContext());
-             if (shader != null) {
-                 shader.bindShader(getGVRContext(), this, scene, material);
-             }
-         }
-     }
+    public void bindShader(GVRScene scene)
+    {
+        for (GVRRenderPass pass : mRenderPassList)
+        {
+            pass.bindShader(scene);
+        }
+    }
+
+    private static Runnable sBindShaderFromNative = null;
+
+    /**
+     * Called from the GL thread during rendering when a
+     * RenderData without a valid shader is encountered.
+     */
+    void bindShaderNative(GVRScene scene)
+    {
+        bindShader(scene);
+        /*
+        if (sBindShaderFromNative == null)
+        {
+            sBindShaderFromNative = new Runnable()
+            {
+                public void run()
+                {
+                    bindShader(scene);
+                }
+            };
+        }
+        getGVRContext().runOnTheFrameworkThread(sBindShaderFromNative);
+        */
+    }
 
     /**
      * @return The {@link GVRLight light} the {@link GVRMesh mesh} is being lit by.
@@ -489,8 +525,10 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      * GVRLight.enable(). GVRLight.enable turns on a light, while this method
      * enables the lighting effect for the render_data.
      */
-    public void enableLight() {
-        if (!isLightEnabled) {
+    public void enableLight()
+    {
+        if (!isLightEnabled)
+        {
             NativeRenderData.enableLight(getNative());
             isLightEnabled = true;
             bindShader(getGVRContext().getMainScene());
@@ -504,11 +542,13 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
      * GVRLight.disable turns off a light, while this method
      * disables the lighting effect for the render_data.
      */
-    public void disableLight() {
-        if (isLightEnabled) {
+    public void disableLight()
+    {
+        if (isLightEnabled)
+        {
             NativeRenderData.disableLight(getNative());
-            isLightEnabled = false;
             bindShader(null);
+            isLightEnabled = false;
         }
     }
 
@@ -860,6 +900,25 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
         }
     }
 
+    /**
+     * Checks if a renderable object can cast shadows.
+     * @returns true if shadows are cast, false if not.
+     * @see GVRRenderData.setCastShadows
+     * @see GVRLightBase.castShadows
+     */
+    public boolean getCastShadows() {
+        return NativeRenderData.getCastShadows(getNative());
+    }
+
+    /**
+     * Indicates whether a renderable object will cast shadows or not.
+     * By default, all objects cast shadows. Transparent objects cast
+     * non-transparent shadows. This function lets you disable shadow-casting.
+     * @param castShadows true to cast shadows, false to not cast shadows
+     */
+    public void setCastShadows(boolean castShadows) {
+        NativeRenderData.setCastShadows(getNative(), castShadows);
+    }
     @Override
     public void prettyPrint(StringBuffer sb, int indent) {
         GVRMesh mesh = null;
@@ -897,8 +956,6 @@ public class GVRRenderData extends GVRComponent implements PrettyPrint {
 
 class NativeRenderData {
     static native long ctor();
-
-    static native long setJava(long renderData, GVRRenderData javaRenderData);
 
     static native long getComponentType();
 
@@ -961,4 +1018,8 @@ class NativeRenderData {
     public static native void setDrawMode(long renderData, int draw_mode);
 
     public static native void setTextureCapturer(long renderData, long texture_capturer);
+
+    public static native void setCastShadows(long renderData, boolean castShadows);
+
+    public static native boolean getCastShadows(long renderData);
 }

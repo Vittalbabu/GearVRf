@@ -1,6 +1,4 @@
 precision highp float;
-precision highp sampler2DArray;
-
 #ifdef HAS_MULTIVIEW
 	flat in int view_id;
 #endif
@@ -101,6 +99,13 @@ struct Radiance
    vec3 direction; // view space direction from light to surface
    float attenuation;
 };
+
+float unpackFloatFromVec4i(const vec4 value)
+{
+    const vec4 unpackFactors = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);
+    return dot(value, unpackFactors);
+}
+
 
 @FragmentSurface
 

@@ -59,13 +59,9 @@ import java.util.Set;
 public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptable, IEventReceiver {
     @SuppressWarnings("unused")
     private static final String TAG = Log.tag(GVRScene.class);
-    public static final int MAX_LIGHTS = 16;
     private GVRCameraRig mMainCameraRig;
     private StringBuilder mStatMessage = new StringBuilder();
-    private Set<GVRLightBase> mLightList = new HashSet<GVRLightBase>();
     private GVREventReceiver mEventReceiver = new GVREventReceiver(this);
-    private GVRMaterial mShadowMaterial = null;
-    private boolean mShadowMapDirty = true;
     private GVRSceneObject mSceneRoot;
     /**
      * Constructs a scene with a camera rig holding left & right cameras in it.
@@ -75,6 +71,7 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      */
     public GVRScene(GVRContext gvrContext) {
         super(gvrContext, NativeScene.ctor());
+        NativeScene.setJava(getNative(), this);
         mSceneRoot = new GVRSceneObject(gvrContext);
         NativeScene.addSceneObject(getNative(), mSceneRoot.getNative());
         GVRCamera leftCamera = new GVRPerspectiveCamera(gvrContext);
@@ -104,6 +101,7 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
 
     private GVRScene(GVRContext gvrContext, long ptr) {
         super(gvrContext, ptr);
+        NativeScene.setJava(getNative(), this);
         mSceneRoot = new GVRSceneObject(gvrContext);
         NativeScene.addSceneObject(getNative(), mSceneRoot.getNative());
         setFrustumCulling(true);
@@ -118,7 +116,6 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      */
     public void addSceneObject(GVRSceneObject sceneObject) {
         mSceneRoot.addChildObject(sceneObject);
-        bindShaders(sceneObject);
     }
 
     /**
@@ -139,17 +136,11 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
     	GVRCameraRig rig = getMainCameraRig();
         GVRSceneObject head = rig.getOwnerObject();
         rig.removeAllChildren();
-        head.getParent().removeChildObject(head);
 
         for (GVRSceneObject child : mSceneRoot.getChildren()) {
             child.getParent().removeChildObject(child);
         }
-
         NativeScene.removeAllSceneObjects(getNative());
-        synchronized (mLightList)
-        {
-            mLightList.clear();
-        }
         mSceneRoot = new GVRSceneObject(getGVRContext());
         mSceneRoot.addChildObject(head);
         NativeScene.addSceneObject(getNative(), mSceneRoot.getNative());
@@ -168,8 +159,8 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      * This node is a common ancestor to all the objects
      * in the scene.
      * @return top level scene object.
-     * @see addSceneObject
-     * @see removeSceneObject
+     * @see GVRScene#addSceneObject(GVRSceneObject)
+     * @see GVRScene#removeSceneObject(GVRSceneObject) removeSceneObject
      */
     public GVRSceneObject getRoot() {
         return mSceneRoot;
@@ -181,9 +172,9 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      * @return A read-only list containing all direct children of the root node.
      *
      * @since 2.0.0
-     * @see getRoot
-     * @see addSceneObject
-     * @see removeSceneObject
+     * @see GVRScene#getRoot()
+     * @see GVRScene#addSceneObject(GVRSceneObject)
+     * @see GVRScene#removeSceneObject(GVRSceneObject) removeSceneObject
      */
     public List<GVRSceneObject> getSceneObjects() {
         return mSceneRoot.getChildren();
@@ -399,38 +390,27 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
     }
 
     /**
-     * Bind the correct vertex and fragment shaders on all renderable objects.
-     * 
-     * Setting the shader template for a GVRRenderData selects what kind
-     * of shader to use but does not actually construct a vertex and fragment shader.
-     * This function does that for all the renderable objects that need it.
-     *
-     * All shaders should be bound after scene initialization is complete.
-     * If new assets are loaded that add lights to the scene after initialization,
-     * bindShaders may need to be called again to regenerate the correct shaders
-     * for the new lighting conditions.
-     * {@link GVRRenderData.bindShader GVRShaderTemplate }
+     * Visits all the GVRRenderData components in a hierarchy and regenerates
+     * their shaders if necessary.
      */
-    public void bindShaders() {
-        clearLights();
+    protected class ShaderBinder implements GVRSceneObject.ComponentVisitor
+    {
+        private GVRScene mScene;
 
-        class AddLights implements GVRSceneObject.ComponentVisitor
+        public ShaderBinder(GVRScene scene)
         {
-            @Override
-            public boolean visit(GVRComponent comp) {
-                addLight((GVRLightBase) comp);
-                return true;
-            }
+            mScene = scene;
         }
 
-        AddLights addLightCV = new AddLights();
-        mSceneRoot.forAllComponents(addLightCV, GVRLightBase.getComponentType());
-
-        ArrayList<GVRRenderData> renderers = mSceneRoot.getAllComponents(GVRRenderData.getComponentType());
-        for (GVRRenderData rdata : renderers) {
-            rdata.bindShader(this);
+        public boolean visit(GVRComponent obj)
+        {
+            GVRRenderData rdata = (GVRRenderData) obj;
+            rdata.bindShader(mScene);
+            return true;
         }
-    }
+    };
+
+    protected ShaderBinder mBindShaderVisitor;
 
     /**
      * Bind the correct vertex and fragment shaders on the given hierarchy.
@@ -441,71 +421,48 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      * bindShaders may need to be called again to regenerate the correct shaders
      * for the new lighting conditions. This function is called whenever a scene
      * object is added at the root of the scene.
-     * @see GVRRenderData.bindShader
+     * @see GVRRenderData#bindShader(GVRScene)
      * @see GVRShaderTemplate
-     * @see GVRScene.addSceneObject
+     * @see GVRScene#addSceneObject(GVRSceneObject)
      */
-    public void bindShaders(GVRSceneObject root) {
-        ArrayList<GVRLightBase> lights = root.getAllComponents(GVRLightBase.getComponentType());
-        int added = 0;
-        for (GVRLightBase light : lights) {
-            if (addLight(light))
-            {
-                ++added;
-            }
-        }
-        if (added > 0)
+    private void bindShaders(GVRSceneObject root) {
+        if (mBindShaderVisitor == null)
         {
-            bindShaders();
+            mBindShaderVisitor = new ShaderBinder(this);
         }
-        else
-        {
-            ArrayList<GVRRenderData> renderDataList = root.getAllComponents(GVRRenderData
-                    .getComponentType());
-            for (GVRRenderData renderData : renderDataList) {
-                renderData.bindShader(this);
-            }           
-        }
+        root.forAllComponents(mBindShaderVisitor, GVRRenderData.getComponentType());
     }
-        
-    /**
-     * Add a light to the scene's light list.
-     * @param light light to add
-     * @see GVRScene.getLightList
-     */
-    private boolean addLight(GVRLightBase light) {
-        synchronized (mLightList)
-        {
-            Integer lightIndex = mLightList.size();
 
-            if (lightIndex >= MAX_LIGHTS)
+    private static Runnable sBindShadersFromNative = null;
+
+    /**
+     * Called from the GL thread during rendering if lights
+     * have been added or removed. Will possibly regenerate
+     * all shaders which use light sources.
+     */
+    void bindShadersNative()
+    {
+        bindShaders(getRoot());
+        /*
+        if (sBindShadersFromNative == null)
+        {
+            sBindShadersFromNative = new Runnable()
             {
-                Log.e(TAG, "Exceeded maximum number of lights");
-                return false;
-            }
-            String name = "light" + lightIndex.toString();
-            if (NativeScene.addLight(getNative(), light.getNative()))
-            {
-                mLightList.add(light);
-                NativeLight.setLightID(light.getNative(), name);
-                return true;
-            }
+                public void run()
+                {
+                    bindShaders(getRoot());
+                }
+            };
         }
-        return false;
+        getGVRContext().runOnTheFrameworkThread(sBindShadersFromNative);
+        */
     }
 
     /**
      * Clears all lights of the scene's light list.
      */
     private void clearLights() {
-        synchronized (mLightList)
-        {
-            if(mLightList.size() != 0){
-                mLightList.clear();
-                NativeScene.clearLights(getNative());
-            }
-
-        }
+        NativeScene.clearLights(getNative());
     }
     
     /**
@@ -514,21 +471,11 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
      * This list is maintained by GearVRF by gathering the
      * lights attached to the scene objects in the scene.
      * 
-     * @return array of lights
+     * @return array of lights or null if no lights in scene.
      */
     public GVRLightBase[] getLightList()
     {
-        synchronized (mLightList)
-        {
-            int n = mLightList.size();
-            if (n == 0)
-            {
-                return null;
-            }
-            GVRLightBase[] list = new GVRLightBase[n];
-            mLightList.toArray(list);
-            return list;
-        }
+        return NativeScene.getLightList(getNative());
     }
     
     /**
@@ -638,7 +585,6 @@ public class GVRScene extends GVRHybridObject implements PrettyPrint, IScriptabl
 
         @Override
         public void onAfterInit() {
-            bindShaders();
             recursivelySendSimpleEvent(mSceneRoot, "onAfterInit");
         }
 
@@ -696,6 +642,8 @@ class NativeScene {
 
     static native long ctor();
 
+    static native void setJava(long scene, Object javaScene);
+
     static native void addSceneObject(long scene, long sceneObject);
    
     public static native void invalidateShadowMap(long scene);
@@ -721,7 +669,9 @@ class NativeScene {
     static native boolean addLight(long scene, long light);
 
     static native void clearLights(long scene);
-    
+
+    static native GVRLightBase[] getLightList(long scene);
+
     static native void setMainScene(long scene);
     
     static native void setPickVisible(long scene, boolean flag);

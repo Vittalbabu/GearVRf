@@ -24,9 +24,12 @@
 #include "vulkanInfoWrapper.h"
 #include <vector>
 #include <string>
+
 #include <objects/components/camera.h>
 #include "glm/glm.hpp"
 #include <unordered_map>
+#include "glm/glm.hpp"
+//#include "vulkanThreadPool.h"
 
 #define GVR_VK_CHECK(X) if (!(X)) { LOGD("VK_CHECK Failure"); assert((X));}
 #define GVR_VK_VERTEX_BUFFER_BIND_ID 0
@@ -101,6 +104,7 @@ namespace gvr {
 
         VkShaderModule CreateShaderModuleAscii(const uint32_t *code, uint32_t size);
 
+
         bool GetMemoryTypeFromProperties(uint32_t typeBits, VkFlags requirements_mask,
                                          uint32_t *typeIndex);
 
@@ -117,6 +121,7 @@ namespace gvr {
         VkCommandPool &getTransientCmdPool() {
             return m_commandPoolTrans;
         }
+
         void initVulkanCore();
         bool swapChainCreated(){
             return swap_chain_init_;
@@ -125,10 +130,12 @@ namespace gvr {
         std::vector <VkFence> waitFences;
         std::vector <VkFence> waitSCBFences;
         static VulkanCore *theInstance;
+
         bool swap_chain_init_;
         VulkanCore(ANativeWindow *newNativeWindow) : m_pPhysicalDevices(NULL),swap_chain_init_(false) {
             m_Vulkan_Initialised = false;
             initVulkanDevice(newNativeWindow);
+
         }
 
         bool CreateInstance();
@@ -139,6 +146,7 @@ namespace gvr {
 
 
         void initVulkanDevice(ANativeWindow *newNativeWindow);
+
         bool InitDevice();
 
         void InitSurface();
@@ -168,6 +176,7 @@ namespace gvr {
                                              const std::string &shaderContents);
         void InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader);
         void CreateSampler(TextureObject * &textureObject);
+
 
         ANativeWindow *m_androidWindow;
 

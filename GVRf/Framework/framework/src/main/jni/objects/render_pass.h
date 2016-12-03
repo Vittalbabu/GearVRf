@@ -53,7 +53,6 @@ public:
 
     void set_shader(int shaderid)
     {
-        LOGE("SHADER: RenderPass:set_shader %d", shaderid);
         shaderID_ = shaderid;
     }
 

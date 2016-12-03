@@ -30,8 +30,8 @@ import org.gearvrf.utility.Exceptions;
  * GVROrthographicCamera and GVRPerspectiveCamera both have the
  * same type. All of the light classes have the same type as well.
  * 
- * @see GVRSceneObject.attachComponent
- * @see GVRSceneObject.getComponent
+ * @see GVRSceneObject#attachComponent(GVRComponent)
+ * @see GVRSceneObject#getComponent(long)
  */
 public class GVRComponent extends GVRHybridObject {
     protected boolean mIsEnabled;
@@ -43,8 +43,8 @@ public class GVRComponent extends GVRHybridObject {
      * @param gvrContext    The current GVRF context
      * @param nativePointer Pointer to the native object, returned by the native constructor
      */
-    protected GVRComponent(GVRContext gvrContext, long nativeConstructor) {
-        super(gvrContext, nativeConstructor);
+    protected GVRComponent(GVRContext gvrContext, long nativePointer) {
+        super(gvrContext, nativePointer);
         mIsEnabled = true;
     }
     
@@ -119,9 +119,9 @@ public class GVRComponent extends GVRHybridObject {
     /**
      * Enable or disable this component.
      * @param flag true to enable, false to disable.
-     * @see enable
-     * @see disable
-     * @see isEnabled
+     * @see #enable
+     * @see #disable
+     * @see #isEnabled
      */
     public void setEnable(boolean flag) {
         if (flag == mIsEnabled)
@@ -191,6 +191,8 @@ public class GVRComponent extends GVRHybridObject {
      * 
      * If the scene object that owns this component also has a component
      * of the given type, it will be returned.
+     * @param type  type of component to find. This must be a value
+     *              returned by getComponentType.
      * @return GVRComponent of requested type or null if none exists.
      */
     public GVRComponent getComponent(long type) {
@@ -219,7 +221,7 @@ public class GVRComponent extends GVRHybridObject {
     public void onNewOwnersParent(GVRSceneObject newOwnersParent) { }
 
     /**
-     * Called when is removed the parent of then component's owner.
+     * Called when the component's owner is detached from its parent.
      *
      * @param oldOwnersParent Old parent of the component's owner.
      */
@@ -242,4 +244,3 @@ class NativeComponent {
     static native boolean isEnabled(long component);
     static native void setEnable(long component, boolean flag);
 }
-

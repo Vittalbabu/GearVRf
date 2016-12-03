@@ -33,26 +33,29 @@
 #include "objects/material.h"
 #include "../engine/renderer/renderer.h"
 #include "glm/gtc/matrix_inverse.hpp"
+
 namespace gvr {
 class Color;
 class SceneObject;
 class Scene;
 class ShaderManager;
+class GLFrameBuffer;
 
-class Light: public Component {
+//#define DEBUG_LIGHT 1
+
+class Light: public JavaComponent {
 public:
     static const int MAX_SHADOW_MAPS;
     static const int SHADOW_MAP_SIZE;
 
     explicit Light()
-    :   Component(Light::getComponentType()),
+    :   JavaComponent(Light::getComponentType()),
         shadowMaterial_(nullptr),
- 		fboId_(-1),
+ 		shadowFB_(NULL),
 		shadowMapIndex_(-1) {
     }
 
-    ~Light() {
-    }
+    ~Light();
 
     static long long getComponentType() {
         return COMPONENT_TYPE_LIGHT;
@@ -62,6 +65,7 @@ public:
         enabled_ = enable;
         setDirty();
     }
+    virtual JNIEnv* set_java(jobject javaObj, JavaVM* jvm);
 
     float getFloat(std::string key) {
         auto it = floats_.find(key);
@@ -129,9 +133,6 @@ public:
             setDirty();
         }
     }
-    Material* getShadowMaterial(){
-    	return shadowMaterial_;
-    }
 
     bool castShadow() {
          return shadowMaterial_ != NULL;
@@ -176,6 +177,11 @@ public:
      */
     void static createDepthTexture(int width, int height, int depth);
 
+    /***
+    *  Calls destructor depth texture and delete textures
+    */
+    void static deleteDepthTexture();
+
     std::string getLightID() {
         return lightID_;
     }
@@ -190,16 +196,21 @@ public:
         lightID_ = lightid;
     };
 
+    void cleanup();
+    virtual void onAddedToScene(Scene* scene);
+    virtual void onRemovedFromScene(Scene* scene);
+
 private:
     Light(const Light& light);
     Light(Light&& light);
     Light& operator=(const Light& light);
     Light& operator=(Light&& light);
 
+
     /*
      * Generate the framebuffer used for shadow map generation
      */
-    void generateFBO();
+    bool generateFBO();
 
     /*
      * Mark the light as needing update for all shaders using it
@@ -224,11 +235,19 @@ private:
         }
         return -1;
     }
+#ifdef DEBUG_LIGHT
+    void writeShadowMapToDisk();
+#endif
+
+public:
+#ifdef DEBUG_LIGHT
+    std::string ShadowMapFile;
+#endif
 
 private:
     int size_;
     int shadowMapIndex_;
-    GLuint fboId_;
+    GLFrameBuffer* shadowFB_;
     std::string lightID_;
     Material* shadowMaterial_;
     std::map<int, bool> dirty_;
@@ -240,7 +259,6 @@ private:
     std::map<std::string, std::map<int, int> > offsets_;
     std::map<std::string, Texture*> textures_;
     static GLTexture* depth_texture_;
-    static GLTexture* color_texture_;
 };
 }
 #endif

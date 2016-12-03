@@ -78,11 +78,13 @@ import org.gearvrf.R;
            mUsesLights = true;
        }
        
-       public HashMap<String, Integer> getRenderDefines(GVRRenderData rdata, GVRScene scene)
+       public HashMap<String, Integer> getRenderDefines(IRenderable renderable, GVRScene scene)
        {
            GVRLightBase[] lights = (scene != null) ? scene.getLightList() : null;
-           HashMap<String, Integer> defines = super.getRenderDefines(rdata, scene);
-           if (!rdata.isLightMapEnabled())
+           HashMap<String, Integer> defines = super.getRenderDefines(renderable, scene);
+           boolean lightMapEnabled  = (renderable instanceof GVRRenderData) ? ((GVRRenderData) renderable).isLightMapEnabled() : false;
+
+           if (!lightMapEnabled)
                defines.put("lightMapTexture", 0);
            if (!defines.containsKey("LIGHTSOURCES") || (defines.get("LIGHTSOURCES") != 1))
            {
