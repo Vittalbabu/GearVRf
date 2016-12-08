@@ -272,12 +272,11 @@ void Renderer::addRenderData(RenderData *render_data, Scene* scene) {
         //LOGE("SHADER: RenderData %p[%p] shader being generated", render_data, pass);
         return;
     }
-    if ((shaderID == 0) || render_data->renderdata_dirty())
+    if (shaderID == 0)
     {
         LOGE("SHADER: RenderData %p[%p] has no shader", render_data, pass);
         render_data->set_shader(0, -1);
         render_data->bindShader(scene);
-        render_data->set_renderdata_dirty(false);
         return;
     }
     if (render_data->render_mask() == 0) {
