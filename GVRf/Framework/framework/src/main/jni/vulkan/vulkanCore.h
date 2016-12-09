@@ -24,6 +24,10 @@
 #include "vulkanInfoWrapper.h"
 #include <vector>
 #include <string>
+
+#include <objects/components/camera.h>
+#include "glm/glm.hpp"
+#include <unordered_map>
 #include "glm/glm.hpp"
 //#include "vulkanThreadPool.h"
 
@@ -31,13 +35,31 @@
 #define GVR_VK_VERTEX_BUFFER_BIND_ID 0
 #define GVR_VK_SAMPLE_NAME "GVR Vulkan"
 #define VK_KHR_ANDROID_SURFACE_EXTENSION_NAME "VK_KHR_android_surface"
-
+#define SWAP_CHAIN_COUNT 6
 
 namespace gvr {
+    struct uniformDefination{
+        std::string type;
+        int size;
+    };
+
     enum ShaderType{
         VERTEX_SHADER,
-        FRAGMENT_SHADER,
-        GEOMETRY_SHADER
+        FRAGMENT_SHADER
+    };
+
+    struct TextureObject{
+        VkSampler m_sampler;
+        VkImage m_image;
+        VkImageView m_view;
+        VkDeviceMemory m_mem;
+        VkFormat m_format;
+        VkImageLayout m_imageLayout;
+        uint32_t m_width;
+        uint32_t m_height;
+        VkImageType m_textureType;
+        VkImageViewType m_textureViewType;
+        uint8_t *m_data;
     };
 
     class Scene;
@@ -60,25 +82,27 @@ namespace gvr {
                 return theInstance;
             return NULL;
         }
-        void InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader);
-
         void InitLayoutRenderData(RenderData *rdata);
 
-        void updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data);
+        void updateMaterialUniform(Scene *scene, Camera *camera, RenderData *render_data,std::unordered_map<std::string,uniformDefination>& nameTypeMap );
 
         void UpdateUniforms(Scene *scene, Camera *camera, RenderData *render_data);
+
+        void InitUniformBuffersForRenderData(GVR_Uniform &m_modelViewMatrixUniform);
 
         void InitDescriptorSetForRenderData(RenderData *rdata);
 
         void BuildCmdBufferForRenderData(std::vector <VkDescriptorSet> &allDescriptors,
                                          int &swapChainIndex,
-                                         std::vector<RenderData *> &render_data_vector);
+                                         std::vector<RenderData *> &render_data_vector, Camera*);
 
         void DrawFrameForRenderData(int &swapChainIndex);
 
         int AcquireNextImage();
 
-        void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *);
+        void InitPipelineForRenderData(GVR_VK_Vertices &m_vertices, RenderData *rdata, std::vector<uint32_t> &vs, std::vector<uint32_t> &fs);
+
+        VkShaderModule CreateShaderModuleAscii(const uint32_t *code, uint32_t size);
 
 
         bool GetMemoryTypeFromProperties(uint32_t typeBits, VkFlags requirements_mask,
@@ -98,23 +122,30 @@ namespace gvr {
             return m_commandPoolTrans;
         }
 
+        void initVulkanCore();
+        bool swapChainCreated(){
+            return swap_chain_init_;
+        }
     private:
         std::vector <VkFence> waitFences;
         std::vector <VkFence> waitSCBFences;
         static VulkanCore *theInstance;
 
-        VulkanCore(ANativeWindow *newNativeWindow) : m_pPhysicalDevices(NULL) {
+        bool swap_chain_init_;
+        VulkanCore(ANativeWindow *newNativeWindow) : m_pPhysicalDevices(NULL),swap_chain_init_(false) {
             m_Vulkan_Initialised = false;
-            initVulkanCore(newNativeWindow);
+            initVulkanDevice(newNativeWindow);
+
         }
 
         bool CreateInstance();
 
-        void CreateShaderModule(VkShaderModule& module,std::vector <uint32_t> code, uint32_t size);
-
+        VkShaderModule CreateShaderModule(std::vector <uint32_t> code, uint32_t size);
+     //   void CreateShaderModule(VkShaderModule& module, std::vector <uint32_t> code, uint32_t size);
         bool GetPhysicalDevices();
 
-        void initVulkanCore(ANativeWindow *newNativeWindow);
+
+        void initVulkanDevice(ANativeWindow *newNativeWindow);
 
         bool InitDevice();
 
@@ -126,21 +157,26 @@ namespace gvr {
 
         void InitTransientCmdPool();
 
-        void InitLayouts();
-
         void InitRenderPass();
 
         void InitFrameBuffers();
 
         void InitSync();
 
-        void BuildCmdBuffer();
+        void InitUniformBuffers();
 
         void createPipelineCache();
-
+        void InitTexture();
+        VkCommandBuffer textureCmdBuffer;
 
         bool m_Vulkan_Initialised;
-        std::vector<uint32_t> CompileShader(const std::string& shaderName, ShaderType shaderTypeID, const std::string& shaderContents);
+
+        std::vector <uint32_t> CompileShader(const std::string &shaderName,
+                                             ShaderType shaderTypeID,
+                                             const std::string &shaderContents);
+        void InitShaders(VkPipelineShaderStageCreateInfo shaderStages[], std::string& vertexShader, std::string& fragmentShader);
+        void CreateSampler(TextureObject * &textureObject);
+
 
         ANativeWindow *m_androidWindow;
 
@@ -190,6 +226,7 @@ namespace gvr {
 
         //uint m_threadCount;
         //ThreadPool m_threadPool;
+        TextureObject * textureObject;
     };
 
 

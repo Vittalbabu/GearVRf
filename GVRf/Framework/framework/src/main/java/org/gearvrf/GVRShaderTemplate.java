@@ -208,12 +208,13 @@ public class GVRShaderTemplate extends GVRShader
     protected String generateVariantDefines(HashMap<String, Integer> definedNames, GVRMesh mesh, GVRShaderData material)
     {
         String signature = getClass().getSimpleName();
+
         for (String name : mShaderDefines)
         {
             if (definedNames.containsKey(name))
             {
-                Integer v = definedNames.get(name);
-                if (v == 1)
+                Integer value = definedNames.get(name);
+                if (value != 0)
                 {
                     signature += "$" + name;
                 }
@@ -227,17 +228,19 @@ public class GVRShaderTemplate extends GVRShader
             else if ((mesh != null) && mesh.hasAttribute(name))
             {
                 definedNames.put(name, 1);
-                signature += "$" + name;
+                if (!signature.contains(name))
+                    signature += "$" + name;
             }
             else if (material.getTexture(name) != null)
             {
                 definedNames.put(name, 1);
                 signature += "$" + name;
                 String attrname = material.getTexCoordAttr(name);
-                if (attrname != null)
+                if (attrname == null)
                 {
-                    signature += "-" + attrname;
+                    attrname = "a_texcoord";
                 }
+                signature += "-" +"#"+ attrname+ "#";
             }
         }
         return signature;
@@ -261,6 +264,11 @@ public class GVRShaderTemplate extends GVRShader
                 textureDesc.append(' ');
                 textureDesc.append(name);
                 textureDesc.append(' ');
+                String attrname = material.getTexCoordAttr(name);
+                if (attrname == null)
+                {
+                    attrname = "a_texcoord";
+                }
             }
         }
         matcher = pattern.matcher(mUniformDescriptor);
@@ -544,27 +552,22 @@ public class GVRShaderTemplate extends GVRShader
         HashMap<String, Integer> defines = new HashMap<String, Integer>();
         int castShadow = 0;
         GVRLightBase[] lights = (scene != null) ? scene.getLightList() : null;
+        boolean lightEnabled  = renderable.isLightEnabled();
 
         if (scene.getGVRContext().getActivity().getAppSettings().isMultiviewSet())
         {
             defines.put("MULTIVIEW", 1);
         }
-        if (GVRRenderData.class.isAssignableFrom(renderable.getClass()))
+        if ((lights == null) || !lightEnabled)
         {
-            GVRRenderData rdata = (GVRRenderData) renderable;
-            if (!rdata.isLightEnabled())
-            {
-                defines.put("LIGHTSOURCES", 0);
-                return defines;
-            }
+            defines.put("LIGHTSOURCES", 0);
+            return defines;
         }
-        if (lights != null)
-        {
-            for (GVRLightBase light : lights)
-                if (light.getCastShadow())
-                    castShadow = 1;
-            defines.put("SHADOWS", castShadow);
-        }
+        defines.put("LIGHTSOURCES", 1);
+        for (GVRLightBase light : lights)
+            if (light.getCastShadow())
+                castShadow = 1;
+        defines.put("SHADOWS", castShadow);
         return defines;
     }
     
@@ -765,6 +768,6 @@ public class GVRShaderTemplate extends GVRShader
         return desc;
     }
 
-    protected boolean mWriteShadersToDisk = false;
+    protected boolean mWriteShadersToDisk = true;
     protected Set<String> mShaderDefines;
 }

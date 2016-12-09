@@ -114,7 +114,7 @@ struct GVR_VK_Indices {
     {
         VkPipelineMultisampleStateCreateInfo mInfo;
     public:
-        explicit PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits& rasterizationSamples, VkBool32 sampleShadingEnable,
+        explicit PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples, VkBool32 sampleShadingEnable,
                                                     float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable);
         operator const VkPipelineMultisampleStateCreateInfo*() const{
             return &mInfo;
@@ -302,6 +302,82 @@ class FenceCreateInfo final
         }
     private:
         VkFenceCreateInfo mInfo;
+    };
+
+    class FramebufferCreateInfo final
+    {
+        VkFramebufferCreateInfo mInfo;
+    public:
+        explicit FramebufferCreateInfo(VkFramebufferCreateFlags flags, VkRenderPass &renderPass, uint32_t attachmentCount, const VkImageView* pAttachments, uint32_t width, uint32_t height, uint32_t layers);
+
+        operator const VkFramebufferCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class RenderPassCreateInfo final
+    {
+        VkRenderPassCreateInfo mInfo;
+    public:
+        explicit RenderPassCreateInfo(VkRenderPassCreateFlags flags, uint32_t attachmentCount, const VkAttachmentDescription* pAttachments,
+                                      uint32_t subpassCount, const VkSubpassDescription* pSubpasses, uint32_t dependencyCount, const VkSubpassDependency* pDependencies);
+
+        operator const VkRenderPassCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class MemoryAllocateInfo final
+    {
+        VkMemoryAllocateInfo mInfo;
+    public:
+        explicit MemoryAllocateInfo(VkDeviceSize allocationSize, uint32_t memoryTypeIndex);
+
+        operator const VkMemoryAllocateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class DescriptorSetLayoutCreateInfo final
+    {
+        VkDescriptorSetLayoutCreateInfo mInfo;
+    public:
+        explicit DescriptorSetLayoutCreateInfo(VkDescriptorSetLayoutCreateFlags flags, uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings);
+
+        operator const VkDescriptorSetLayoutCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class PipelineLayoutCreateInfo final
+    {
+        VkPipelineLayoutCreateInfo mInfo;
+    public:
+        explicit PipelineLayoutCreateInfo(VkPipelineLayoutCreateFlags flags, uint32_t setLayoutCount, const VkDescriptorSetLayout* pSetLayouts, uint32_t pushConstantRangeCount, const VkPushConstantRange* pPushConstantRanges);
+
+        operator const VkPipelineLayoutCreateInfo*() const
+        {
+            return &mInfo;
+        }
+    };
+
+    class SamplerCreateInfo final
+    {
+        VkSamplerCreateInfo mInfo;
+    public:
+        explicit SamplerCreateInfo(VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressModeU,
+                                   VkSamplerAddressMode addressModeV, VkSamplerAddressMode addressModeW, float mipLodBias, VkBool32 anisotropyEnable,
+                                   float maxAnisotropy, VkBool32 compareEnable, VkCompareOp compareOp, float minLod, float maxLod, VkBorderColor borderColor,
+                                   VkBool32 unnormalizedCoordinates);
+
+        operator const VkSamplerCreateInfo*() const
+        {
+            return &mInfo;
+        }
     };
 }
 #endif //FRAMEWORK_VULKANINFOWRAPPER_H

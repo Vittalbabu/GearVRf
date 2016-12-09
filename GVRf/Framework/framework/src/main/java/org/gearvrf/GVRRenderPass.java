@@ -126,15 +126,8 @@ public class GVRRenderPass extends GVRHybridObject implements IRenderable {
         mMesh = mesh;
     }
 
-    public void bindShader(GVRScene scene)
-    {
-        GVRShaderId shader = mMaterial.getShaderType();
-        GVRShader template = shader.getTemplate(getGVRContext());
-        if (template != null)
-        {
-            template.bindShader(getGVRContext(), this, scene);
-        }
-    }
+
+    public boolean isLightEnabled() { return false; }
 
     /**
      * Set the native shader for this pass.

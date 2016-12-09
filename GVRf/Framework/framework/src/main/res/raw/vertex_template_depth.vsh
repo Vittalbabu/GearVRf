@@ -4,6 +4,7 @@ uniform mat4 shadow_matrix;
 #ifdef HAS_MULTIVIEW
 #extension GL_OVR_multiview2 : enable
 layout(num_views = 2) in;
+
 uniform mat4 u_mvp_[2];
 uniform mat4 u_view_[2];
 uniform mat4 u_mv_it_[2];

@@ -6,7 +6,8 @@
 #endif
 
 vertex.viewspace_position = pos.xyz / pos.w;
-#ifdef HAS_a_normal
+
+#if defined(HAS_a_normal) && defined(HAS_LIGHTSOURCES)
    vertex.local_normal = vec4(normalize(a_normal), 0.0);
 #endif
 

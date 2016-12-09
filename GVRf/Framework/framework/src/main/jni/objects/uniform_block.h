@@ -1,3 +1,4 @@
+
 /* Copyright 2015 Samsung Electronics Co., LTD
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +17,7 @@
 
 #ifndef UNIFORMBLOCK_H_
 #define UNIFORMBLOCK_H_
-
+#include<unordered_map>
 #include "vulkan/vulkanCore.h"
 #include "glm/glm.hpp"
 #include "util/gvr_log.h"
@@ -50,6 +51,7 @@ protected:
         std::string Type;
         std::string Name;
     };
+
 public:
     UniformBlock();
     UniformBlock(const std::string& descriptor);
@@ -343,8 +345,11 @@ public:
         }
         UniformData = NULL;
     }
+private:
+    std::map<std::string, Uniform> UniformMap;
 
 protected:
+
     /**
      * Parse the descriptor string to create the UniformMap
      * which contains the name, offset and size of all uniforms.
@@ -398,7 +403,8 @@ protected:
     std::string Descriptor;     // descriptor with name, type and size of uniforms
     void*       UniformData;    // -> data block with uniform values
     GLint       TotalSize;      // number of bytes in data block
-    std::map<std::string, Uniform> UniformMap;
+
+
 };
 class VulkanUniformBlock: public UniformBlock
 {

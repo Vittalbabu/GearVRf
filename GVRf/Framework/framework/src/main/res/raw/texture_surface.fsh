@@ -28,6 +28,7 @@ Surface @ShaderName()
 #ifdef HAS_LIGHTSOURCES
     diffuse *= diffuse_color;
 #endif
+
 #ifdef HAS_diffuseTexture
 	diffuse *= texture(diffuseTexture, diffuse_coord.xy);
 #else

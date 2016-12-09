@@ -471,9 +471,22 @@ public class GVRRenderData extends GVRJavaComponent implements IRenderable, Pret
      */
     public void bindShader(GVRScene scene)
     {
-        for (GVRRenderPass pass : mRenderPassList)
+        GVRRenderPass pass = mRenderPassList.get(0);
+        GVRShaderId shader = pass.getMaterial().getShaderType();
+        GVRShader template = shader.getTemplate(getGVRContext());
+        if (template != null)
         {
-            pass.bindShader(scene);
+            template.bindShader(getGVRContext(), this, scene);
+        }
+        for (int i = 1; i < mRenderPassList.size(); ++i)
+        {
+            pass = mRenderPassList.get(i);
+            shader = pass.getMaterial().getShaderType();
+            template = shader.getTemplate(getGVRContext());
+            if (template != null)
+            {
+                template.bindShader(getGVRContext(), this, null);
+            }
         }
     }
 
@@ -534,6 +547,7 @@ public class GVRRenderData extends GVRJavaComponent implements IRenderable, Pret
             bindShader(getGVRContext().getMainScene());
         }
     }
+
 
     /**
      * Disable lighting effect for the render_data.

@@ -8,12 +8,12 @@ namespace gvr {
         mInfo.pName = name;
 
     }
-
     PipelineInputAssemblyStateCreateInfo::PipelineInputAssemblyStateCreateInfo(VkPrimitiveTopology topology):mInfo()
     {
         mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         mInfo.topology = topology;
     }
+
 
     PipelineRasterizationStateCreateInfo::PipelineRasterizationStateCreateInfo(VkBool32 depthClamp,VkBool32 rasterizeDiscard, VkPolygonMode polyMode, VkCullModeFlags cullMode,VkFrontFace frontFace,
                                                                                VkBool32 depthBias, float depthBiasConstantFactor, float  depthBiasClamp, float depthBiasSlopeFactor, float lineWidth):mInfo()
@@ -57,23 +57,16 @@ namespace gvr {
         mInfo.pScissors = pScissors;
     }
 
-    PipelineMultisampleStateCreateInfo::PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits& rasterizationSamples, VkBool32 sampleShadingEnable,
-    float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable): mInfo()
-    {/*
-        VkPipelineMultisampleStateCreateInfo ms = {};
-        ms.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        ms.pSampleMask = nullptr;
-        ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        mInfo = ms;
-        mInfo = ms;*/
+    PipelineMultisampleStateCreateInfo::PipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples, VkBool32 sampleShadingEnable,
+    float minSampleShading, const VkSampleMask* pSampleMask, VkBool32 alphaToCoverageEnable, VkBool32 alphaToOneEnable):mInfo()
+    {
         mInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        mInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+        mInfo.rasterizationSamples = rasterizationSamples;
         mInfo.sampleShadingEnable = sampleShadingEnable;
         mInfo.minSampleShading = minSampleShading;
-        mInfo.pSampleMask = nullptr;
+        mInfo.pSampleMask = pSampleMask;
         mInfo.alphaToCoverageEnable = alphaToCoverageEnable;
         mInfo.alphaToOneEnable = alphaToOneEnable;
-
     }
 
     /*Viewport::Viewport(int width, int height, int minDepth, int maxDepth):mInfo()
@@ -254,4 +247,77 @@ FenceCreateInfo::FenceCreateInfo(VkFenceCreateFlags aFlags)
     mInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 }
 
+    FramebufferCreateInfo::FramebufferCreateInfo(VkFramebufferCreateFlags flags, VkRenderPass &renderPass, uint32_t attachmentCount,
+                                                 const VkImageView* pAttachments, uint32_t width, uint32_t height, uint32_t layers) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.renderPass = renderPass;
+        mInfo.attachmentCount = attachmentCount;
+        mInfo.pAttachments = pAttachments;
+        mInfo.width = width;
+        mInfo.height = height;
+        mInfo.layers = layers;
+    }
+
+    RenderPassCreateInfo::RenderPassCreateInfo(VkRenderPassCreateFlags flags, uint32_t attachmentCount, const VkAttachmentDescription* pAttachments,
+    uint32_t subpassCount, const VkSubpassDescription* pSubpasses, uint32_t dependencyCount, const VkSubpassDependency* pDependencies) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.attachmentCount = attachmentCount;
+        mInfo.pAttachments = pAttachments;
+        mInfo.subpassCount = subpassCount;
+        mInfo.pSubpasses = pSubpasses;
+        mInfo.dependencyCount = dependencyCount;
+        mInfo.pDependencies = pDependencies;
+    }
+
+    MemoryAllocateInfo::MemoryAllocateInfo(VkDeviceSize allocationSize, uint32_t memoryTypeIndex) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        mInfo.allocationSize = allocationSize;
+        mInfo.memoryTypeIndex = memoryTypeIndex;
+    }
+
+    DescriptorSetLayoutCreateInfo::DescriptorSetLayoutCreateInfo(VkDescriptorSetLayoutCreateFlags flags, uint32_t bindingCount, const VkDescriptorSetLayoutBinding* pBindings) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.bindingCount = bindingCount;
+        mInfo.pBindings = pBindings;
+    }
+
+    PipelineLayoutCreateInfo::PipelineLayoutCreateInfo(VkPipelineLayoutCreateFlags flags, uint32_t setLayoutCount, const VkDescriptorSetLayout* pSetLayouts, uint32_t pushConstantRangeCount, const VkPushConstantRange* pPushConstantRanges) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        mInfo.flags = flags;
+        mInfo.setLayoutCount = setLayoutCount;
+        mInfo.pSetLayouts = pSetLayouts;
+        mInfo.pushConstantRangeCount = pushConstantRangeCount;
+        mInfo.pPushConstantRanges = pPushConstantRanges;
+    }
+
+    SamplerCreateInfo::SamplerCreateInfo(VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapMode, VkSamplerAddressMode addressModeU,
+                                         VkSamplerAddressMode addressModeV, VkSamplerAddressMode addressModeW, float mipLodBias, VkBool32 anisotropyEnable,
+                                         float maxAnisotropy, VkBool32 compareEnable, VkCompareOp compareOp, float minLod, float maxLod, VkBorderColor borderColor,
+                                         VkBool32 unnormalizedCoordinates) : mInfo()
+    {
+        mInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        mInfo.pNext = nullptr;
+        mInfo.magFilter = magFilter;
+        mInfo.minFilter = minFilter;
+        mInfo.mipmapMode = mipmapMode;
+        mInfo.addressModeU = addressModeU;
+        mInfo.addressModeV = addressModeV;
+        mInfo.addressModeW = addressModeW;
+        mInfo.mipLodBias = mipLodBias;
+        mInfo.anisotropyEnable = anisotropyEnable;
+        mInfo.anisotropyEnable = anisotropyEnable;
+        mInfo.compareOp = compareOp;
+        mInfo.minLod = minLod;
+        mInfo.maxLod = maxLod;
+        mInfo.borderColor = borderColor;
+        mInfo.unnormalizedCoordinates = unnormalizedCoordinates;
+    }
 }

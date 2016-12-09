@@ -56,7 +56,8 @@ std::string to_string(T value) {
 class VulkanData {
 
 public:
-    VulkanData():vk_descriptor("mat4 mvp"){}
+    VulkanData():vk_descriptor("mat4 u_view; mat4 u_mvp; mat4 u_mv; mat4 u_mv_it; mat4 u_model; mat4 u_view_i; mat4 u_right;"){}
+
     void createTransformDescriptor(VkDevice &device,VulkanCore* vk){
         vk_descriptor.createDescriptor(device, vk, TRANSFORM_UBO_INDEX, VK_SHADER_STAGE_VERTEX_BIT );
     }
@@ -98,6 +99,7 @@ private:
     Descriptor vk_descriptor;
 
 };
+
 class RenderData: public JavaComponent {
 public:
     enum Queue {
@@ -437,9 +439,10 @@ public:
          }
          void bindBonesUbo(int program_id){
              if(bones_ubo_ == nullptr)
-                 bones_ubo_ = bindUbo(program_id,BONES_UBO_INDEX,"Bones_ubo","mat4 u_bone_matrix[60];" );
+                 bones_ubo_ = bindUbo(program_id, BONES_UBO_INDEX, "Bones_ubo", "mat4 u_bone_matrix[60];");
              else
                  bones_ubo_->bindBuffer(program_id);
+
          }
      GLUniformBlock* getBonesUbo(){
         return bones_ubo_;

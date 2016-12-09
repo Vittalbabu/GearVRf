@@ -437,7 +437,7 @@ private:
 
  public:
      void getAttribData(std::string& descriptor,std::vector<GLAttributeMapping>& bindings, int& total_size);
-     void generateVKBuffers(std::string& descriptor, VkDevice& m_device, VulkanCore* );
+     void generateVKBuffers(std::string descriptor, VkDevice& m_device, VulkanCore* );
 
 };
 }

@@ -15,19 +15,24 @@ namespace gvr{
 class Descriptor{
 public:
     Descriptor(){}
-    Descriptor(const std::string& ubo_descriptor): ubo(ubo_descriptor){}
+    ~Descriptor(){
+        delete ubo;
+    }
+    Descriptor(const std::string& ubo_descriptor): ubo(nullptr){
+        ubo = new VulkanUniformBlock(ubo_descriptor);
+    }
     void createDescriptor(VkDevice &,VulkanCore*, int, VkShaderStageFlagBits);
     void  createBuffer(VkDevice &device,VulkanCore* vk);
     void createLayoutBinding(int binding_index,int stageFlags, bool sampler=false);
     void createDescriptorWriteInfo(int binding_index,int stageFlags, VkDescriptorSet& descriptor, bool sampler=false);
-    VulkanUniformBlock& getUBO();
+    VulkanUniformBlock* getUBO();
     VkDescriptorSetLayoutBinding& getLayoutBinding();
     VkWriteDescriptorSet& getDescriptorSet();
 
 
 private:
 
-     VulkanUniformBlock ubo;
+    VulkanUniformBlock* ubo;
      VkDescriptorSetLayoutBinding layout_binding;
      VkWriteDescriptorSet writeDescriptorSet;
 };

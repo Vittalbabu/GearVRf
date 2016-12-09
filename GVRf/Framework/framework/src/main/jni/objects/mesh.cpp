@@ -32,6 +32,23 @@
 
 namespace gvr {
 std::vector<std::string> Mesh::dynamicAttribute_Names_ = {"a_bone_indices", "a_bone_weights"};
+    std::vector<std::string> static getTokens(const std::string &input){
+        std::vector <std::string> tokens;
+        int prev = 0;
+        for(uint i = 0; i < input.length(); i++){
+            if(input[i] == '#'){
+                std::string token = input.substr(prev, i-prev);
+                if(token.find("a_texcoord")!=std::string::npos)
+                    tokens.push_back(token);
+                prev = i+1;
+            }
+            else{
+
+            }
+        }
+
+        return tokens;
+    }
 
 Mesh* Mesh::createBoundingBox() {
 
@@ -197,101 +214,86 @@ int calcSize(std::string type)
     return 0;
 }
 
-void Mesh::getAttribData(std::string& descriptor,std::vector<GLAttributeMapping>& bindings, int& total_size){
-       const char *p = descriptor.c_str();
-       const char *type_start;
-       int type_size;
-       const char *name_start;
-       int name_size;
-       int attrib_index =0;
-       int vertices_len = 0;
-       while (*p) {
-           while (std::isspace(*p) || std::ispunct(*p))
-               ++p;
-           type_start = p;
-           if (*p == 0)
-               break;
-           while (std::isalnum(*p))
-               ++p;
-           type_size = p - type_start;
-           if (type_size == 0) {
-               LOGE("SHADER: SYNTAX ERROR: expecting data type %s\n", descriptor.c_str());
-               break;
-           }
-           std::string type(type_start, type_size);
-           while (std::isspace(*p))
-               ++p;
-           name_start = p;
-           while (std::isalnum(*p) || (*p == '_'))
-               ++p;
-           name_size = p - name_start;
-           if (name_size == 0) {
-               LOGE("SHADER: SYNTAX ERROR: expecting name\n");
-               break;
-           }
+    void Mesh::getAttribData( std::string& descriptor,std::vector<GLAttributeMapping>& bindings, int& total_size){
+        GLAttributeMapping binding;
+        int vertices_len = 0;
+        int attrib_index =0;
+        binding.data = vertices_.data();
+        vertices_len = vertices_.size();
 
-           std::string name(name_start, name_size);
-           GLAttributeMapping binding;
+        binding.data_type = "vec3";
+        binding.size = calcSize(binding.data_type);
+        binding.offset = total_size * sizeof(float);
+        total_size +=calcSize(binding.data_type) ;
+        binding.index = attrib_index++;
+        bindings.push_back(binding);
 
-           if(name.compare("a_position") == 0){
-                binding.data = vertices_.data();
-                vertices_len = vertices_.size();
+        ////
+        const std::vector<glm::vec2>& texcord = getVec2Vector("a_texcoord");
 
-               binding.data_type = type;
-               binding.size = calcSize(type);
-               binding.offset = total_size * sizeof(float);
-               total_size +=calcSize(type) ;
-               binding.index = attrib_index++;
-               bindings.push_back(binding);
+        if(vertices_len && vertices_len != texcord.size()){
+            LOGE("ERROR: length of vector is not same as of vertices");
+        }
+        binding.data_type = "vec2";
+        binding.size = calcSize(binding.data_type);
+        binding.offset = total_size * sizeof(float);
+        total_size +=calcSize(binding.data_type) ;
+        binding.index = attrib_index++;
+        binding.data = texcord.data();
+        bindings.push_back(binding);
 
-           }
-        /*   else if(name.compare("a_texcoord")==0){
-                if(vertices_len && vertices_len != tex_coords_.size()){
-                    LOGE("ERROR: length of tex cords is not same as of vertices");
-                }
-                binding.data = tex_coords_.data();
-           }
-          *//* else if(name.compare("a_normal")==0){
-                if(vertices_len && vertices_len != normals_.size()){
-                    LOGE("ERROR: length of tex cords is not same as of vertices");
-                }
-                binding.data = normals_.data();
-           }
-           else if(type.compare("float") == 0){
-                const std::vector<float>& curr = getFloatVector(name);
-                if(vertices_len && vertices_len != curr.size()){
-                    LOGE("ERROR: length of vector is not same as of vertices");
-                }
-                binding.data = curr.data();
-           }
-           else if(type.compare("float2") == 0){
-                const std::vector<glm::vec2>& curr = getVec2Vector(name);
-                if(vertices_len && vertices_len != curr.size()){
-                    LOGE("ERROR: length of vector is not same as of vertices");
-                }
-                binding.data = curr.data();
-           }
-           else if(type.compare("float3") == 0){
-                const std::vector<glm::vec3>& curr = getVec3Vector(name);
-                 if(vertices_len && vertices_len != curr.size()){
-                     LOGE("ERROR: length of vector is not same as of vertices");
-                 }
-               binding.data = curr.data();
-           }
-           else if(type.compare("float4") == 0){
-                const std::vector<glm::vec4>& curr = getVec4Vector(name);
-                if(vertices_len && vertices_len != curr.size()){
-                    LOGE("ERROR: length of vector is not same as of vertices");
-                }
-                binding.data = curr.data();
-           }
-           */
 
+        if(descriptor.find("a_normal")!=std::string::npos || descriptor.find("normalTexture")!=std::string::npos){
+            if(vertices_len && vertices_len != normals_.size()){
+                LOGE("ERROR: length of tex cords is not same as of vertices");
+            }
+            binding.offset = total_size * sizeof(float);
+            total_size +=calcSize(binding.data_type) ;
+            binding.index = attrib_index++;
+            binding.data = normals_.data();
+            bindings.push_back(binding);
+        }
+        if(descriptor.find("normalTexture")!=std::string::npos) {
+            const std::vector<glm::vec3>& curr = getVec3Vector("a_tangent");
+            if(vertices_len && vertices_len != curr.size()){
+                LOGE("ERROR: length of vector is not same as of vertices");
+            }
+            binding.offset = total_size * sizeof(float);
+            total_size +=calcSize(binding.data_type) ;
+            binding.index = attrib_index++;
+            binding.data = curr.data();
+            bindings.push_back(binding);
+
+            // add bitangent
+            const std::vector<glm::vec3>& curr1 = getVec3Vector("a_bitangent");
+            if(vertices_len && vertices_len != curr1.size()){
+                LOGE("ERROR: length of vector is not same as of vertices");
+            }
+            binding.offset = total_size * sizeof(float);
+            total_size +=calcSize(binding.data_type) ;
+            binding.index = attrib_index++;
+            binding.data = curr1.data();
+            bindings.push_back(binding);
 
         }
+        std::vector<std::string> tokens = getTokens(descriptor);
+        for(auto& it: tokens) {
 
+            const std::vector<glm::vec2>& texcord = getVec2Vector(it);
+            if(vertices_len && vertices_len != texcord.size()){
+                LOGE("ERROR: length of vector is not same as of vertices");
+            }
+            binding.data_type = "vec2";
+            binding.size = calcSize(binding.data_type);
+            binding.offset = total_size * sizeof(float);
+            total_size +=calcSize(binding.data_type) ;
+            binding.index = attrib_index++;
+            binding.data = texcord.data();
+            bindings.push_back(binding);
+        }
 
-}
+    }
+
 VkFormat getDataType(std::string& type){
     if(type.compare("float")==0)
         return VK_FORMAT_R32_SFLOAT;
@@ -308,7 +310,7 @@ VkFormat getDataType(std::string& type){
 }
 
 // call this from renderCamera, get attribute descriptor from shader
-void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, VulkanCore* vulkanCore ){
+void Mesh::generateVKBuffers(std::string descriptor, VkDevice& m_device, VulkanCore* vulkanCore ){
         if (!vao_dirty_)
             return;
         int total_size = 0;
@@ -417,13 +419,13 @@ void Mesh::generateVKBuffers(std::string& descriptor, VkDevice& m_device, Vulkan
         m_vertices.vi.pVertexBindingDescriptions = m_vertices.vi_bindings;
         m_vertices.vi.vertexAttributeDescriptionCount = attrMapping.size();
         m_vertices.vi.pVertexAttributeDescriptions = m_vertices.vi_attrs;
-
+        m_vertices.vi_bindings[0].binding = 0;
+        m_vertices.vi_bindings[0].stride = total_size * sizeof(float); //sizeof(vb[0]);//
+        m_vertices.vi_bindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         for(int i=0; i< attrMapping.size(); i++){
+           // check this
 
-            m_vertices.vi_bindings[i].binding = attrMapping[i].index;
-            m_vertices.vi_bindings[i].stride = total_size * sizeof(float); //sizeof(vb[0]);//
-            m_vertices.vi_bindings[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
             m_vertices.vi_attrs[i].binding = GVR_VK_VERTEX_BUFFER_BIND_ID;
             m_vertices.vi_attrs[i].location = attrMapping[i].index;
             m_vertices.vi_attrs[i].format = getDataType(attrMapping[i].data_type); //float3

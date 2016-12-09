@@ -1,3 +1,4 @@
+
 precision highp float;
 uniform samplerCube u_texture;
 layout (std140) uniform Material_ubo{

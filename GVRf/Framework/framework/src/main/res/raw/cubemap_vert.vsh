@@ -1,3 +1,4 @@
+
 in vec3 a_position;
 out vec3 diffuse_coord;
 

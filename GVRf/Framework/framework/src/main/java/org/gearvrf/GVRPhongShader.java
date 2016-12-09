@@ -42,7 +42,7 @@ import org.gearvrf.R;
        {
             super("float u_opacity; float3 u_color; float4 ambient_color; float4 diffuse_color; float4 specular_color; float4 emissive_color; float specular_exponent; float line_width",
                    "sampler2D ambientTexture; sampler2D diffuseTexture; sampler2D specularTexture; sampler2D opacityTexture; sampler2D lightmapTexture; sampler2D emissiveTexture",
-                   "float3 a_position float3 a_normal float2 a_texcoord float4 a_bone_weights int4 a_bone_indices float4 a_tangent float4 a_bitangent",
+                   "float3 a_position float3 a_normal float2 a_texcoord float2 a_texcoord1 float2 a_texcoord2 float2 a_texcoord3 float4 a_bone_weights int4 a_bone_indices float4 a_tangent float4 a_bitangent",
                    300);
 
            if (fragTemplate == null)
@@ -80,14 +80,15 @@ import org.gearvrf.R;
        
        public HashMap<String, Integer> getRenderDefines(IRenderable renderable, GVRScene scene)
        {
+           GVRLightBase[] lights = (scene != null) ? scene.getLightList() : null;
            HashMap<String, Integer> defines = super.getRenderDefines(renderable, scene);
-           if (GVRRenderData.class.isAssignableFrom(renderable.getClass()))
+           boolean lightMapEnabled  = (renderable instanceof GVRRenderData) ? ((GVRRenderData) renderable).isLightMapEnabled() : false;
+
+           if (!lightMapEnabled)
+               defines.put("lightMapTexture", 0);
+           if (!defines.containsKey("LIGHTSOURCES") || (defines.get("LIGHTSOURCES") != 1))
            {
-               GVRRenderData rdata = (GVRRenderData) renderable;
-               if (!rdata.isLightMapEnabled())
-               {
-                   defines.put("lightMapTexture", 0);
-               }
+               defines.put("a_normal", 0);
            }
            return defines;
        }

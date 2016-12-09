@@ -437,6 +437,7 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     rstate.uniforms.u_mvp = rstate.uniforms.u_proj * rstate.uniforms.u_mv;
     rstate.uniforms.u_right = rstate.render_mask & RenderData::RenderMaskBit::Right;
 
+
     if(use_multiview && !rstate.shadow_map){
         rstate.uniforms.u_view_[0] = rstate.scene->main_camera_rig()->left_camera()->getViewMatrix();
         rstate.uniforms.u_view_[1] = rstate.scene->main_camera_rig()->right_camera()->getViewMatrix();
@@ -482,7 +483,6 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     else
     {
         glDrawArrays(render_data->draw_mode(), 0, mesh->vertices().size());
-
     }
     glBindVertexArray(0);
     checkGlError("renderMesh::renderMaterialShader");

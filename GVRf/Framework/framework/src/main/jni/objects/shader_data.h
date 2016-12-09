@@ -33,6 +33,7 @@
 #include "objects/uniform_block.h"
 
 namespace gvr {
+
 class Texture;
 
 class ShaderData: public HybridObject {

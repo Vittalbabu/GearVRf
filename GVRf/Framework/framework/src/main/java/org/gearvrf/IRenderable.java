@@ -20,13 +20,9 @@ public interface IRenderable
     public GVRMesh      getMesh();
 
     /**
-     * Generate the shader for this renderable if necessary.
-     * Shader generation requires both a mesh and a material
-     * to be present.
-     *
-     * @param scene GVRScene which will render this renderable.
+     * Determine if this renderable uses light sources.
      */
-    public void         bindShader(GVRScene scene);
+    public boolean      isLightEnabled();
 
     /**
      * Save the native Shader ID for this renderable.

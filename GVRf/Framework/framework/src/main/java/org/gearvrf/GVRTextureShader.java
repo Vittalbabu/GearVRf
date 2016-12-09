@@ -61,16 +61,15 @@ public class GVRTextureShader extends GVRShaderTemplate
         mUsesLights = true;
     }
 
-    public HashMap<String, Integer> getRenderDefines(IRenderable renderable, GVRScene scene)
+    public HashMap<String, Integer> getRenderDefines(GVRRenderData rdata, GVRScene scene)
     {
-        HashMap<String, Integer> defines = super.getRenderDefines(renderable, scene);
-        if (GVRRenderData.class.isAssignableFrom(renderable.getClass()))
+        GVRLightBase[] lights = (scene != null) ? scene.getLightList() : null;
+        HashMap<String, Integer> defines = super.getRenderDefines(rdata, scene);
+        if (!rdata.isLightMapEnabled())
+            defines.put("lightMapTexture", 0);
+        if (!defines.containsKey("LIGHTSOURCES") || (defines.get("LIGHTSOURCES") != 1))
         {
-            GVRRenderData rdata = (GVRRenderData) renderable;
-            if (!rdata.isLightMapEnabled())
-            {
-                defines.put("lightMapTexture", 0);
-            }
+            defines.put("a_normal", 0);
         }
         return defines;
     }

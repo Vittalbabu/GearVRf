@@ -130,7 +130,6 @@ public class GVRMaterial extends  GVRPostEffect
         public abstract static class BeingGenerated {
             public static final GVRShaderId ID = GVRShaderType.Phong.ID;
         }
-
     };
 
     /**
@@ -554,7 +553,6 @@ public class GVRMaterial extends  GVRPostEffect
     public void setOpacity(float opacity) {
         setFloat("u_opacity", opacity);
     }
-
 
 
     public void setTexture(final String key, final Future<GVRTexture> texture) {

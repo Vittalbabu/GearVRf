@@ -31,6 +31,7 @@
 #include "objects/light.h"
 #include "objects/uniform_block.h"
 
+
 namespace gvr {
 
 class Scene: public HybridObject {

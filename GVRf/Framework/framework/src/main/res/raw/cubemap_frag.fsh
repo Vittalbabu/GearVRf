@@ -1,3 +1,4 @@
+
 precision highp float;
 uniform samplerCube u_texture;
 in vec3 diffuse_coord;
