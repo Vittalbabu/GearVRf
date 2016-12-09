@@ -195,7 +195,7 @@ public class GVRLightBase extends GVRJavaComponent implements GVRDrawFrameListen
     public static GVRMaterial getShadowMaterial(GVRContext ctx) {
         if (mShadowMaterial == null)
         {
-            mShadowMaterial = new GVRMaterial(ctx);
+            mShadowMaterial = new GVRMaterial(ctx, new GVRShaderId(GVRDepthShader.class));
             mShadowMaterial.setFloat("shadow_near", 0.1f);
             mShadowMaterial.setFloat("shadow_far", 50);
         }

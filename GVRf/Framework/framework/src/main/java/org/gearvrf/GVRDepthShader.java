@@ -30,8 +30,9 @@ public class GVRDepthShader extends GVRShaderTemplate
 
     public GVRDepthShader(GVRContext gvrcontext)
     {
-        super("", "", "float3 a_position float3 a_normal float4 a_bone_weights int4 a_bone_indices", 300);
-        if (fragTemplate == null) {
+        super("float shadow_near float shadow_far", "", "float3 a_position float3 a_normal float4 a_bone_weights int4 a_bone_indices", 300);
+        if (fragTemplate == null)
+        {
             Context context = gvrcontext.getContext();
             fragTemplate = TextFile.readTextFile(context, R.raw.depth_shader);
             vtxTemplate = TextFile.readTextFile(context, R.raw.vertex_template_depth);

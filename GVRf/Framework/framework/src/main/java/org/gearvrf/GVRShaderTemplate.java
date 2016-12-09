@@ -558,7 +558,7 @@ public class GVRShaderTemplate extends GVRShader
         {
             defines.put("MULTIVIEW", 1);
         }
-        if ((lights == null) || !lightEnabled)
+        if ((lights == null) || (lights.length == 0) || !lightEnabled)
         {
             defines.put("LIGHTSOURCES", 0);
             return defines;
