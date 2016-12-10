@@ -116,7 +116,8 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
      * has been set even if it is NULL.
      * @param name of texture
      * @return true if texture has been set, else false
-     * @see getTexture hasUniform
+     * @see #getTexture
+     * @see #hasUniform
      */
     public boolean hasTexture(String name) {
         return textures.containsKey(name);
@@ -128,8 +129,7 @@ public class GVRPostEffect extends GVRHybridObject implements  GVRShaderData {
      */
     public Set<String> getTextureNames()
     {
-        Set<String> texNames = new HashSet<String>();
-        texNames.add("u_texture");
+        Set<String> texNames = textures.keySet();
         return texNames;
     }
 

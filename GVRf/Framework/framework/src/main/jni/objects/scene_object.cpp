@@ -52,6 +52,24 @@ bool SceneObject::attachComponent(Component* component) {
     }
     component->set_owner_object(this);
     components_.push_back(component);
+    SceneObject* par = parent();
+    if (par)
+    {
+        Scene* scene = Scene::main_scene();
+        SceneObject* root = scene->getRoot();
+        if (scene != NULL)
+        {
+            while (par)
+            {
+                if (par == root)
+                {
+                    component->onAddedToScene(scene);
+                    return true;
+                }
+                par = par->parent();
+            }
+        }
+    }
     return true;
 }
 
@@ -59,6 +77,24 @@ bool SceneObject::detachComponent(Component* component) {
     auto it = std::find(components_.begin(), components_.end(), component);
     if (it == components_.end())
         return false;
+    SceneObject* par = parent();
+    if (par)
+    {
+        Scene* scene = Scene::main_scene();
+        SceneObject* root = scene->getRoot();
+        if (scene != NULL)
+        {
+            while (par)
+            {
+                if (par == root)
+                {
+                    component->onRemovedFromScene(scene);
+                    break;
+                }
+                par = par->parent();
+            }
+        }
+    }
     (*it)->set_owner_object(NULL);
     components_.erase(it);
     return true;

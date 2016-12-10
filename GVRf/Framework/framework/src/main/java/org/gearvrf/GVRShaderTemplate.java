@@ -264,11 +264,6 @@ public class GVRShaderTemplate extends GVRShader
                 textureDesc.append(' ');
                 textureDesc.append(name);
                 textureDesc.append(' ');
-                String attrname = material.getTexCoordAttr(name);
-                if (attrname == null)
-                {
-                    attrname = "a_texcoord";
-                }
             }
         }
         matcher = pattern.matcher(mUniformDescriptor);
@@ -552,13 +547,12 @@ public class GVRShaderTemplate extends GVRShader
         HashMap<String, Integer> defines = new HashMap<String, Integer>();
         int castShadow = 0;
         GVRLightBase[] lights = (scene != null) ? scene.getLightList() : null;
-        boolean lightEnabled  = renderable.isLightEnabled();
 
         if (scene.getGVRContext().getActivity().getAppSettings().isMultiviewSet())
         {
             defines.put("MULTIVIEW", 1);
         }
-        if ((lights == null) || (lights.length == 0) || !lightEnabled)
+        if ((lights == null) || (lights.length == 0) || !renderable.isLightEnabled())
         {
             defines.put("LIGHTSOURCES", 0);
             return defines;

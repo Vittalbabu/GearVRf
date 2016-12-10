@@ -60,14 +60,14 @@ public:
     virtual void setFloat(const std::string& key, float value) {
         ShaderData::setFloat(key, value);
         listener_->notify_listeners(true);
-        material_dirty_ = true;
+        setMaterialDirty(true);
     }
 
 
     virtual void setVec2(const std::string& key, glm::vec2 vector) {
         ShaderData::setVec2(key, vector);
         listener_->notify_listeners(true);
-         material_dirty_ = true;
+        setMaterialDirty(true);
     }
 
 
@@ -79,7 +79,7 @@ public:
     virtual void setVec4(const std::string& key, glm::vec4 vector) {
         ShaderData::setVec4(key, vector);
         listener_->notify_listeners(true);
-         material_dirty_ = true;
+        setMaterialDirty(true);
     }
 
     bool hasTexture() const {
@@ -89,30 +89,15 @@ public:
     virtual void setMat4(const std::string& key, glm::mat4 matrix) {
         ShaderData::setMat4(key, matrix);
         listener_->notify_listeners(true);
-         material_dirty_ = true;
-    }
-
-    int get_shader_feature_set() {
-        return shader_feature_set_;
+        setMaterialDirty(true);
     }
 
     void set_shader_feature_set(int feature_set) {
         shader_feature_set_ = feature_set;
     }
 
-    virtual bool isMainTextureReady() {
-        return (main_texture != NULL) && main_texture->isReady();
-    }
     void setMaterialDirty(bool dirty){
         material_dirty_ = dirty;
-    }
-    bool isTextureReady(const std::string& name) {
-        auto it = textures_.find(name);
-        if (it != textures_.end()) {
-            return ((Texture*) it->second)->isReady();
-        } else {
-            return false;
-        }
     }
 
     void add_listener(Listener* listener){

@@ -379,31 +379,42 @@ public class GVRCubeSceneObject extends GVRSceneObject {
         createComplexCube(gvrContext, facingOut, futureTextureList, segmentNumber);
     }
 
-    private void createSimpleCube(GVRContext gvrContext, boolean facingOut,
-            GVRMaterial material, Vector3f dimensions) {
-
-        GVRMesh mesh = new GVRMesh(gvrContext, "float3 a_position float3 a_normal float2 a_texcoord");
+    public static GVRMesh createCube(GVRContext gvrContext, String descriptor, boolean facingOut, Vector3f dimensions)
+    {
+        GVRMesh mesh = new GVRMesh(gvrContext, descriptor);
         float[] vertices = SIMPLE_VERTICES;
-        if (dimensions != null) {
+
+        if (dimensions != null)
+        {
             vertices = new float[SIMPLE_VERTICES.length];
-            for (int i = 0; i < SIMPLE_VERTICES.length; i += 3) {
-               vertices[i] = SIMPLE_VERTICES[i] * dimensions.x;
-               vertices[i + 1] = SIMPLE_VERTICES[i + 1] * dimensions.y;
-               vertices[i + 2] = SIMPLE_VERTICES[i + 2] * dimensions.z;
+            for (int i = 0; i < SIMPLE_VERTICES.length; i += 3)
+            {
+                vertices[i] = SIMPLE_VERTICES[i] * dimensions.x;
+                vertices[i + 1] = SIMPLE_VERTICES[i + 1] * dimensions.y;
+                vertices[i + 2] = SIMPLE_VERTICES[i + 2] * dimensions.z;
             }
-         }
-        if (facingOut) {
+        }
+        if (facingOut)
+        {
             mesh.setVertices(vertices);
             mesh.setNormals(SIMPLE_OUTWARD_NORMALS);
             mesh.setTexCoords(SIMPLE_OUTWARD_TEXCOORDS);
             mesh.setTriangles(SIMPLE_OUTWARD_INDICES);
-        } else {
+        }
+        else
+        {
             mesh.setVertices(vertices);
             mesh.setNormals(SIMPLE_INWARD_NORMALS);
             mesh.setTexCoords(SIMPLE_INWARD_TEXCOORDS);
             mesh.setTriangles(SIMPLE_INWARD_INDICES);
         }
+        return mesh;
+    }
 
+    private void createSimpleCube(GVRContext gvrContext, boolean facingOut,
+            GVRMaterial material, Vector3f dimensions) {
+
+        GVRMesh mesh = createCube(gvrContext, "float3 a_position, float3 a_normal, float2 a_texcoord", facingOut, dimensions);
         GVRRenderData renderData = new GVRRenderData(gvrContext, material);
         attachComponent(renderData);
         renderData.setMesh(mesh);

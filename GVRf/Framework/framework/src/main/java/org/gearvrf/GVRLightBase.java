@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import org.gearvrf.GVRSceneObject;
 import org.gearvrf.utility.ImageUtils;
+import org.gearvrf.utility.ResourceCache;
 import org.gearvrf.utility.Threads;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -109,6 +110,21 @@ public class GVRLightBase extends GVRJavaComponent implements GVRDrawFrameListen
     }
 
     /**
+     * When the application is restarted we reset the shadow material
+     * since all of the native materials have been deleted.
+     */
+    static
+    {
+        GVRContext.addResetOnRestartHandler(new Runnable() {
+
+            @Override
+            public void run() {
+                mShadowMaterial = null;
+            }
+        });
+    }
+
+    /**
      * Enable or disable shadow casting by this light.
      *
      * If shadow casting is enabled, GearVRF will compute shadow maps
@@ -134,17 +150,14 @@ public class GVRLightBase extends GVRJavaComponent implements GVRDrawFrameListen
 
         if (enableFlag)
         {
-            if (mShadowMaterial == null)
+            GVRMaterial shadowMtl = getShadowMaterial(context);
+            GVRShaderId id = shadowMtl.getShaderType();
+            GVRShader shader = id.getTemplate(context);
+            if (shader != null)
             {
-                GVRShaderId id = context.getMaterialShaderManager().getShaderType(GVRDepthShader.class);
-                mShadowMaterial = new GVRMaterial(context, id);
-                GVRShader shader = id.getTemplate(context);
-                if (shader != null)
-                {
-                    shader.bindShader(context, mShadowMaterial);
-                }
+                shader.bindShader(context, shadowMtl);
             }
-            NativeLight.setCastShadow(getNative(), mShadowMaterial.getNative());
+            NativeLight.setCastShadow(getNative(), shadowMtl.getNative());
         }
         else
         {
@@ -180,9 +193,10 @@ public class GVRLightBase extends GVRJavaComponent implements GVRDrawFrameListen
      *
      * The shadow material has several public attributes which affect the shadow
      * map construction:
-     *  - shadow_near   near plane of the shadow map camera (default 0.1)
-     *  - shadow_far    far plane of the shadow map camera (default 50)
-     *
+     * <ul>
+     * <li>shadow_near   near plane of the shadow map camera (default 0.1)</li>
+     * <li>shadow_far    far plane of the shadow map camera (default 50)</li>
+     * </ul>
      * The shadow map is constructed using a depth map rendered
      * from the viewpoint of the light. This global material
      * contains the shadow map properties. Modifying the near and far

@@ -318,8 +318,8 @@ void Mesh::generateVKBuffers(std::string descriptor, VkDevice& m_device, VulkanC
     std::vector<GLfloat> buffer;
     createBuffer(buffer, vertices_.size());
         memset(&m_vertices, 0, sizeof(m_vertices));
-    m_vertices.vi_bindings = new VkVertexInputBindingDescription[attrMapping.size()];
-    m_vertices.vi_attrs = new VkVertexInputAttributeDescription[attrMapping.size()];
+        m_vertices.vi_bindings = new VkVertexInputBindingDescription[attrMapping.size()];
+        m_vertices.vi_attrs = new VkVertexInputAttributeDescription[attrMapping.size()];
         VkResult   err;
         bool   pass;
 

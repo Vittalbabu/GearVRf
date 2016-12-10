@@ -55,14 +55,20 @@ class Mesh: public HybridObject {
 public:
     Mesh(const std::string& descriptor) :
             vertexDescriptor_(descriptor), vertices_(), normals_(), indices_(), float_vectors_(), vec2_vectors_(), vec3_vectors_(), vec4_vectors_(),
-                    have_bounding_volume_(false), vao_dirty_(true), listener_(new Listener()),vkVertices_(new GVR_VK_Vertices()),
-                    boneVboID_(GVR_INVALID), vertexBoneData_(this), bone_data_dirty_(true), regenerate_vao_(true)
+            have_bounding_volume_(false), vao_dirty_(true), listener_(new Listener()),vkVertices_(new GVR_VK_Vertices()),
+            boneVboID_(GVR_INVALID), vertexBoneData_(this), bone_data_dirty_(true), regenerate_vao_(true)
     {
+        m_vertices.vi_bindings = NULL;
+        m_vertices.vi_attrs = NULL;
     }
 
     ~Mesh() {
-        delete m_vertices.vi_bindings;
-        delete m_vertices.vi_attrs;
+        if (m_vertices.vi_bindings) {
+            delete m_vertices.vi_bindings;
+        }
+        if (m_vertices.vi_attrs) {
+            delete m_vertices.vi_attrs;
+        }
         cleanUp();
     }
 
