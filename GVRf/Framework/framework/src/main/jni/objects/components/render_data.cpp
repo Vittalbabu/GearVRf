@@ -137,8 +137,7 @@ namespace gvr {
                 int no_passes1 = i->pass_count();
                 int no_passes2 = j->pass_count();
 
-                if (no_passes1 == no_passes2)
-                {
+
                     // if it is a transparent object, sort by camera distance from back to front
                     if (i->rendering_order() >= RenderData::Transparent
                         && i->rendering_order() < RenderData::Overlay)
@@ -146,6 +145,8 @@ namespace gvr {
                         return i->camera_distance() > j->camera_distance();
                     }
 
+                if (no_passes1 == no_passes2)
+                {
                     //@todo what about the other passes
 
                     //this is pointer comparison; assumes batching is on; if the materials are not
@@ -168,7 +169,7 @@ namespace gvr {
                 }
                 return no_passes1 < no_passes2;
             }
-            return i->get_shader() < j->get_shader();
+            //return i->get_shader() < j->get_shader();
         }
         return i->rendering_order() < j->rendering_order();
     }

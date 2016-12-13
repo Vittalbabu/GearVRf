@@ -147,6 +147,7 @@ public class GVRMaterial extends  GVRPostEffect
         GVRShader shader = mShaderId.getTemplate(gvrContext);
         mUniformDescriptor = shader.getUniformDescriptor();
         mTextureDescriptor = shader.getTextureDescriptor();
+        Log.i("Abhijit Descriptor", "" + mUniformDescriptor);
         NativeMaterial.setUniformDescriptor(getNative(),mUniformDescriptor);
         shader.setMaterialDefaults(this);
         this.mShaderFeatureSet = 0;

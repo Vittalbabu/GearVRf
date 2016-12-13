@@ -414,6 +414,8 @@ void GLRenderer::renderMaterialShader(RenderState& rstate, RenderData* render_da
     SceneObject *owner = render_data->owner_object();
     ShaderManager *shader_manager = rstate.shader_manager;
 
+    LOGE("SHADER: Scene object %s", owner->name().c_str());
+
     Shader* shader = shader_manager->getShader(render_data->get_shader(curr_pass));
     if (shader == NULL) {
         LOGE("SHADER: shader not ready %s %p", owner->name().c_str(), render_data);

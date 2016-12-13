@@ -89,7 +89,8 @@ namespace gvr {
             fv = material_->getFloatVec(key, size);
             if ((fv != NULL) && (size <= 4)) {
                 memcpy(data, fv, size * sizeof(float));
-                ubo->setVec(key, data, 4);
+                //ubo->setVec(key, data, 4);
+                ubo->setVec(key, data, size);
             }
             break;
 
@@ -435,6 +436,14 @@ void Shader::render(RenderState* rstate, RenderData* render_data, ShaderData* ma
         mat->bindMaterialUbo(programID);
 
      GLUniformBlock* mat_ubo = mat->getMatUbo();
+
+    float * temp = (float*)mat_ubo->UniformData;
+    LOGE("Material data start");
+    for(int i = 0; i < (mat_ubo->getTotalSize())/sizeof(float); i++){
+        LOGE("Material data %f", *temp);
+        temp++;
+    }
+    LOGE("Material data end");
 
     if(mat && mat->isMaterialDirty())
     {

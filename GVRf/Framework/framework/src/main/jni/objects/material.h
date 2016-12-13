@@ -162,7 +162,7 @@ public:
                 if(type.compare("float4") == 0 || type.compare("int4") == 0 || type.compare("mat4") == 0)
                     modified_type = type;
                 else
-                    modified_type = getType(type);
+                    modified_type = type;//getType(type);
 
                 uniform_desc_ = uniform_desc_ + modified_type + " ";
                 while (std::isspace(*p))
@@ -178,30 +178,36 @@ public:
             }
     }
    void setUniformDesc(std::string uniform_desc){
-        convertDescriptor(uniform_desc);
-       LOGE("setting matertial descriptor %s", uniform_desc_.c_str());
+       convertDescriptor(uniform_desc);
+       LOGE("setting matertial descriptor %s", uniform_desc.c_str());
         vk_descriptor = new Descriptor(uniform_desc_);
     }
     bool isMaterialDirty(){
         return material_dirty_;
     }
-      GLUniformBlock* bindUbo(int program_id, int index, const char* name, const char* desc){
-                       GLUniformBlock* ubo = new GLUniformBlock(desc);
-                       ubo->setGLBindingPoint(index);
-                       ubo->setBlockName(name);
-                       ubo->bindBuffer(program_id);
-                       return ubo;
-             }
-             void bindMaterialUbo(int program_id){
-                 if(mat_ubo_ == nullptr){
-                     mat_ubo_ = bindUbo(program_id,MATERIAL_UBO_INDEX,"Material_ubo",uniform_desc_.c_str() );
-                 }
-                 else
-                     mat_ubo_->bindBuffer(program_id);
-             }
-         GLUniformBlock* getMatUbo(){
-            return mat_ubo_;
-         }
+
+    GLUniformBlock *bindUbo(int program_id, int index, const char *name, const char *desc) {
+        GLUniformBlock *ubo = new GLUniformBlock(desc);
+        ubo->setGLBindingPoint(index);
+        ubo->setBlockName(name);
+        ubo->bindBuffer(program_id);
+        return ubo;
+    }
+
+    void bindMaterialUbo(int program_id) {
+        if (mat_ubo_ == nullptr) {
+            mat_ubo_ = bindUbo(program_id, MATERIAL_UBO_INDEX, "Material_ubo",
+                               uniform_desc_.c_str());
+        }
+        else
+            mat_ubo_->bindBuffer(program_id);
+    }
+
+    GLUniformBlock *getMatUbo() {
+
+        return mat_ubo_;
+    }
+
 private:
     GLUniformBlock *mat_ubo_;
     bool material_dirty_;

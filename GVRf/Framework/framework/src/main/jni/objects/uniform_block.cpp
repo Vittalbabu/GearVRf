@@ -27,7 +27,7 @@ UniformBlock::UniformBlock(const std::string& descriptor) :
     ownData = false;
     if (!descriptor.empty())
     {
-        LOGE("setting descriptor");
+        LOGE("setting descriptor %s", descriptor.c_str());
         setDescriptor(descriptor);
     }
 }
@@ -54,6 +54,7 @@ bool UniformBlock::setInt(std::string name, int val)
 
 bool UniformBlock::setFloat(std::string name, float val) {
     int size = sizeof(float);
+    LOGE("UniformBlock good here%s", name.c_str());
     char* data = getData(name, size);
     if (data != NULL)
     {
@@ -122,6 +123,7 @@ bool UniformBlock::setVec4(std::string name, const glm::vec4& val)
 {
     int bytesize = 4 * sizeof(float);
     float* data = (float*)getData(name, bytesize);
+    LOGE("UniformBlock here%s", name.c_str());
     if (data != NULL)
     {
         data[0] = val.x;
@@ -166,6 +168,7 @@ const glm::vec3* UniformBlock::getVec3(std::string name) const {
 
 const glm::vec4* UniformBlock::getVec4(std::string name) const {
     int size = 4 * sizeof(float);
+    LOGE("UniformBlock get vec4 here %s", name.c_str());
     const char* data = getData(name, size);
     if (data != NULL)
         return (reinterpret_cast<const glm::vec4*> (data));
@@ -183,6 +186,7 @@ int UniformBlock::getInt(std::string name) const
 
 float UniformBlock::getFloat(std::string name) const
 {
+    LOGE("UniformBlock good heregood%s", name.c_str());
     int size = sizeof(float);
     const char* data = getData(name, size);
     if (data != NULL)
@@ -205,6 +209,7 @@ bool UniformBlock::getIntVec(std::string name, int* val, int n) const
 
 bool UniformBlock::getVec(std::string name, float* val, int n) const
 {
+    LOGE("UniformBlock bad here%s", name.c_str());
     int size =  n * sizeof(float);
     const char* data = getData(name, size);
     if (data != NULL)
@@ -230,6 +235,7 @@ bool UniformBlock::getMat4(std::string name, glm::mat4& val) const
 
 void  UniformBlock::parseDescriptor()
 {
+    LOGD("UniformBlockNew: %s", Descriptor.c_str());
     const char* p = Descriptor.c_str();
     const char* type_start;
     int type_size;
@@ -238,6 +244,8 @@ void  UniformBlock::parseDescriptor()
     int offset = 0;
     const int VEC4_BOUNDARY = (sizeof(float) * 4) - 1;
     TotalSize = 0;
+    int currentBlock = 4;
+    int requiredBlock = 0;
     while (*p)
     {
         while (std::isspace(*p) || *p == ';'|| *p == ',')
@@ -288,14 +296,40 @@ void  UniformBlock::parseDescriptor()
 
         uniform.Name = name;
         uniform.Type = type;
+
+        requiredBlock = getRequiredBlock(type);
+
+        if(requiredBlock) {
+            if (currentBlock >= requiredBlock) {
+
+                if (requiredBlock == 2 && currentBlock == 3) {
+                    TotalSize += sizeof(float);
+                    offset += sizeof(float);
+                    currentBlock--;
+                }else{
+                    currentBlock -= requiredBlock;
+                }
+            }
+            else {
+                TotalSize += currentBlock * sizeof(float);
+                offset += currentBlock * sizeof(float);
+                currentBlock = 4 - currentBlock;
+            }
+        }else{
+            // For mat4
+        }
+
         uniform.Offset = offset;
+        offset += calcSize(type) * array_size;
+
         uniform.Size = calcSize(type) * array_size;                // get number of bytes
 
+        LOGD("UniformBlockNew: %s : %s offset=%d size=%d\n", name.c_str(), uniform.Type.c_str(), uniform.Offset, uniform.Size);
 
         if (uniform.Size == 0)
             continue;
-        if (offset & VEC4_BOUNDARY)                   // pad to 4 float boundary?
-            uniform.Offset = offset = (offset + VEC4_BOUNDARY) & ~VEC4_BOUNDARY;
+        //if (offset & VEC4_BOUNDARY)                   // pad to 4 float boundary?
+        //    uniform.Offset = offset = (offset + VEC4_BOUNDARY) & ~VEC4_BOUNDARY;
         std::pair<std::string, Uniform> pair(name, uniform);
         std::pair< std::map<std::string, Uniform>::iterator, bool > ret = UniformMap.insert(pair);
         if (!ret.second)
@@ -304,7 +338,7 @@ void  UniformBlock::parseDescriptor()
             continue;
         }
         LOGD("UniformBlock: %s offset=%d size=%d\n", name.c_str(), uniform.Offset, uniform.Size);
-        offset += uniform.Size;
+        //offset += uniform.Size;
         TotalSize += uniform.Size;
     }
     if (TotalSize > 0)
@@ -324,16 +358,30 @@ void  UniformBlock::parseDescriptor()
 int UniformBlock::calcSize(std::string type) const
 {
     if (type == "float") return sizeof(float);
-    if (type == "float3") return 4 * sizeof(float);
+    if (type == "float3") return 3 * sizeof(float);
     if (type == "float4") return 4 * sizeof(float);
     if (type == "float2") return 2 * sizeof(float);
     if (type == "int") return sizeof(int);
-    if (type == "int3") return 4 * sizeof(int);
+    if (type == "int3") return 3 * sizeof(int);
     if (type == "int4") return 4 * sizeof(int);
     if (type == "float2") return 2 * sizeof(int);
     if (type == "mat4") return 16 * sizeof(float);
     if (type == "mat3") return 12 * sizeof(float);
     LOGE("UniformBlock: SYNTAX ERROR: unknown type %s\n", type.c_str());
+    return 0;
+}
+
+int UniformBlock::getRequiredBlock(std::string type) const
+{
+    if (type == "float") return 1;
+    if (type == "float3") return 3;
+    if (type == "float4") return 4;
+    if (type == "float2") return 2;
+    if (type == "int") return 1;
+    if (type == "int3") return 3;
+    if (type == "int4") return 4;
+    if (type == "float2") return 2;
+    LOGE("UniformBlock: SYNTAX ERROR: unknown required block %s\n", type.c_str());
     return 0;
 }
 
@@ -348,7 +396,7 @@ UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int& bytesize)
     Uniform& u = it->second;
     if (u.Size < bytesize)
     {
-        LOGE("ERROR: UniformBlock element %s is %d bytes, should be %d bytes\n", name.c_str(), bytesize, u.Size);
+        LOGE("ERROR: UniformBlock not const element %s is %d bytes, should be %d bytes\n", name.c_str(), bytesize, u.Size);
         return NULL;
     }
     bytesize = u.Size;
@@ -366,7 +414,7 @@ const UniformBlock::Uniform* UniformBlock::getUniform(std::string name, int& byt
     const Uniform& u = it->second;
     if (u.Size < bytesize)
     {
-        LOGE("ERROR: UniformBlock element %s is %d bytes, should be %d bytes\n", name.c_str(), bytesize, u.Size);
+        LOGE("ERROR: UniformBlock const element %s is %d bytes, should be %d bytes\n", name.c_str(), bytesize, u.Size);
         return NULL;
     }
     bytesize = u.Size;
@@ -389,7 +437,14 @@ char* UniformBlock::getData(std::string name, int& bytesize)
     if (u == NULL)
         return NULL;
     char* data = (char*) UniformData;
+
+    //for(int i = 0; i < (u->Offset)/sizeof(float); i++){
+    //temp++;
+    //    break;
+    //}
     data += u->Offset;
+    //float * temp = (float*) data;
+    //LOGE("UniformBlock data %s  %f", name.c_str(), *temp);
     return data;
 }
 

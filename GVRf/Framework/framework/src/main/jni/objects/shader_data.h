@@ -86,9 +86,11 @@ public:
     }
 
     bool getFloat(const std::string& key, float& v) {
+        LOGE("Abhijit get %s", key.c_str());
         auto it = floats_.find(key);
         if (it != floats_.end()) {
             v = it->second;
+            LOGE("Abhijit get %s %f", key.c_str(), v);
             return true;
         } else {
             LOGE("Material::getFloat() : %s not found", key.c_str());
@@ -97,6 +99,7 @@ public:
     }
 
     virtual void setFloat(const std::string& key, float value) {
+        LOGE("Abhijit %s %f", key.c_str(), value);
         floats_[key] = value;
     }
 
@@ -117,6 +120,7 @@ public:
     virtual GLUniformBlock* getMatUbo(){}
     virtual const float* getFloatVec(const std::string& key, int numfloats) const
     {
+
         std::map<std::string, float>::const_iterator it1;
         std::map<std::string, glm::vec2>::const_iterator it2;
         std::map<std::string, glm::vec3>::const_iterator it3;
@@ -126,8 +130,10 @@ public:
         {
             case 1:
             it1 = floats_.find(key);
-            if (it1 != floats_.end())
+            if (it1 != floats_.end()) {
+                LOGE("Abhijit get %s %f", key.c_str(), it1->second);
                 return &(it1->second);
+            }
             break;
 
             case 2:
