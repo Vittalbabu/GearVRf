@@ -1,13 +1,13 @@
 precision highp float;
 
 layout (std140) uniform Material_ubo{
-    vec4 u_opacity;
-    vec4 u_color;
+    float u_opacity;
+    vec3 u_color;
     vec4 ambient_color;
     vec4 diffuse_color;
     vec4 specular_color;
     vec4 emissive_color;
-    vec4 specular_exponent;
+    float specular_exponent;
     vec4 line_width;
 };
 

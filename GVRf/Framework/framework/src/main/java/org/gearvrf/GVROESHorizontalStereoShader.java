@@ -67,4 +67,10 @@ public class GVROESHorizontalStereoShader extends GVRShader
         setSegment("FragmentTemplate",  TextFile.readTextFile(context, R.raw.oes_horizontal_stereo_frag));
         setSegment("VertexTemplate", TextFile.readTextFile(context, R.raw.oes_horizontal_stereo_vert));
     }
+
+    protected void setMaterialDefaults(GVRShaderData material)
+    {
+        material.setVec3("u_color", 1, 1, 1);
+        material.setFloat("u_opacity", 1);
+    }
 }
